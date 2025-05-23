@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: yarn start
+
+  cypress:
+    image: cypress/included:9.7.0
+    working_dir: /e2e
+    volumes:
+      - ./cypress:/e2e
+      - ./cypress.config.ts:/e2e/cypress.config.ts
+      - ./node_modules:/e2e/node_modules
+    depends_on:
+      - frontend
+    environment:
+      - CYPRESS_baseUrl=http://frontend:3000
+    command: cypress run
+
+  tests:
+    build: .
+    command: yarn test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - frontend
