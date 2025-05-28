@@ -1,14 +1,14 @@
 import MainLayout from "../../../components/MainLayout/MainLayout";
 import Hero from "../container/Hero"
 import HomePageCard from "../container/HomePageCard";
-import WhatToKnow from "../container/WhatToKnow";
+import LatestContent from "../container/LatestContent";
 
 const HomePage = () => {
     return (
         <MainLayout>
             <Hero />
             <HomePageCard />
-            <WhatToKnow />
+            <LatestContent />
         </MainLayout>
     )
 }
