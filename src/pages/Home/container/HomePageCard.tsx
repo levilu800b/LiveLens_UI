@@ -13,6 +13,7 @@ interface ContentItem {
 }
 
 const contentItems: ContentItem[] = [
+  // ... your contentItems as before
   {
     id: '1',
     type: 'film',
@@ -107,36 +108,58 @@ const ContentTrailerSection: React.FC = () => {
 
   // Example Play Now handler
   const handlePlayNow = (item: ContentItem) => {
-    // Replace with navigation or logic as needed
     alert(`Play Now: ${item.title}`);
+  };
+
+  // Example Read Story handler
+  const handleReadStory = (item: ContentItem) => {
+    alert(`Read Story: ${item.title}`);
   };
 
   return (
     <div className="min-h-screen bg-white py-16 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-black mb-2">Featured Content</h2>
-          <p className="text-gray-400">Preview our latest releases before diving into the full experience</p>
+          <h2 className="text-4xl font-bold text-gray-900 mb-2">Featured Content</h2>
+          <p className="text-gray-500">Preview our latest releases before diving into the full experience</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 auto-rows-[220px] md:auto-rows-[200px] lg:auto-rows-[250px] gap-6">
           {contentItems.map((item, idx) => (
             <div
               key={item.id}
-              className={`group relative rounded-2xl overflow-hidden border border-slate-700/50 hover:border-purple-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 ${gridSpans[idx]}`}
+              className={`group relative rounded-2xl overflow-hidden border border-slate-200 hover:border-purple-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 ${gridSpans[idx]}`}
             >
-              <div className="relative h-full w-full flex flex-col">
-                <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover absolute inset-0" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+              {/* Card image and hover animation */}
+              <div className={`absolute inset-0 w-full h-full z-0 transition-transform duration-500
+                ${item.type !== 'story' ? 'group-hover:-translate-y-2 group-hover:scale-105' : ''}
+              `}>
+                <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              </div>
 
-                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor(item.type)} text-white text-xs font-semibold flex items-center gap-2 shadow-md`}>
-                  {getIcon(item.type)}
-                  {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                </div>
+              {/* Card badge */}
+              <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor(item.type)} text-white text-xs font-semibold flex items-center gap-2 shadow-md z-10`}>
+                {getIcon(item.type)}
+                {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+              </div>
 
-                <div className="absolute bottom-4 left-4 right-4 text-white z-10">
-                  <h3 className="text-lg font-bold">{item.title}</h3>
-                  <p className="text-sm text-gray-300 line-clamp-2 mb-3">{item.description}</p>
+              {/* Card content with hover animation for film/podcast */}
+              <div className={`absolute bottom-4 left-4 right-4 text-white z-10 transition-transform duration-500
+                ${item.type !== 'story' ? 'group-hover:-translate-y-2' : ''}
+              `}>
+                <h3 className="text-lg font-bold">{item.title}</h3>
+                <p className="text-sm text-gray-200 line-clamp-2 mb-3">{item.description}</p>
+                {/* Buttons */}
+                {item.type === 'story' ? (
+                  <button
+                    onClick={() => handleReadStory(item)}
+                    className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold shadow transition"
+                    type="button"
+                  >
+                    Start Reading
+                  </button>
+                ) : (
                   <div className="flex gap-2">
                     <button
                       onClick={() => setActiveTrailer(item.id)}
@@ -153,12 +176,15 @@ const ContentTrailerSection: React.FC = () => {
                       <Film className="w-4 h-4" /> Play Now
                     </button>
                   </div>
-                </div>
+                )}
+              </div>
 
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/40 z-0">
+              {/* Optional: Play icon overlay for film/podcast */}
+              {item.type !== 'story' && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/30 z-0">
                   <Play className="w-12 h-12 text-white drop-shadow-lg" />
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
