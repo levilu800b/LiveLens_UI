@@ -33,7 +33,7 @@ const ForgotPasswordPage = () => {
       } else {
         setError('No account found with this email address.');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to send reset email. Please try again.');
     } finally {
       setIsLoading(false);
