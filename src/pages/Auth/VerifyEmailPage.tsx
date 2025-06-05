@@ -105,7 +105,7 @@ const VerifyEmailPage = () => {
         setVerificationCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
-    } catch (err) {
+    } catch {
       setError('Verification failed. Please try again.');
       setVerificationCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -137,7 +137,7 @@ const VerifyEmailPage = () => {
           return prev - 1;
         });
       }, 1000);
-    } catch (err) {
+    } catch {
       setError('Failed to resend code. Please try again.');
     }
   };
@@ -186,7 +186,7 @@ const VerifyEmailPage = () => {
                 {verificationCode.map((digit, index) => (
                   <input
                     key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    ref={el => { inputRefs.current[index] = el; }}
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]"
