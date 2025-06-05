@@ -1,30 +1,18 @@
 // src/components/Auth/ProtectedRoute.tsx
-import { useSelector } from 'react-redux';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-
-interface UserInfo {
-  // Define the properties of userInfo here, for example:
-  id: string;
-  name: string;
-  email: string;
-  // Add other fields as needed
-}
-
-interface RootState {
-  user: {
-    userInfo: UserInfo | null;
-  };
-}
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../store';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { userInfo } = useSelector((state: RootState) => state.user);
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const isAuthenticated = useSelector((state: RootState) => !!state.user.userInfo);
   const location = useLocation();
 
-  if (!userInfo) {
+  if (!isAuthenticated) {
     // Redirect to login page with return url
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
