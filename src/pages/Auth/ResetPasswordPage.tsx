@@ -88,7 +88,7 @@ const ResetPasswordPage = () => {
         setVerificationCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
-    } catch (err) {
+    } catch {
       setError('Verification failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -133,7 +133,7 @@ const ResetPasswordPage = () => {
           message: 'Password reset successful! Please sign in with your new password.' 
         } 
       });
-    } catch (err) {
+    } catch {
       setError('Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
@@ -159,7 +159,7 @@ const ResetPasswordPage = () => {
           return prev - 1;
         });
       }, 1000);
-    } catch (err) {
+    } catch {
       setError('Failed to resend code. Please try again.');
     }
   };
@@ -213,7 +213,7 @@ const ResetPasswordPage = () => {
                   {verificationCode.map((digit, index) => (
                     <input
                       key={index}
-                      ref={(el) => (inputRefs.current[index] = el)}
+                      ref={(el) => { inputRefs.current[index] = el; }}
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]"
