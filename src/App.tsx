@@ -1,11 +1,11 @@
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/Home/Homepage/HomePage';
 import StoriesPage from './pages/Stories/StoriesPage';
-// import MediaPage from './pages/Media/MediaPage';
-// import FilmsPage from './pages/Media/FilmsPage';
-// import ContentsPage from './pages/Media/ContentsPage';
-// import PodcastsPage from './pages/Podcasts/PodcastsPage';
-// import AnimationsPage from './pages/Animations/AnimationsPage';
+import MediaPage from './pages/Media/MediaPage';
+import FilmsPage from './pages/Media/FilmsPage';
+import ContentsPage from './pages/Media/ContentsPage';
+import PodcastsPage from './pages/Podcasts/PodcastsPage';
+import AnimationsPage from './pages/Animations/AnimationsPage';
 // import SneakPeeksPage from './pages/SneakPeeks/SneakPeeksPage';
 import LoginPage from './pages/Auth/LoginPage';
 import SignupPage from './pages/Auth/SignupPage';
@@ -38,11 +38,11 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/stories" element={<StoriesPage />} />
-        {/* <Route path="/media" element={<MediaPage />} /> */}
-        {/* <Route path="/media/films" element={<FilmsPage />} /> */}
-        {/* <Route path="/media/contents" element={<ContentsPage />} /> */}
-        {/* <Route path="/podcasts" element={<PodcastsPage />} /> */}
-        {/* <Route path="/animations" element={<AnimationsPage />} /> */}
+        <Route path="/media" element={<MediaPage />} />
+        <Route path="/media/films" element={<FilmsPage />} /> 
+        <Route path="/media/contents" element={<ContentsPage />} /> 
+        <Route path="/podcasts" element={<PodcastsPage />} />
+        <Route path="/animations" element={<AnimationsPage />} />
         {/* <Route path="/sneak-peeks" element={<SneakPeeksPage />} /> */}
         
         {/* Auth Routes */}
