@@ -302,29 +302,25 @@ const PodcastsPage = () => {
 
           {/* Search and Filters */}
           <SearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedTags={selectedTags}
-            onTagChange={setSelectedTags}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            availableTags={availableTags}
-            contentType="podcasts"
+            onSearch={setSearchTerm}
+            onFilter={(filters) => {
+              setSelectedTags(filters.tags);
+              setSortBy(filters.sortBy);
+              // optionally handle filters.duration and filters.dateRange if needed
+            }}
+            contentType="podcast"
           />
 
           {/* Podcasts Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredPodcasts.map(podcast => (
-              <div key={podcast.id} className="relative">
-                <ContentCard
-                  {...podcast}
-                  onLike={(id) => console.log('Liked podcast:', id)}
-                />
-                {/* Episode Info Overlay */}
-                <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-xs font-medium">
-                  S{podcast.season} E{podcast.episode}
-                </div>
-              </div>
+              <ContentCard
+                key={podcast.id}
+                {...podcast}
+                season={podcast.season}
+                episode={podcast.episode}
+                onLike={(id) => console.log('Liked podcast:', id)}
+              />
             ))}
           </div>
 
