@@ -132,10 +132,12 @@ const StoriesPage: React.FC = () => {
 
   // Accept FilterOptions from SearchFilter component
   type FilterOptions = {
-    tags?: string[];
-    sortBy?: string;
-    duration?: string;
-  };
+  tags?: string[];
+  sortBy?: string;
+  duration?: string;
+  dateRange?: string;
+};
+
 
   const handleFilter = (filters: FilterOptions) => {
     let filtered = [...stories];
@@ -173,7 +175,7 @@ const StoriesPage: React.FC = () => {
     // Filter by duration
     if (filters.duration && filters.duration !== 'all') {
       filtered = filtered.filter(story => {
-        const readingMinutes = parseInt(story.readingTime);
+        const readingMinutes = parseInt(story.readingTime.split(' ')[0]);
         switch (filters.duration) {
           case 'short':
             return readingMinutes <= 5;
@@ -186,6 +188,36 @@ const StoriesPage: React.FC = () => {
         }
       });
     }
+
+    // Filter by date range
+    if (filters.dateRange && filters.dateRange !== 'all') {
+  const now = new Date();
+  filtered = filtered.filter(story => {
+    const publishedDate = new Date(story.publishedAt);
+    switch (filters.dateRange) {
+      case 'today':
+        return publishedDate.toDateString() === now.toDateString();
+      case 'week': {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(now.getDate() - 7);
+        return publishedDate >= oneWeekAgo;
+      }
+      case 'month': {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+        return publishedDate >= oneMonthAgo;
+      }
+      case 'year': {
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(now.getFullYear() - 1);
+        return publishedDate >= oneYearAgo;
+      }
+      default:
+        return true;
+    }
+  });
+}
+
 
     setFilteredStories(filtered);
   };
