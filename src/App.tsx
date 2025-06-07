@@ -6,7 +6,7 @@ import FilmsPage from './pages/Media/FilmsPage';
 import ContentsPage from './pages/Media/ContentsPage';
 import PodcastsPage from './pages/Podcasts/PodcastsPage';
 import AnimationsPage from './pages/Animations/AnimationsPage';
-// import SneakPeeksPage from './pages/SneakPeeks/SneakPeeksPage';
+import SneakPeeksPage from './pages/SneakPeeks/SneakPeeksPage';
 import LoginPage from './pages/Auth/LoginPage';
 import SignupPage from './pages/Auth/SignupPage';
 import VerifyEmailPage from './pages/Auth/VerifyEmailPage';
@@ -43,7 +43,7 @@ function App() {
         <Route path="/media/contents" element={<ContentsPage />} /> 
         <Route path="/podcasts" element={<PodcastsPage />} />
         <Route path="/animations" element={<AnimationsPage />} />
-        {/* <Route path="/sneak-peeks" element={<SneakPeeksPage />} /> */}
+        <Route path="/sneak-peeks" element={<SneakPeeksPage />} />
         
         {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />

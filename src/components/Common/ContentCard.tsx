@@ -22,6 +22,8 @@ interface ContentCardProps {
   // New props for animation info
   style?: string;
   complexity?: string;
+  // New props for sneak peek info
+  category?: string;
 }
 
 interface RootState {
@@ -46,7 +48,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
   season,
   episode,
   style,
-  complexity
+  complexity,
+  category
 }) => {
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
@@ -156,14 +159,21 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </div>
         )}
         
+        {/* Category Badge - Top Right for sneak peeks */}
+        {category && (
+          <div className="absolute top-4 right-4 bg-indigo-500 text-white px-2 py-1 rounded text-xs font-medium">
+            {category}
+          </div>
+        )}
+        
         {/* Type Badge - Positioned to avoid conflict with episode badge */}
         <div className={`absolute ${season && episode ? 'top-4 left-20' : 'top-4 left-4'} px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor()} text-white text-xs font-semibold flex items-center gap-2 shadow-md`}>
           {getTypeIcon()}
           {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
         </div>
         
-        {/* Duration - Only show if not an animation (since animations have style/complexity badges) */}
-        {!style && !complexity && (
+        {/* Duration - Only show if not an animation or sneak peek with special badges */}
+        {!style && !complexity && !category && (
           <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {duration}
@@ -173,6 +183,14 @@ const ContentCard: React.FC<ContentCardProps> = ({
         {/* Duration for animations - positioned below style/complexity badges */}
         {style && complexity && (
           <div className="absolute top-20 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {duration}
+          </div>
+        )}
+        
+        {/* Duration for sneak peeks - positioned below category badge */}
+        {category && (
+          <div className="absolute top-12 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {duration}
           </div>
