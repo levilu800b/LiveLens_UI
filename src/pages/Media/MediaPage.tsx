@@ -220,15 +220,14 @@ const MediaPage = () => {
 
           {/* Search and Filters */}
           <SearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedTags={selectedTags}
-            onTagChange={setSelectedTags}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            availableTags={availableTags}
-            contentType="media"
-          />
+  onSearch={setSearchTerm}
+  onFilter={(filters) => {
+    setSelectedTags(filters.tags);
+    setSortBy(filters.sortBy);
+    // optionally handle filters.duration and filters.dateRange if needed
+  }}
+  contentType="media"
+/>
 
           {/* Content Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
