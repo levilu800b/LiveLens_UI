@@ -125,54 +125,59 @@ const ContentsPage = () => {
   const availableTags = Array.from(new Set(mockContents.flatMap(item => item.tags)));
 
   const getFilteredContents = () => {
-    let contents = [...mockContents];
+  let contents = [...mockContents];
 
-    // Apply category filter
-    if (selectedCategory !== 'All') {
-      contents = contents.filter(item => item.category === selectedCategory);
-    }
+  // Filter by category
+  if (selectedCategory !== 'All') {
+    contents = contents.filter(item => item.category === selectedCategory);
+  }
 
-    // Apply search filter
-    if (searchTerm) {
-      contents = contents.filter(item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
+  // Filter by search term (title and description)
+  if (searchTerm) {
+    const lowerSearch = searchTerm.toLowerCase();
+    contents = contents.filter(item =>
+      item.title.toLowerCase().includes(lowerSearch) ||
+      item.description.toLowerCase().includes(lowerSearch)
+    );
+  }
 
-    // Apply tag filter
-    if (selectedTags.length > 0) {
-      contents = contents.filter(item =>
-        selectedTags.some(tag => item.tags.includes(tag))
-      );
-    }
+  // Filter by tags
+  if (selectedTags.length > 0) {
+    contents = contents.filter(item =>
+      selectedTags.some(tag =>
+        item.tags.some(t => t.toLowerCase() === tag.toLowerCase())
+      )
+    );
+  }
 
-    // Apply sorting
-    switch (sortBy) {
-      case 'most-liked':
-        contents.sort((a, b) => b.likes - a.likes);
-        break;
-      case 'most-viewed':
-        contents.sort((a, b) => b.views - a.views);
-        break;
-      case 'alphabetical':
-        contents.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case 'trending':
-        contents.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
-        break;
-      case 'oldest':
-        contents.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
-        break;
-      default:
-        // newest first
-        contents.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
-        break;
-    }
+  // Sorting
+  switch (sortBy) {
+    case 'most-liked':
+      contents.sort((a, b) => b.likes - a.likes);
+      break;
+    case 'most-viewed':
+      contents.sort((a, b) => b.views - a.views);
+      break;
+    case 'alphabetical':
+      contents.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case 'trending':
+      contents.sort((a, b) => {
+        if (b.isTrending && !a.isTrending) return 1;
+        if (a.isTrending && !b.isTrending) return -1;
+        return b.views - a.views;
+      });
+      break;
+    case 'oldest':
+      contents.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+      break;
+    default: // newest
+      contents.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+      break;
+  }
 
-    return contents;
-  };
+  return contents;
+};
 
   const filteredContents = getFilteredContents();
   const featuredContent = mockContents.find(content => content.isTrending) || mockContents[0];
@@ -301,16 +306,14 @@ const ContentsPage = () => {
 
           {/* Search and Filters */}
           <SearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedTags={selectedTags}
-            onTagChange={setSelectedTags}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            availableTags={availableTags}
-            contentType="content"
-          />
-
+  onSearch={setSearchTerm}
+  onFilter={(filters) => {
+    setSelectedTags(filters.tags);
+    setSortBy(filters.sortBy);
+    // optionally handle filters.duration and filters.dateRange if needed
+  }}
+  contentType="content"
+/>
           {/* Content Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredContents.map(content => (
