@@ -16,6 +16,12 @@ interface ContentCardProps {
   isTrailerAvailable?: boolean;
   size?: 'small' | 'medium' | 'large';
   featured?: boolean;
+  // New props for podcast episode info
+  season?: number;
+  episode?: number;
+  // New props for animation info
+  style?: string;
+  complexity?: string;
 }
 
 interface RootState {
@@ -36,7 +42,11 @@ const ContentCard: React.FC<ContentCardProps> = ({
   likes = 0,
   isTrailerAvailable = true,
   size = 'medium',
-  featured = false
+  featured = false,
+  season,
+  episode,
+  style,
+  complexity
 }) => {
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
@@ -106,11 +116,11 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   return (
     <div 
-      className={`group relative rounded-2xl overflow-hidden border border-slate-200 hover:border-purple-500 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer ${getSizeClasses()}`}
+      className={`group relative rounded-2xl overflow-hidden border border-slate-200 hover:border-purple-500 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer ${getSizeClasses()} flex flex-col h-full`}
       onClick={() => handlePlayClick({ stopPropagation: () => {} } as React.MouseEvent)}
     >
       {/* Thumbnail */}
-      <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden">
+      <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden flex-shrink-0">
         <img 
           src={thumbnail || '/api/placeholder/400/300'} 
           alt={title}
@@ -127,17 +137,46 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </div>
         </div>
         
-        {/* Type Badge */}
-        <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor()} text-white text-xs font-semibold flex items-center gap-2 shadow-md`}>
+        {/* Episode Badge - Top Left for podcasts */}
+        {season && episode && (
+          <div className="absolute top-4 left-4 bg-purple-500 text-white px-2 py-1 rounded text-xs font-medium">
+            S{season} E{episode}
+          </div>
+        )}
+        
+        {/* Animation Style and Complexity Badges - Top Right for animations */}
+        {style && complexity && (
+          <div className="absolute top-4 right-4 flex flex-col gap-1">
+            <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
+              {style}
+            </div>
+            <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+              {complexity}
+            </div>
+          </div>
+        )}
+        
+        {/* Type Badge - Positioned to avoid conflict with episode badge */}
+        <div className={`absolute ${season && episode ? 'top-4 left-20' : 'top-4 left-4'} px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor()} text-white text-xs font-semibold flex items-center gap-2 shadow-md`}>
           {getTypeIcon()}
           {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
         </div>
         
-        {/* Duration */}
-        <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {duration}
-        </div>
+        {/* Duration - Only show if not an animation (since animations have style/complexity badges) */}
+        {!style && !complexity && (
+          <div className="absolute top-4 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {duration}
+          </div>
+        )}
+        
+        {/* Duration for animations - positioned below style/complexity badges */}
+        {style && complexity && (
+          <div className="absolute top-20 right-4 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {duration}
+          </div>
+        )}
         
         {/* Featured Badge */}
         {featured && (
@@ -147,13 +186,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
         )}
       </div>
       
-      {/* Content */}
-      <div className="p-4 md:p-6">
+      {/* Content - Flex grow to fill remaining space */}
+      <div className="p-4 md:p-6 flex-grow flex flex-col">
         <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 line-clamp-2">
           {title}
         </h3>
         
-        <p className="text-gray-600 text-sm md:text-base mb-4 line-clamp-3">
+        <p className="text-gray-600 text-sm md:text-base mb-4 line-clamp-3 flex-grow">
           {description}
         </p>
         
@@ -183,8 +222,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </div>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex gap-2">
+        {/* Action Buttons - At the bottom */}
+        <div className="flex gap-2 mt-auto">
           {type === 'story' ? (
             <button
               onClick={handlePlayClick}
