@@ -359,34 +359,25 @@ const AnimationsPage = () => {
 
           {/* Search and Filters */}
           <SearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedTags={selectedTags}
-            onTagChange={setSelectedTags}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            availableTags={availableTags}
+            onSearch={setSearchTerm}
+            onFilter={(filters) => {
+              setSelectedTags(filters.tags);
+              setSortBy(filters.sortBy);
+              // optionally handle filters.duration and filters.dateRange if needed
+            }}
             contentType="animations"
           />
 
           {/* Animations Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAnimations.map(animation => (
-              <div key={animation.id} className="relative">
-                <ContentCard
-                  {...animation}
-                  onLike={(id) => console.log('Liked animation:', id)}
-                />
-                {/* Style and Complexity Badges */}
-                <div className="absolute top-3 right-3 flex flex-col gap-1">
-                  <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
-                    {animation.style}
-                  </div>
-                  <div className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
-                    {animation.complexity}
-                  </div>
-                </div>
-              </div>
+              <ContentCard
+                key={animation.id}
+                {...animation}
+                style={animation.style}
+                complexity={animation.complexity}
+                onLike={(id) => console.log('Liked animation:', id)}
+              />
             ))}
           </div>
 
