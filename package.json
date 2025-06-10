@@ -8,9 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "cypress:open": "NODE_NO_WARNINGS=1 cypress open",
-    "cypress:run": "cypress run",
-    "coverage": "yarn test -- --coverage --watchAll --collectCoverageFrom=src/**/*.{ts,tsx}"
+    "start:dev": "concurrently \"npm run dev\" \"cd backend && python manage.py runserver\"",
+    "build:prod": "npm run build && npm run preview"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -18,9 +17,11 @@
     "@tailwindcss/postcss": "^4.1.7",
     "@tailwindcss/vite": "^4.1.7",
     "@testing-library/react": "^16.0.1",
+    "@types/axios": "^0.14.4",
     "@types/d3": "^7.4.3",
     "d3": "^7.9.0",
     "framer-motion": "12.12.1",
+    "google-oauth-api": "^0.0.3",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
     "react-anchor-link-smooth-scroll": "^1.0.12",
