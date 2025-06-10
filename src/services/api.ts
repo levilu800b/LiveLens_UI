@@ -1,177 +1,211 @@
 // src/services/api.ts
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-class ApiService {
-  private baseURL: string;
-
-  constructor() {
-    this.baseURL = API_BASE_URL;
-  }
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    const config: RequestInit = {
+// Auth API functions
+export const authAPI = {
+  // Login
+  login: async (email: string, password: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
       },
-      ...options,
-    };
-
-    // Add authentication token if available
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
-    }
-  }
-
-  // Authentication methods
-  async register(userData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-  }) {
-    return this.request('/auth/register/', {
-      method: 'POST',
-      body: JSON.stringify({
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-        email: userData.email,
-        password: userData.password,
-      }),
-    });
-  }
-
-  async login(email: string, password: string) {
-    return this.request('/auth/login/', {
-      method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-  }
 
-  async verifyEmail(email: string, code: string) {
-    return this.request('/auth/verify-email/', {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Login failed');
+    }
+
+    return response.json();
+  },
+
+  // Google Login
+  googleLogin: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/google-login/`, {
       method: 'POST',
-      body: JSON.stringify({ email, verification_code: code }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
     });
-  }
 
-  async resendVerification(email: string) {
-    return this.request('/auth/resend-verification/', {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Google login failed');
+    }
+
+    return response.json();
+  },
+
+  // Register
+  register: async (userData: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/auth/register/`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Registration failed');
+    }
+
+    return response.json();
+  },
+
+  // Google Signup
+  googleSignup: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/google-signup/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Google signup failed');
+    }
+
+    return response.json();
+  },
+
+  // Verify Email
+  verifyEmail: async (email: string, code: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-email/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, code }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Email verification failed');
+    }
+
+    return response.json();
+  },
+
+  // Resend Verification
+  resendVerification: async (email: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-verification/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ email }),
     });
-  }
 
-  async forgotPassword(email: string) {
-    return this.request('/password-reset/request-reset/', {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to resend verification');
+    }
+
+    return response.json();
+  },
+
+  // Check Email (for password reset)
+  checkEmail: async (email: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/check-email/`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ email }),
     });
-  }
 
-  async resetPassword(email: string, code: string, password: string) {
-    return this.request('/password-reset/confirm-reset/', {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Email check failed');
+    }
+
+    return response.json();
+  },
+
+  // Reset Password
+  resetPassword: async (email: string, code: string, newPassword: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password/`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ 
         email, 
-        reset_code: code, 
-        new_password: password 
+        code, 
+        new_password: newPassword,
+        confirm_password: newPassword 
       }),
     });
-  }
 
-  async logout() {
-    const refreshToken = localStorage.getItem('refresh_token');
-    return this.request('/auth/logout/', {
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Password reset failed');
+    }
+
+    return response.json();
+  },
+
+  // Logout
+  logout: async (refreshToken: string) => {
+    const accessToken = localStorage.getItem('access_token');
+    
+    const response = await fetch(`${API_BASE_URL}/auth/logout/`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
-  }
 
-  async getProfile() {
-    return this.request('/auth/profile/');
-  }
+    // Even if the request fails, we should clear local storage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('account');
 
-  async updateProfile(profileData: any) {
-    return this.request('/auth/profile/', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
-  }
+    if (!response.ok) {
+      // Don't throw error for logout - just log it
+      console.warn('Logout request failed, but local storage cleared');
+    }
 
-  async refreshToken() {
-    const refreshToken = localStorage.getItem('refresh_token');
-    return this.request('/auth/token/refresh/', {
+    return response.ok ? response.json() : { message: 'Logged out locally' };
+  },
+
+  // Refresh Token
+  refreshToken: async (refreshToken: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ refresh: refreshToken }),
     });
-  }
 
-  async googleSignUp(credential: string) {
-    return this.request('/auth/google-signup/', {
-      method: 'POST',
-      body: JSON.stringify({ credential }),
-    });
-  }
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
 
-  async googleLogin(credential: string) {
-    return this.request('/auth/google-login/', {
-      method: 'POST',
-      body: JSON.stringify({ credential }),
-    });
+    return response.json();
   }
+};
 
-  // Content methods (placeholder for now)
-  async getStories(params?: any) {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.request(`/stories/${query}`);
-  }
-
-  async getFilms(params?: any) {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.request(`/media/films/${query}`);
-  }
-
-  async getContents(params?: any) {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.request(`/media/contents/${query}`);
-  }
-
-  async getPodcasts(params?: any) {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.request(`/podcasts/${query}`);
-  }
-
-  async getAnimations(params?: any) {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.request(`/animations/${query}`);
-  }
-
-  async getSneakPeeks(params?: any) {
-    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return this.request(`/sneak-peeks/${query}`);
-  }
-}
-
-export const apiService = new ApiService();
-export default apiService;
+// Helper function to get auth headers
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
