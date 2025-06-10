@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Loader2, ArrowLeft, Key } from 'lucide-react';
+import { authAPI } from '../../services/auth';
 
 const ResetPasswordPage = () => {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
@@ -73,27 +74,22 @@ const ResetPasswordPage = () => {
   };
 
   const handleCodeVerification = async (code: string) => {
-    setIsLoading(true);
-    setError('');
+  setIsLoading(true);
+  setError('');
 
-    try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock verification (use 123456 for demo)
-      if (code === '123456') {
-        setStep(2);
-      } else {
-        setError('Invalid verification code. Please try again.');
-        setVerificationCode(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
-      }
-    } catch {
-      setError('Verification failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  try {
+    // Make real API call to verify reset code
+    await authAPI.verifyPasswordResetCode(email, code);
+    setStep(2); // Move to password reset step
+  } catch (error: any) {
+    console.error('Code verification error:', error);
+    setError(error.message || 'Invalid verification code. Please try again.');
+    setVerificationCode(['', '', '', '', '', '']);
+    inputRefs.current[0]?.focus();
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handlePasswordChange = (field: 'newPassword' | 'confirmPassword', value: string) => {
     setPasswords(prev => ({
@@ -116,29 +112,36 @@ const ResetPasswordPage = () => {
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validatePasswords()) return;
+  e.preventDefault();
+  
+  if (!validatePasswords()) return;
 
-    setIsLoading(true);
-    setError('');
+  setIsLoading(true);
+  setError('');
 
-    try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    // Make real API call to reset password
+    await authAPI.confirmPasswordReset(
+      email,
+      verificationCode.join(''),
+      passwords.newPassword,
+      passwords.confirmPassword
+    );
 
-      // Navigate to login with success message
-      navigate('/login', { 
-        state: { 
-          message: 'Password reset successful! Please sign in with your new password.' 
-        } 
-      });
-    } catch {
-      setError('Failed to reset password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // Navigate to login with success message
+    navigate('/login', { 
+      state: { 
+        message: 'Password reset successful! Please sign in with your new password.',
+        email: email
+      } 
+    });
+  } catch (error: any) {
+    console.error('Password reset error:', error);
+    setError(error.message || 'Failed to reset password. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleResendCode = async () => {
     if (!canResend) return;

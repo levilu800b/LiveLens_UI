@@ -2,6 +2,7 @@
 import React, { use, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Mail, Lock, UserPlus, Chrome } from 'lucide-react';
+import { authAPI } from '../../services/auth'; // Adjust the import based on your API structure
 
 const SignupPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -67,31 +68,44 @@ const SignupPage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+  setErrors({});
+
+  try {
+    // Generate username from email
+    const username = formData.email.split('@')[0];
     
-    if (!validateForm()) return;
+    // Make real API call to Django backend
+    const response = await authAPI.signup({
+      email: formData.email,
+      username: username,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      password: formData.password,
+      password_confirm: formData.confirmPassword
+    });
 
-    setIsLoading(true);
+    // Navigate to verification page
+    navigate('/verify-email', { 
+      state: { 
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        message: response.message
+      }
+    });
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate to email verification
-      navigate('/verify-email', { 
-        state: { 
-          email: formData.email,
-          firstName: formData.firstName,
-          lastName: formData.lastName
-        }
-      });
-    } catch {
-      setErrors({ submit: 'Something went wrong. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  } catch (error: any) {
+    console.error('Signup error:', error);
+    setErrors({ submit: error.message || 'Signup failed. Please try again.' });
+  } finally {
+    setIsLoading(false);
+  }
+};
   const handleGoogleSignUp = () => {
     // Implement Google OAuth
     console.log('Google Sign Up clicked');

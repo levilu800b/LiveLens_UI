@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
+import { authAPI } from '../../services/auth';
 
 const VerifyEmailPage = () => {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
@@ -79,40 +80,44 @@ const VerifyEmailPage = () => {
   };
 
   const handleVerification = async (code: string) => {
-    setIsLoading(true);
-    setError('');
+  setIsLoading(true);
+  setError('');
 
-    try {
-      // TODO: Replace with actual API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    // Make real API call to verify the code
+    const response = await authAPI.verifyEmail(email, code);
+    
+    // Success - create user data and navigate
+    const userData = {
+      id: response.user_id || '1',
+      firstName: response.first_name || 'User',
+      lastName: response.last_name || '',
+      email: email,
+      isVerified: true,
+      isAdmin: response.is_admin ?? false,
+      createdAt: response.created_at ?? new Date().toISOString()
+    };
 
-      // Mock successful verification
-      if (code === '123456') {
-        const userData = {
-          id: '1',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: email,
-          isVerified: true
-        };
-
-        dispatch(userActions.setUserInfo(userData));
-        localStorage.setItem('account', JSON.stringify(userData));
-        navigate('/');
-      } else {
-        setError('Invalid verification code. Please try again.');
-        setVerificationCode(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+    dispatch(userActions.setUserInfo(userData));
+    localStorage.setItem('account', JSON.stringify(userData));
+    
+    // Navigate to login page with success message
+    navigate('/login', {
+      state: {
+        message: 'Email verified successfully! Please log in.',
+        email: email
       }
-    } catch {
-      setError('Verification failed. Please try again.');
-      setVerificationCode(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
+
+  } catch (error: any) {
+    console.error('Verification error:', error);
+    setError(error.message || 'Invalid verification code. Please try again.');
+    setVerificationCode(['', '', '', '', '', '']);
+    inputRefs.current[0]?.focus();
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleResendCode = async () => {
     if (!canResend) return;

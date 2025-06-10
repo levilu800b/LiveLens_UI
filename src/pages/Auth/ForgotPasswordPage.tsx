@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Loader2, ArrowLeft, Check } from 'lucide-react';
+import { authAPI } from '../../services/auth';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -12,33 +13,27 @@ const ForgotPasswordPage = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+  e.preventDefault();
+  setIsLoading(true);
+  setError('');
 
-    try {
-      // TODO: Replace with actual API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    // Make real API call to request password reset
+    await authAPI.requestPasswordReset(email);
+    
+    setIsSubmitted(true);
+    // Navigate to reset password page after a delay
+    setTimeout(() => {
+      navigate('/reset-password', { state: { email } });
+    }, 2000);
 
-      // Mock email existence check
-      const emailExists = email.includes('@'); // Simple mock validation
-      
-      if (emailExists) {
-        setIsSubmitted(true);
-        // Navigate to reset password page after a delay
-        setTimeout(() => {
-          navigate('/reset-password', { state: { email } });
-        }, 2000);
-      } else {
-        setError('No account found with this email address.');
-      }
-    } catch {
-      setError('Failed to send reset email. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (error: any) {
+    console.error('Password reset request error:', error);
+    setError(error.message || 'Failed to send reset email. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (isSubmitted) {
     return (
