@@ -1,128 +1,177 @@
 // src/services/api.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import type { ApiResponse, PaginatedResponse } from '../types';
-
-// Base API configuration
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 class ApiService {
-  private api: AxiosInstance;
+  private baseURL: string;
 
   constructor() {
-    this.api = axios.create({
-      baseURL: BASE_URL,
-      timeout: 30000,
+    this.baseURL = API_BASE_URL;
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...options.headers,
       },
-    });
-
-    // Request interceptor to add auth token
-    this.api.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    // Response interceptor for token refresh
-    this.api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-              const response = await axios.post(`${BASE_URL}/auth/token/refresh/`, {
-                refresh: refreshToken,
-              });
-
-              const { access } = response.data;
-              localStorage.setItem('access_token', access);
-              
-              // Retry original request with new token
-              originalRequest.headers.Authorization = `Bearer ${access}`;
-              return this.api(originalRequest);
-            }
-          } catch (refreshError) {
-            // Refresh failed, redirect to login
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('account');
-            window.location.href = '/login';
-          }
-        }
-
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  // Generic HTTP methods
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.api.get(url, config);
-    return response.data;
-  }
-
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.api.post(url, data, config);
-    return response.data;
-  }
-
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.api.put(url, data, config);
-    return response.data;
-  }
-
-  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.api.patch(url, data, config);
-    return response.data;
-  }
-
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await this.api.delete(url, config);
-    return response.data;
-  }
-
-  // File upload method
-  async upload<T>(url: string, formData: FormData, onProgress?: (progress: number) => void): Promise<T> {
-    const config: AxiosRequestConfig = {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent) => {
-        if (onProgress && progressEvent.total) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(progress);
-        }
-      },
+      ...options,
     };
 
-    const response: AxiosResponse<T> = await this.api.post(url, formData, config);
-    return response.data;
+    // Add authentication token if available
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Authentication methods
+  async register(userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }) {
+    return this.request('/auth/register/', {
+      method: 'POST',
+      body: JSON.stringify({
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+      }),
+    });
+  }
+
+  async login(email: string, password: string) {
+    return this.request('/auth/login/', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async verifyEmail(email: string, code: string) {
+    return this.request('/auth/verify-email/', {
+      method: 'POST',
+      body: JSON.stringify({ email, verification_code: code }),
+    });
+  }
+
+  async resendVerification(email: string) {
+    return this.request('/auth/resend-verification/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async forgotPassword(email: string) {
+    return this.request('/password-reset/request-reset/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(email: string, code: string, password: string) {
+    return this.request('/password-reset/confirm-reset/', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        email, 
+        reset_code: code, 
+        new_password: password 
+      }),
+    });
+  }
+
+  async logout() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    return this.request('/auth/logout/', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+  }
+
+  async getProfile() {
+    return this.request('/auth/profile/');
+  }
+
+  async updateProfile(profileData: any) {
+    return this.request('/auth/profile/', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async refreshToken() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    return this.request('/auth/token/refresh/', {
+      method: 'POST',
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+  }
+
+  async googleSignUp(credential: string) {
+    return this.request('/auth/google-signup/', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    });
+  }
+
+  async googleLogin(credential: string) {
+    return this.request('/auth/google-login/', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    });
+  }
+
+  // Content methods (placeholder for now)
+  async getStories(params?: any) {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/stories/${query}`);
+  }
+
+  async getFilms(params?: any) {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/media/films/${query}`);
+  }
+
+  async getContents(params?: any) {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/media/contents/${query}`);
+  }
+
+  async getPodcasts(params?: any) {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/podcasts/${query}`);
+  }
+
+  async getAnimations(params?: any) {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/animations/${query}`);
+  }
+
+  async getSneakPeeks(params?: any) {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return this.request(`/sneak-peeks/${query}`);
   }
 }
 
 export const apiService = new ApiService();
-
-// Error handling utility
-export const handleApiError = (error: any): string => {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  if (error.response?.data?.detail) {
-    return error.response.data.detail;
-  }
-  if (error.message) {
-    return error.message;
-  }
-  return 'An unexpected error occurred';
-};
+export default apiService;

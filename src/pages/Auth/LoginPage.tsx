@@ -4,6 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
+import { apiService } from '../../services/api';
+import type { AuthResponse } from '../../types';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -51,64 +53,61 @@ const LoginPage: React.FC = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiService.login(formData.email, formData.password) as AuthResponse;
       
-      // Mock user data - replace with real API response
-      const mockUser = {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: formData.email,
-        isAdmin: formData.email === 'admin@livelens.com',
-        isVerified: true,
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      dispatch(userActions.setUserInfo(mockUser));
-      localStorage.setItem('account', JSON.stringify(mockUser));
+      // Store tokens
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
+      localStorage.setItem('account', JSON.stringify(response.user));
       
+      // Update Redux state
+      dispatch(userActions.setUserInfo(response.user));
+      
+      // Navigate to intended page or home
       navigate(from, { replace: true });
-    } catch {
-      setErrors({ submit: 'Invalid email or password' });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setErrors({ 
+        submit: error.message || 'Login failed. Please check your credentials and try again.' 
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
-    // Implement Google OAuth
-    console.log('Google Sign In clicked');
+  const handleGoogleLogin = async () => {
+    try {
+      // This would integrate with Google OAuth
+      console.log('Google login would be implemented here');
+      // For now, just show a message
+      setErrors({ submit: 'Google login not yet implemented' });
+    } catch (error: any) {
+      setErrors({ submit: error.message || 'Google login failed' });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
-
-      <div className="relative max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Link to="/" className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            _livelens
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold text-white">Welcome back</h2>
-          <p className="mt-2 text-gray-300">Sign in to your account to continue</p>
+          <div className="mx-auto h-12 w-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mb-6">
+            <LogIn className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
+          <p className="text-gray-300">Please sign in to your account</p>
         </div>
 
         {/* Form */}
-        <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-white/10 p-8">
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Error Message */}
             {errors.submit && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
-                {errors.submit}
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 text-sm">{errors.submit}</p>
               </div>
             )}
 
@@ -179,14 +178,17 @@ const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-purple-500/25 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
             >
               {isLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Signing in...</span>
+                </>
               ) : (
                 <>
-                  <LogIn className="h-5 w-5 mr-2" />
-                  Sign in
+                  <LogIn className="h-5 w-5" />
+                  <span>Sign in</span>
                 </>
               )}
             </button>
@@ -197,18 +199,18 @@ const LoginPage: React.FC = () => {
                 <div className="w-full border-t border-white/20"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-slate-800/50 text-gray-400">Or continue with</span>
+                <span className="bg-transparent px-2 text-gray-400">Or continue with</span>
               </div>
             </div>
 
-            {/* Google Sign In */}
+            {/* Google Login */}
             <button
               type="button"
-              onClick={handleGoogleSignIn}
-              className="w-full bg-white hover:bg-gray-50 text-gray-900 py-3 px-4 rounded-lg font-medium transition-all duration-200 hover:scale-105 shadow-lg flex items-center justify-center"
+              onClick={handleGoogleLogin}
+              className="w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 border border-gray-300"
             >
-              <Chrome className="h-5 w-5 mr-2" />
-              Continue with Google
+              <Chrome className="h-5 w-5" />
+              <span>Sign in with Google</span>
             </button>
           </form>
 
@@ -220,7 +222,7 @@ const LoginPage: React.FC = () => {
                 to="/signup"
                 className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
               >
-                Sign up here
+                Sign up
               </Link>
             </p>
           </div>
