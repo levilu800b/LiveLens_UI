@@ -1,5 +1,5 @@
 // src/pages/Auth/SignupPage.tsx
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Mail, Lock, UserPlus, Chrome } from 'lucide-react';
 
@@ -8,6 +8,7 @@ const SignupPage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
@@ -41,6 +42,12 @@ const SignupPage: React.FC = () => {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
     }
 
     if (!formData.password) {
@@ -180,6 +187,28 @@ const SignupPage: React.FC = () => {
                 />
               </div>
               {errors.email && <p className="mt-1 text-sm text-red-400">{errors.email}</p>}
+            </div>
+
+            {/* Username */}
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className={`w-full pl-10 pr-4 py-3 bg-slate-700/50 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
+                    errors.username ? 'border-red-500' : 'border-white/20'
+                  }`}
+                  placeholder="Choose a username"
+                />
+              </div>
+              {errors.username && <p className="mt-1 text-sm text-red-400">{errors.username}</p>}
             </div>
 
             {/* Password */}

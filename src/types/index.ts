@@ -36,11 +36,12 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
+  username?: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  password_confirm: string;
 }
 
 export interface Content {

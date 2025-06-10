@@ -8,11 +8,11 @@ export interface LoginCredentials {
 }
 
 export interface SignupData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  password_confirm: string;
 }
 
 export interface VerifyEmailData {
@@ -26,9 +26,9 @@ export interface ForgotPasswordData {
 
 export interface ResetPasswordData {
   email: string;
-  code: string;
-  newPassword: string;
-  confirmPassword: string;
+  reset_code: string;
+  new_password: string;
+  new_password_confirm: string;
 }
 
 export interface GoogleAuthData {
@@ -54,6 +54,7 @@ class AuthService {
       const response = await apiService.post<VerificationResponse>('/auth/register/', {
         first_name: data.firstName,
         last_name: data.lastName,
+        username: data.username,
         email: data.email,
         password: data.password,
         password_confirm: data.confirmPassword,
