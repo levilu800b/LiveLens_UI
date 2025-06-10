@@ -1,10 +1,5 @@
 // src/App.tsx
-import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { checkAuthStatus } from './store/actions/user';
-
-// Page imports
 import HomePage from './pages/Home/Homepage/HomePage';
 import StoriesPage from './pages/Stories/StoriesPage';
 import MediaPage from './pages/Media/MediaPage';
@@ -19,38 +14,31 @@ import VerifyEmailPage from './pages/Auth/VerifyEmailPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
-
-// Protected route components
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 
-// Future imports (commented out for now)
-// import ProfilePage from './pages/User/ProfilePage';
-// import LibraryPage from './pages/User/LibraryPage';
-// import FavoritesPage from './pages/User/FavoritesPage';
-// import SettingsPage from './pages/User/SettingsPage';
-// import AddStoryPage from './pages/Admin/AddStoryPage';
-// import AddFilmPage from './pages/Admin/AddFilmPage';
-// import AddContentPage from './pages/Admin/AddContentPage';
-// import AddPodcastPage from './pages/Admin/AddPodcastPage';
-// import AddAnimationPage from './pages/Admin/AddAnimationPage';
-// import AddSneakPeekPage from './pages/Admin/AddSneakPeekPage';
-// import CreateAIAnimationPage from './pages/Admin/CreateAIAnimationPage';
-// import CreateAIStoryPage from './pages/Admin/CreateAIStoryPage';
-// import AllPostsPage from './pages/Admin/AllPostsPage';
-// import StoryReaderPage from './pages/Content/StoryReaderPage';
-// import VideoPlayerPage from './pages/Content/VideoPlayerPage';
+// Placeholder components for commented out routes
+const ProfilePage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Profile Page - Coming Soon</h1></div>;
+const LibraryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Library Page - Coming Soon</h1></div>;
+const FavoritesPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Favorites Page - Coming Soon</h1></div>;
+const SettingsPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Settings Page - Coming Soon</h1></div>;
+const StoryReaderPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Story Reader - Coming Soon</h1></div>;
+const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Video Player - Coming Soon</h1></div>;
+
+// Admin placeholder components
+const AddStoryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Story - Coming Soon</h1></div>;
+const AddFilmPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Film - Coming Soon</h1></div>;
+const AddContentPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Content - Coming Soon</h1></div>;
+const AddPodcastPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Podcast - Coming Soon</h1></div>;
+const AddAnimationPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Animation - Coming Soon</h1></div>;
+const AddSneakPeekPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Sneak Peek - Coming Soon</h1></div>;
+const CreateAIAnimationPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Create AI Animation - Coming Soon</h1></div>;
+const CreateAIStoryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Create AI Story - Coming Soon</h1></div>;
+const AllPostsPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>All Posts - Coming Soon</h1></div>;
 
 function App() {
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    // Check authentication status on app load
-    dispatch(checkAuthStatus() as any);
-  }, [dispatch]);
-
   return (
-    <div className="app">
+    <div className="app min-h-screen bg-gray-900">
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
@@ -70,11 +58,11 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         
         {/* Content Routes */}
-        {/* <Route path="/story/:id" element={<StoryReaderPage />} /> */}
-        {/* <Route path="/watch/:type/:id" element={<VideoPlayerPage />} /> */}
+        <Route path="/story/:id" element={<StoryReaderPage />} />
+        <Route path="/watch/:type/:id" element={<VideoPlayerPage />} />
         
         {/* Protected User Routes */}
-        {/* <Route path="/profile" element={
+        <Route path="/profile" element={
           <ProtectedRoute>
             <ProfilePage />
           </ProtectedRoute>
@@ -93,23 +81,15 @@ function App() {
           <ProtectedRoute>
             <SettingsPage />
           </ProtectedRoute>
-        } /> */}
+        } />
         
-        {/* Admin Routes - Updated routing */}
+        {/* Admin Routes */}
         <Route path="/admin" element={
           <AdminRoute>
             <AdminDashboard />
           </AdminRoute>
         } />
-        {/* Alternative route for users trying /dashboard */}
-        <Route path="/dashboard" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
-        
-        {/* Additional Admin Routes (commented for now) */}
-        {/* <Route path="/admin/add-story" element={
+        <Route path="/admin/add-story" element={
           <AdminRoute>
             <AddStoryPage />
           </AdminRoute>
@@ -153,17 +133,18 @@ function App() {
           <AdminRoute>
             <AllPostsPage />
           </AdminRoute>
-        } /> */}
-
-        {/* 404 Fallback */}
+        } />
+        
+        {/* 404 Route */}
         <Route path="*" element={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">404 - Page Not Found</h1>
+              <h1 className="text-6xl font-bold text-purple-500 mb-4">404</h1>
+              <h2 className="text-2xl mb-4">Page Not Found</h2>
               <p className="text-gray-400 mb-8">The page you're looking for doesn't exist.</p>
               <a 
                 href="/" 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors"
               >
                 Go Home
               </a>

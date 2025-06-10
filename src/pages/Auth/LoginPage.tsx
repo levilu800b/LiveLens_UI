@@ -91,6 +91,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -126,13 +127,15 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Login Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Error Message */}
-          {errors.submit && (
-            <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-              <p className="text-red-400 text-sm">{errors.submit}</p>
-            </div>
-          )}
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {errors.submit && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 text-sm">{errors.submit}</p>
+              </div>
+            )}
+          
 
           <div className="space-y-4">
             {/* Email Field */}
@@ -279,6 +282,8 @@ const LoginPage: React.FC = () => {
             </Link>
           </p>
         </form>
+        </div>
+        </div>
       </div>
     </div>
   );
