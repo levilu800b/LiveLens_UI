@@ -92,6 +92,22 @@ const AdminDashboard: React.FC = () => {
       link: '/admin/films'
     },
     {
+      title: 'Contents',
+      value: stats?.totalFilms || 0,
+      icon: Film,
+      color: 'from-red-500 to-red-600',
+      change: 6.7,
+      link: '/admin/contents'
+    },
+    {
+      title: 'Sneak Peeks',
+      value: stats?.totalSneakPeeks || 0,
+      icon: Film,
+      color: 'from-indigo-500 to-indigo-600',
+      change: 9.4,
+      link: '/admin/sneak-peeks'
+    },
+    {
       title: 'Podcasts',
       value: stats?.totalPodcasts || 0,
       icon: Headphones,
@@ -220,6 +236,7 @@ const AdminDashboard: React.FC = () => {
     const data = [
       { name: 'Stories', value: stats.totalStories, color: '#10b981' },
       { name: 'Films', value: stats.totalFilms, color: '#ef4444' },
+      {name: 'Contents', value: stats.totalContent, color: '#3b82f6' },
       { name: 'Podcasts', value: stats.totalPodcasts, color: '#f59e0b' },
       { name: 'Animations', value: stats.totalAnimations, color: '#ec4899' },
       { name: 'Sneak Peeks', value: stats.totalSneakPeeks, color: '#6366f1' }
@@ -380,6 +397,8 @@ const AdminDashboard: React.FC = () => {
   const quickActions = [
     { name: 'Add Story', icon: FileText, path: '/admin/add-story', color: 'bg-green-500' },
     { name: 'Add Film', icon: Film, path: '/admin/add-film', color: 'bg-red-500' },
+    {name: 'Add Content', icon: FileText, path: '/admin/add-content', color: 'bg-purple-500' },
+    { name: 'Add Sneak Peek', icon: Film, path: '/admin/add-sneak-peek', color: 'bg-indigo-500' },
     { name: 'Add Podcast', icon: Headphones, path: '/admin/add-podcast', color: 'bg-yellow-500' },
     { name: 'Add Animation', icon: Palette, path: '/admin/add-animation', color: 'bg-pink-500' },
     { name: 'Create AI Story', icon: Activity, path: '/admin/create-ai-story', color: 'bg-blue-500' },
