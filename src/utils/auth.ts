@@ -1,6 +1,6 @@
 // src/utils/auth.ts
-import { apiService } from '../../services/api';
-import type { User } from '../../types';
+import { apiService } from '../services/api';
+import type { User } from '../types';
 
 export const AUTH_STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',

@@ -16,6 +16,7 @@ import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
+import { useAuthInit } from './hooks/useAuthInit';
 
 // Placeholder components for commented out routes
 const ProfilePage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Profile Page - Coming Soon</h1></div>;
@@ -37,6 +38,7 @@ const CreateAIStoryPage = () => <div className="min-h-screen bg-gray-900 text-wh
 const AllPostsPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>All Posts - Coming Soon</h1></div>;
 
 function App() {
+  useAuthInit();
   return (
     <div className="app min-h-screen bg-gray-900">
       <Routes>

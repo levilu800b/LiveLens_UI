@@ -6,6 +6,9 @@ import { Eye, EyeOff, Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
 import { authAPI } from '../../services/auth';
 import { googleAuthService } from '../../services/googleAuth';
+import { secureUserStorage } from '../../utils/secureStorage';
+import Logger from '../../utils/logger';
+
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -49,31 +52,29 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+  setErrors({});
+
+  try {
+    const response = await authAPI.login(formData.email, formData.password);
     
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    setErrors({});
-
-    try {
-      const response = await authAPI.login(formData.email, formData.password);
-      
-      // Store tokens and user data
-      localStorage.setItem('access_token', response.access_token);
-      localStorage.setItem('refresh_token', response.refresh_token);
-      localStorage.setItem('account', JSON.stringify(response.user));
-
-      // Update Redux store
-      dispatch(userActions.setUserInfo(response.user));
-      
-      navigate(from, { replace: true });
-    } catch (error: any) {
-      setErrors({ submit: error.message || 'Login failed. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // REMOVE: localStorage.setItem('access_token', response.access_token);
+    // REMOVE: localStorage.setItem('refresh_token', response.refresh_token);
+    // REMOVE: localStorage.setItem('account', JSON.stringify(response.user));
+    
+    // The new auth.login() already stores tokens securely!
+    // Just update Redux:
+    dispatch(userActions.setUserInfo(response.user));
+    navigate(from, { replace: true });
+  } catch (error: any) {
+    setErrors({ submit: error.message || 'Login failed. Please try again.' });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleGoogleSignIn = async () => {
   try {
@@ -81,24 +82,17 @@ const LoginPage: React.FC = () => {
     setErrors({});
 
     const googleUser = await googleAuthService.signIn();
-    console.log('Google login - user data:', googleUser);
-    
     const response = await authAPI.googleLogin({
       email: googleUser.email,
       google_id: googleUser.google_id
     });
     
-    console.log('Google login - response:', response);
-    
-    // ADD THESE LINES TO COMPLETE THE LOGIN:
-    localStorage.setItem('access_token', response.access_token);
-    localStorage.setItem('refresh_token', response.refresh_token);
-    localStorage.setItem('account', JSON.stringify(response.user));
+    // REMOVE ALL localStorage calls - the new auth.googleLogin() handles storage!
+    // Just update Redux:
     dispatch(userActions.setUserInfo(response.user));
     navigate(from, { replace: true });
     
   } catch (error: any) {
-    console.error('Google login - full error:', error);
     setErrors({ 
       submit: error.message || 'Google sign-in failed. Please try again.' 
     });

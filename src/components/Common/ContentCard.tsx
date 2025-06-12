@@ -56,8 +56,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   const handleTrailerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Logic to play trailer in modal or redirect
-    console.log(`Playing trailer for ${title}`);
   };
 
   const handlePlayClick = (e: React.MouseEvent) => {

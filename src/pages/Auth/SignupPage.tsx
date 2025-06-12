@@ -118,17 +118,13 @@ const dispatch = useDispatch();
     setIsLoading(true);
     setErrors({});
 
-    // Debug: Check if Google Client ID is available
-    console.log('Google Client ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID);
     
     if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
       throw new Error('Google OAuth not configured. Please add VITE_GOOGLE_CLIENT_ID to your .env.local file.');
     }
 
     // Get Google user data
-    const googleUser = await googleAuthService.signIn();
-    console.log('Google user data:', googleUser);
-    
+    const googleUser = await googleAuthService.signIn();    
     // Try to sign up with Google
     const response = await authAPI.googleSignup(googleUser);
     
