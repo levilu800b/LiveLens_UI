@@ -83,5 +83,44 @@ export const authAPI = {
     });
     if (!response.ok) throw new Error('Failed to reset password');
     return response.json();
+  },
+
+  // Add these to your existing authAPI object in src/services/auth.ts:
+
+googleSignup: async (googleData: {
+  email: string;
+  first_name: string;
+  last_name: string;
+  google_id: string;
+  avatar_url?: string;
+}) => {
+  const response = await fetch('/api/auth/google-signup/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(googleData),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Google signup failed');
   }
+  return response.json();
+},
+
+googleLogin: async (googleData: {
+  email: string;
+  google_id: string;
+}) => {
+  const response = await fetch('/api/auth/google-login/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(googleData),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('Django error details:', error);  // ← ADD THIS
+    throw new Error(error.message || 'Google login failed');
+  }
+  return response.json();
+},
 };

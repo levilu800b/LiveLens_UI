@@ -3,6 +3,11 @@ import React, { use, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Mail, Lock, UserPlus, Chrome } from 'lucide-react';
 import { authAPI } from '../../services/auth'; // Adjust the import based on your API structure
+import { googleAuthService } from '../../services/googleAuth';
+import { userActions } from '../../store/reducers/userReducers';
+import { useDispatch } from 'react-redux';
+
+
 
 const SignupPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -106,10 +111,53 @@ const SignupPage: React.FC = () => {
     setIsLoading(false);
   }
 };
-  const handleGoogleSignUp = () => {
-    // Implement Google OAuth
-    console.log('Google Sign Up clicked');
-  };
+
+const dispatch = useDispatch();
+  const handleGoogleSignUp = async () => {
+  try {
+    setIsLoading(true);
+    setErrors({});
+
+    // Debug: Check if Google Client ID is available
+    console.log('Google Client ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID);
+    
+    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+      throw new Error('Google OAuth not configured. Please add VITE_GOOGLE_CLIENT_ID to your .env.local file.');
+    }
+
+    // Get Google user data
+    const googleUser = await googleAuthService.signIn();
+    console.log('Google user data:', googleUser);
+    
+    // Try to sign up with Google
+    const response = await authAPI.googleSignup(googleUser);
+    
+    // Store tokens and user data
+    if (response.access_token) {
+      localStorage.setItem('access_token', response.access_token);
+    }
+    if (response.refresh_token) {
+      localStorage.setItem('refresh_token', response.refresh_token);
+    }
+    
+    // Update Redux store
+    if (response.user) {
+      dispatch(userActions.setUserInfo(response.user));
+      localStorage.setItem('account', JSON.stringify(response.user));
+    }
+    
+    // Navigate to home page
+    navigate('/');
+    
+  } catch (error: any) {
+    console.error('Google signup error:', error);
+    setErrors({ 
+      submit: error.message || 'Google signup failed. Please try again.' 
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

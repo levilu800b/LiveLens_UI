@@ -4,7 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
-import { authAPI } from '../../services/api';
+import { authAPI } from '../../services/auth';
+import { googleAuthService } from '../../services/googleAuth';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -75,19 +76,36 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    try {
-      // Note: You'll need to implement Google OAuth integration
-      // This is a placeholder for Google Sign-In
-      console.log('Google Sign In - implement Google OAuth');
-      
-      // Example of how it would work:
-      // const googleToken = await getGoogleToken();
-      // const response = await authAPI.googleLogin(googleToken);
-      // ... handle response similar to regular login
-    } catch (error) {
-      console.error('Google sign-in failed:', error);
-    }
-  };
+  try {
+    setIsLoading(true);
+    setErrors({});
+
+    const googleUser = await googleAuthService.signIn();
+    console.log('Google login - user data:', googleUser);
+    
+    const response = await authAPI.googleLogin({
+      email: googleUser.email,
+      google_id: googleUser.google_id
+    });
+    
+    console.log('Google login - response:', response);
+    
+    // ADD THESE LINES TO COMPLETE THE LOGIN:
+    localStorage.setItem('access_token', response.access_token);
+    localStorage.setItem('refresh_token', response.refresh_token);
+    localStorage.setItem('account', JSON.stringify(response.user));
+    dispatch(userActions.setUserInfo(response.user));
+    navigate(from, { replace: true });
+    
+  } catch (error: any) {
+    console.error('Google login - full error:', error);
+    setErrors({ 
+      submit: error.message || 'Google sign-in failed. Please try again.' 
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
