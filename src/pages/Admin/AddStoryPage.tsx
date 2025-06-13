@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Upload, X, Image, Type, Tag } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
-import { contentService } from '../../services/api';
 
 const AddStoryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -83,7 +82,9 @@ const AddStoryPage: React.FC = () => {
         }
       });
       
-      await contentService.createStory(submitData);
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('Story submitted:', Object.fromEntries(submitData.entries()));
       navigate('/admin');
     } catch (error) {
       console.error('Error creating story:', error);

@@ -17,6 +17,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import { useAuthInit } from './hooks/useAuthInit';
+import AddStoryPage from './pages/Admin/AddStoryPage';
 
 // Placeholder components for commented out routes
 const ProfilePage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Profile Page - Coming Soon</h1></div>;
@@ -27,7 +28,7 @@ const StoryReaderPage = () => <div className="min-h-screen bg-gray-900 text-whit
 const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Video Player - Coming Soon</h1></div>;
 
 // Admin placeholder components
-const AddStoryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Story - Coming Soon</h1></div>;
+//const AddStoryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Story - Coming Soon</h1></div>;
 const AddFilmPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Film - Coming Soon</h1></div>;
 const AddContentPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Content - Coming Soon</h1></div>;
 const AddPodcastPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Podcast - Coming Soon</h1></div>;
