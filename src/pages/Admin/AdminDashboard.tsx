@@ -155,6 +155,7 @@ const AdminDashboard: React.FC = () => {
     const data = [
       { name: 'Stories', value: stats.totalStories },
       { name: 'Films', value: stats.totalFilms },
+      { name: 'Contents', value: stats.totalContent },
       { name: 'Podcasts', value: stats.totalPodcasts },
       { name: 'Animations', value: stats.totalAnimations },
       { name: 'Sneak Peeks', value: stats.totalSneakPeeks }
