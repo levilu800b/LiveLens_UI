@@ -1,4 +1,4 @@
-// src/hooks/useAuthInit.ts - RESTORE ENCRYPTED AUTH STATE
+// src/hooks/useAuthInit.ts - MINIMAL FIX (your exact logic + loading state)
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { secureAuth } from '../utils/secureAuth';
@@ -10,12 +10,21 @@ export const useAuthInit = () => {
   useEffect(() => {
     // Restore authentication state on app startup
     const initializeAuth = () => {
-      if (secureAuth.hasValidSession()) {
-        const user = secureAuth.getUser();
-        if (user) {
-          // Restore user to Redux state
-          dispatch(userActions.setUserInfo(user));
+      // 🆕 ONLY ADDITION: Set loading to true at start
+      dispatch(userActions.setLoading(true));
+      
+      try {
+        // 👇 YOUR EXACT EXISTING LOGIC - NO CHANGES
+        if (secureAuth.hasValidSession()) {
+          const user = secureAuth.getUser();
+          if (user) {
+            // Restore user to Redux state
+            dispatch(userActions.setUserInfo(user));
+          }
         }
+      } finally {
+        // 🆕 ONLY ADDITION: Set loading to false when done
+        dispatch(userActions.setLoading(false));
       }
     };
 
