@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { User, Camera, Save, Edit3 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
-import { authService } from '../../services/authService';
+import { authAPI } from '../../services/auth'; // ✅ Use your existing auth system
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import { uiActions } from '../../store/reducers/uiReducers';
@@ -50,26 +50,46 @@ const ProfilePage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const updateData: any = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        phone_number: formData.phoneNumber,
-        gender: formData.gender,
-        country: formData.country,
-        date_of_birth: formData.dateOfBirth,
-      };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('first_name', formData.firstName);
+      formDataToSend.append('last_name', formData.lastName);
+      formDataToSend.append('phone_number', formData.phoneNumber);
+      formDataToSend.append('gender', formData.gender);
+      formDataToSend.append('country', formData.country);
+      formDataToSend.append('date_of_birth', formData.dateOfBirth);
 
       if (avatarFile) {
-        updateData.avatar = avatarFile;
+        formDataToSend.append('avatar', avatarFile);
       }
 
-      const updatedUser = await authService.updateProfile(updateData);
-      dispatch(userActions.setUser(updatedUser));
+      // Use your existing auth API
+      const response = await fetch('/api/auth/profile/', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const updatedUser = await response.json();
+      
+      // Update user in localStorage and Redux
+      localStorage.setItem('account', JSON.stringify(updatedUser));
+      dispatch(userActions.setUserInfo(updatedUser));
+      
       dispatch(uiActions.addNotification({
         type: 'success',
         message: 'Profile updated successfully!'
       }));
+      
       setIsEditing(false);
+      setAvatarFile(null);
+      setAvatarPreview(null);
     } catch (error: any) {
       dispatch(uiActions.addNotification({
         type: 'error',
@@ -104,13 +124,22 @@ const ProfilePage: React.FC = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  {isEditing ? 'Cancel' : 'Edit Profile'}
-                </button>
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </button>
+                ) : (
+                  <button
+                    onClick={cancelEdit}
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
             </div>
 
@@ -133,14 +162,14 @@ const ProfilePage: React.FC = () => {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <User className="h-12 w-12 text-gray-400" />
+                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-r from-purple-400 to-pink-400">
+                        <User className="h-8 w-8 text-white" />
                       </div>
                     )}
                   </div>
                   {isEditing && (
-                    <label className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 cursor-pointer hover:bg-blue-700">
-                      <Camera className="h-4 w-4 text-white" />
+                    <label className="absolute bottom-0 right-0 p-1 bg-white rounded-full shadow-lg cursor-pointer border-2 border-gray-200 hover:bg-gray-50">
+                      <Camera className="h-4 w-4 text-gray-600" />
                       <input
                         type="file"
                         accept="image/*"
@@ -161,117 +190,109 @@ const ProfilePage: React.FC = () => {
               {/* Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
                   </label>
                   <input
                     type="text"
                     name="firstName"
-                    id="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
                   </label>
                   <input
                     type="text"
                     name="lastName"
-                    id="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </label>
                   <input
                     type="email"
                     name="email"
-                    id="email"
                     value={formData.email}
-                    disabled={true}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500"
+                    disabled={true} // Email should not be editable
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
                 </div>
 
                 <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
                   </label>
                   <input
                     type="tel"
                     name="phoneNumber"
-                    id="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Gender
                   </label>
                   <select
                     name="gender"
-                    id="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
                   >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
                   </select>
                 </div>
 
                 <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Country
                   </label>
                   <input
                     type="text"
                     name="country"
-                    id="country"
                     value={formData.country}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date of Birth
                   </label>
                   <input
                     type="date"
                     name="dateOfBirth"
-                    id="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
                   />
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Save Button */}
               {isEditing && (
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <div className="flex justify-end space-x-4">
                   <button
                     type="button"
                     onClick={cancelEdit}
@@ -282,19 +303,14 @@ const ProfilePage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
                   >
                     {isLoading ? (
-                      <>
-                        <LoadingSpinner size="sm" className="inline mr-2" />
-                        Saving...
-                      </>
+                      <LoadingSpinner size="sm" className="mr-2" />
                     ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2 inline" />
-                        Save Changes
-                      </>
+                      <Save className="h-4 w-4 mr-2" />
                     )}
+                    Save Changes
                   </button>
                 </div>
               )}

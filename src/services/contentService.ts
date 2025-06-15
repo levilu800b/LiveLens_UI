@@ -1,370 +1,394 @@
 // src/services/contentService.ts
-import { apiService, handleApiError } from './api';
-import type { ContentItem, PaginatedResponse, SearchFilters } from '../types';
+import type { ContentItem } from '../types';
 
-export interface ContentFilters extends SearchFilters {
-  status?: 'published' | 'draft' | 'archived';
-  category?: string;
-  author?: string;
-  featured?: boolean;
-  trending?: boolean;
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export interface CreateContentData {
-  title: string;
-  description: string;
-  tags: string[];
-  category?: string;
-  thumbnail?: File;
-  content?: string; // For stories
-  videoFile?: File; // For videos
-  audioFile?: File; // For podcasts
-  duration?: string;
-  status?: 'draft' | 'published';
-}
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+};
 
-class ContentService {
-  // Stories API
-  async getStories(filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams(filters);
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/stories/stories/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
+// Helper function for API requests
+const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: getAuthHeaders(),
+    ...options,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.detail || 'An error occurred');
   }
 
-  async getStory(id: string): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>(`/stories/stories/${id}/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
+  return response.json();
+};
 
-  async getHeroStory(): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>('/stories/hero/');
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async createStory(data: CreateContentData): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.upload<ContentItem>('/stories/stories/', formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async updateStory(id: string, data: Partial<CreateContentData>): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.put<ContentItem>(`/stories/stories/${id}/`, formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async deleteStory(id: string): Promise<void> {
-    try {
-      await apiService.delete(`/stories/stories/${id}/`);
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Films API
-  async getFilms(filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams(filters);
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/media/films/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async getFilm(id: string): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>(`/media/films/${id}/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async createFilm(data: CreateContentData): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.upload<ContentItem>('/media/films/', formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Content API
-  async getContents(filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams(filters);
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/media/contents/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async getContent(id: string): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>(`/media/contents/${id}/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async createContent(data: CreateContentData): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.upload<ContentItem>('/media/contents/', formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Podcasts API
-  async getPodcasts(filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams(filters);
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/podcasts/podcasts/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async getPodcast(id: string): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>(`/podcasts/podcasts/${id}/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async createPodcast(data: CreateContentData): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.upload<ContentItem>('/podcasts/podcasts/', formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Animations API
-  async getAnimations(filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams(filters);
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/animations/animations/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async getAnimation(id: string): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>(`/animations/animations/${id}/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async createAnimation(data: CreateContentData): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.upload<ContentItem>('/animations/animations/', formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Sneak Peeks API
-  async getSneakPeeks(filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams(filters);
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/sneak-peeks/sneak-peeks/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async getSneakPeek(id: string): Promise<ContentItem> {
-    try {
-      const response = await apiService.get<ContentItem>(`/sneak-peeks/sneak-peeks/${id}/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async createSneakPeek(data: CreateContentData): Promise<ContentItem> {
-    try {
-      const formData = this.buildFormData(data);
-      const response = await apiService.upload<ContentItem>('/sneak-peeks/sneak-peeks/', formData);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Common content operations
-  async likeContent(contentType: string, contentId: string): Promise<{ liked: boolean; likeCount: number }> {
-    try {
-      const response = await apiService.post(`/${contentType}/${contentType}/${contentId}/like/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async favoriteContent(contentType: string, contentId: string): Promise<{ favorited: boolean }> {
-    try {
-      const response = await apiService.post(`/${contentType}/${contentType}/${contentId}/favorite/`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async trackView(contentType: string, contentId: string, viewData?: any): Promise<void> {
-    try {
-      await apiService.post(`/${contentType}/track-view/${contentId}/`, viewData);
-    } catch (error) {
-      // Don't throw error for view tracking
-      console.error('View tracking failed:', error);
-    }
-  }
-
-  // Search across all content types
-  async searchContent(query: string, filters?: ContentFilters): Promise<PaginatedResponse<ContentItem>> {
-    try {
-      const params = this.buildFilterParams({ ...filters, query });
-      const response = await apiService.get<PaginatedResponse<ContentItem>>(`/search/${params}`);
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Get trending content
-  async getTrendingContent(): Promise<ContentItem[]> {
-    try {
-      const response = await apiService.get<ContentItem[]>('/trending/');
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Get featured content
-  async getFeaturedContent(): Promise<ContentItem[]> {
-    try {
-      const response = await apiService.get<ContentItem[]>('/featured/');
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Get user's library
+export const contentService = {
+  // User Library Functions
   async getUserLibrary(): Promise<ContentItem[]> {
     try {
-      const response = await apiService.get<ContentItem[]>('/auth/library/');
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
+      const data = await apiRequest('/user/library/');
+      
+      // Transform backend data to frontend format
+      const transformedData: ContentItem[] = [];
+      
+      // Process different content types
+      if (data.watched_stories) {
+        transformedData.push(...data.watched_stories.map((story: any) => ({
+          id: story.id,
+          title: story.title,
+          description: story.description,
+          thumbnail: story.thumbnail,
+          type: 'story' as const,
+          duration: story.estimated_read_time || 0,
+          views: story.views || 0,
+          likes: story.likes || 0,
+          tags: story.tags || [],
+          createdAt: story.created_at,
+          watchProgress: story.read_progress || 0,
+          isFavorited: story.is_favorited || false,
+          isBookmarked: story.is_bookmarked || false,
+        })));
+      }
 
-  // Get user's favorites
+      if (data.watched_films) {
+        transformedData.push(...data.watched_films.map((film: any) => ({
+          id: film.id,
+          title: film.title,
+          description: film.description,
+          thumbnail: film.thumbnail,
+          type: 'film' as const,
+          duration: film.duration || 0,
+          views: film.views || 0,
+          likes: film.likes || 0,
+          tags: film.tags || [],
+          createdAt: film.created_at,
+          watchProgress: film.watch_progress || 0,
+          isFavorited: film.is_favorited || false,
+          isBookmarked: film.is_bookmarked || false,
+        })));
+      }
+
+      if (data.watched_content) {
+        transformedData.push(...data.watched_content.map((content: any) => ({
+          id: content.id,
+          title: content.title,
+          description: content.description,
+          thumbnail: content.thumbnail,
+          type: 'content' as const,
+          duration: content.duration || 0,
+          views: content.views || 0,
+          likes: content.likes || 0,
+          tags: content.tags || [],
+          createdAt: content.created_at,
+          watchProgress: content.watch_progress || 0,
+          isFavorited: content.is_favorited || false,
+          isBookmarked: content.is_bookmarked || false,
+        })));
+      }
+
+      if (data.listened_podcasts) {
+        transformedData.push(...data.listened_podcasts.map((podcast: any) => ({
+          id: podcast.id,
+          title: podcast.title,
+          description: podcast.description,
+          thumbnail: podcast.thumbnail,
+          type: 'podcast' as const,
+          duration: podcast.duration || 0,
+          views: podcast.plays || 0,
+          likes: podcast.likes || 0,
+          tags: podcast.tags || [],
+          createdAt: podcast.created_at,
+          watchProgress: podcast.listen_progress || 0,
+          isFavorited: podcast.is_favorited || false,
+          isBookmarked: podcast.is_bookmarked || false,
+        })));
+      }
+
+      if (data.watched_animations) {
+        transformedData.push(...data.watched_animations.map((animation: any) => ({
+          id: animation.id,
+          title: animation.title,
+          description: animation.description,
+          thumbnail: animation.thumbnail,
+          type: 'animation' as const,
+          duration: animation.duration || 0,
+          views: animation.views || 0,
+          likes: animation.likes || 0,
+          tags: animation.tags || [],
+          createdAt: animation.created_at,
+          watchProgress: animation.watch_progress || 0,
+          isFavorited: animation.is_favorited || false,
+          isBookmarked: animation.is_bookmarked || false,
+        })));
+      }
+
+      // Sort by most recently watched
+      return transformedData.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error fetching user library:', error);
+      throw error;
+    }
+  },
+
+  // User Favorites Functions
   async getUserFavorites(): Promise<ContentItem[]> {
     try {
-      const response = await apiService.get<ContentItem[]>('/auth/favorites/');
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // AI Content Generation
-  async generateStory(prompt: string): Promise<{ content: string; id: string }> {
-    try {
-      const response = await apiService.post('/ai/generate-story/', { prompt });
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  async generateAnimation(prompt: string): Promise<{ videoUrl: string; id: string }> {
-    try {
-      const response = await apiService.post('/ai/generate-animation/', { prompt });
-      return response;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  // Helper methods
-  private buildFilterParams(filters?: ContentFilters): string {
-    if (!filters) return '';
-
-    const params = new URLSearchParams();
-    
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        if (Array.isArray(value)) {
-          value.forEach(item => params.append(key, item));
-        } else {
-          params.append(key, String(value));
+      const data = await apiRequest('/user/favorites/');
+      
+      // Transform backend data to frontend format similar to library
+      const transformedData: ContentItem[] = [];
+      
+      // Process different content types
+      ['stories', 'films', 'content', 'podcasts', 'animations', 'sneak_peeks'].forEach(contentType => {
+        if (data[contentType]) {
+          const type = contentType === 'sneak_peeks' ? 'sneak-peek' : contentType.slice(0, -1);
+          transformedData.push(...data[contentType].map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            thumbnail: item.thumbnail,
+            type: type as ContentItem['type'],
+            duration: item.duration || item.estimated_read_time || 0,
+            views: item.views || item.plays || 0,
+            likes: item.likes || 0,
+            tags: item.tags || [],
+            createdAt: item.created_at,
+            isFavorited: true,
+            isBookmarked: item.is_bookmarked || false,
+          })));
         }
+      });
+
+      // Sort by most recently favorited
+      return transformedData.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error fetching user favorites:', error);
+      throw error;
+    }
+  },
+
+  // Favorite/Unfavorite Content
+  async favoriteContent(contentType: string, contentId: string): Promise<void> {
+    try {
+      // Map frontend content types to backend endpoints
+      const typeMap: Record<string, string> = {
+        'story': 'stories',
+        'film': 'media/films',
+        'content': 'media/content',
+        'podcast': 'podcasts',
+        'animation': 'animations',
+        'sneak-peek': 'sneak-peeks'
+      };
+
+      const endpoint = typeMap[contentType];
+      if (!endpoint) {
+        throw new Error('Invalid content type');
       }
-    });
 
-    return params.toString() ? `?${params.toString()}` : '';
-  }
+      await apiRequest(`/${endpoint}/${contentId}/favorite/`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      throw error;
+    }
+  },
 
-  private buildFormData(data: any): FormData {
-    const formData = new FormData();
+  // Bookmark/Unbookmark Content
+  async bookmarkContent(contentType: string, contentId: string): Promise<void> {
+    try {
+      const typeMap: Record<string, string> = {
+        'story': 'stories',
+        'film': 'media/films',
+        'content': 'media/content',
+        'podcast': 'podcasts',
+        'animation': 'animations',
+        'sneak-peek': 'sneak-peeks'
+      };
 
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (value instanceof File) {
-          formData.append(key, value);
-        } else if (Array.isArray(value)) {
-          value.forEach(item => formData.append(key, item));
-        } else {
-          formData.append(key, String(value));
-        }
+      const endpoint = typeMap[contentType];
+      if (!endpoint) {
+        throw new Error('Invalid content type');
       }
-    });
 
-    return formData;
-  }
-}
+      await apiRequest(`/${endpoint}/${contentId}/bookmark/`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      throw error;
+    }
+  },
 
-export const contentService = new ContentService();
+  // Update Watch Progress
+  async updateWatchProgress(
+    contentType: string, 
+    contentId: string, 
+    progress: number
+  ): Promise<void> {
+    try {
+      const typeMap: Record<string, string> = {
+        'story': 'stories',
+        'film': 'media/films',
+        'content': 'media/content',
+        'podcast': 'podcasts',
+        'animation': 'animations',
+        'sneak-peek': 'sneak-peeks'
+      };
+
+      const endpoint = typeMap[contentType];
+      if (!endpoint) {
+        throw new Error('Invalid content type');
+      }
+
+      await apiRequest(`/${endpoint}/${contentId}/progress/`, {
+        method: 'POST',
+        body: JSON.stringify({ progress }),
+      });
+    } catch (error) {
+      console.error('Error updating watch progress:', error);
+      throw error;
+    }
+  },
+
+  // Mark Content as Watched/Read
+  async markAsWatched(contentType: string, contentId: string): Promise<void> {
+    try {
+      await this.updateWatchProgress(contentType, contentId, 1.0);
+    } catch (error) {
+      console.error('Error marking as watched:', error);
+      throw error;
+    }
+  },
+
+  // Get Content Details
+  async getContentDetails(contentType: string, contentId: string): Promise<ContentItem> {
+    try {
+      const typeMap: Record<string, string> = {
+        'story': 'stories',
+        'film': 'media/films',
+        'content': 'media/content',
+        'podcast': 'podcasts',
+        'animation': 'animations',
+        'sneak-peek': 'sneak-peeks'
+      };
+
+      const endpoint = typeMap[contentType];
+      if (!endpoint) {
+        throw new Error('Invalid content type');
+      }
+
+      const data = await apiRequest(`/${endpoint}/${contentId}/`);
+      
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        thumbnail: data.thumbnail,
+        type: contentType as ContentItem['type'],
+        duration: data.duration || data.estimated_read_time || 0,
+        views: data.views || data.plays || 0,
+        likes: data.likes || 0,
+        tags: data.tags || [],
+        createdAt: data.created_at,
+        isFavorited: data.is_favorited || false,
+        isBookmarked: data.is_bookmarked || false,
+        watchProgress: data.watch_progress || data.read_progress || data.listen_progress || 0,
+      };
+    } catch (error) {
+      console.error('Error fetching content details:', error);
+      throw error;
+    }
+  },
+
+  // Search Content
+  async searchContent(query: string, contentType?: string): Promise<ContentItem[]> {
+    try {
+      const searchParams = new URLSearchParams({ q: query });
+      if (contentType && contentType !== 'all') {
+        searchParams.append('type', contentType);
+      }
+
+      const data = await apiRequest(`/search/?${searchParams.toString()}`);
+      
+      // Transform search results
+      return data.results?.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        thumbnail: item.thumbnail,
+        type: item.content_type as ContentItem['type'],
+        duration: item.duration || item.estimated_read_time || 0,
+        views: item.views || item.plays || 0,
+        likes: item.likes || 0,
+        tags: item.tags || [],
+        createdAt: item.created_at,
+        isFavorited: item.is_favorited || false,
+        isBookmarked: item.is_bookmarked || false,
+      })) || [];
+    } catch (error) {
+      console.error('Error searching content:', error);
+      throw error;
+    }
+  },
+
+  // Like/Unlike Content
+  async likeContent(contentType: string, contentId: string): Promise<void> {
+    try {
+      const typeMap: Record<string, string> = {
+        'story': 'stories',
+        'film': 'media/films',
+        'content': 'media/content',
+        'podcast': 'podcasts',
+        'animation': 'animations',
+        'sneak-peek': 'sneak-peeks'
+      };
+
+      const endpoint = typeMap[contentType];
+      if (!endpoint) {
+        throw new Error('Invalid content type');
+      }
+
+      await apiRequest(`/${endpoint}/${contentId}/like/`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      throw error;
+    }
+  },
+
+  // Get Recommendations
+  async getRecommendations(limit: number = 10): Promise<ContentItem[]> {
+    try {
+      const data = await apiRequest(`/user/recommendations/?limit=${limit}`);
+      
+      return data.recommendations?.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        thumbnail: item.thumbnail,
+        type: item.content_type as ContentItem['type'],
+        duration: item.duration || item.estimated_read_time || 0,
+        views: item.views || item.plays || 0,
+        likes: item.likes || 0,
+        tags: item.tags || [],
+        createdAt: item.created_at,
+        isFavorited: item.is_favorited || false,
+        isBookmarked: item.is_bookmarked || false,
+      })) || [];
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      return []; // Return empty array instead of throwing for recommendations
+    }
+  },
+};

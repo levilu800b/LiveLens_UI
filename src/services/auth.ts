@@ -183,4 +183,4 @@ export const authAPI = {
   getAccessToken: (): string | null => {
     return secureAuth.getAccessToken();
   }
-};
+}

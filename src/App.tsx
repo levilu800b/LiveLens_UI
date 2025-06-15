@@ -19,36 +19,33 @@ import AdminRoute from './components/Auth/AdminRoute';
 import { useAuthInit } from './hooks/useAuthInit';
 import AddStoryPage from './pages/Admin/AddStoryPage';
 
-// Placeholder components for commented out routes
-const ProfilePage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Profile Page - Coming Soon</h1></div>;
-const LibraryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Library Page - Coming Soon</h1></div>;
-const FavoritesPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Favorites Page - Coming Soon</h1></div>;
-const SettingsPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Settings Page - Coming Soon</h1></div>;
+// Import the actual implemented user pages instead of placeholders
+import ProfilePage from './pages/User/ProfilePage';
+import LibraryPage from './pages/User/LibraryPage';
+import FavoritesPage from './pages/User/FavoritesPage';
+import SettingsPage from './pages/User/SettingsPage';
+
+// Placeholder components for pages not yet implemented
 const StoryReaderPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Story Reader - Coming Soon</h1></div>;
 const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Video Player - Coming Soon</h1></div>;
-
-// Admin placeholder components
-//const AddStoryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Story - Coming Soon</h1></div>;
 const AddFilmPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Film - Coming Soon</h1></div>;
 const AddContentPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Content - Coming Soon</h1></div>;
 const AddPodcastPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Podcast - Coming Soon</h1></div>;
 const AddAnimationPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Animation - Coming Soon</h1></div>;
 const AddSneakPeekPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Sneak Peek - Coming Soon</h1></div>;
-const CreateAIAnimationPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Create AI Animation - Coming Soon</h1></div>;
-const CreateAIStoryPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Create AI Story - Coming Soon</h1></div>;
-const AllPostsPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>All Posts - Coming Soon</h1></div>;
 
 function App() {
   useAuthInit();
+
   return (
-    <div className="app min-h-screen bg-gray-900">
+    <div className="App">
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/stories" element={<StoriesPage />} />
         <Route path="/media" element={<MediaPage />} />
-        <Route path="/media/films" element={<FilmsPage />} /> 
-        <Route path="/media/contents" element={<ContentsPage />} /> 
+        <Route path="/media/films" element={<FilmsPage />} />
+        <Route path="/media/contents" element={<ContentsPage />} />
         <Route path="/podcasts" element={<PodcastsPage />} />
         <Route path="/animations" element={<AnimationsPage />} />
         <Route path="/sneak-peeks" element={<SneakPeeksPage />} />
@@ -64,7 +61,7 @@ function App() {
         <Route path="/story/:id" element={<StoryReaderPage />} />
         <Route path="/watch/:type/:id" element={<VideoPlayerPage />} />
         
-        {/* Protected User Routes */}
+        {/* Protected User Routes - These are now fully implemented! */}
         <Route path="/profile" element={
           <ProtectedRoute>
             <ProfilePage />
@@ -121,38 +118,6 @@ function App() {
           <AdminRoute>
             <AddSneakPeekPage />
           </AdminRoute>
-        } />
-        <Route path="/admin/create-ai-animation" element={
-          <AdminRoute>
-            <CreateAIAnimationPage />
-          </AdminRoute>
-        } />
-        <Route path="/admin/create-ai-story" element={
-          <AdminRoute>
-            <CreateAIStoryPage />
-          </AdminRoute>
-        } />
-        <Route path="/admin/all-posts" element={
-          <AdminRoute>
-            <AllPostsPage />
-          </AdminRoute>
-        } />
-        
-        {/* 404 Route */}
-        <Route path="*" element={
-          <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-6xl font-bold text-purple-500 mb-4">404</h1>
-              <h2 className="text-2xl mb-4">Page Not Found</h2>
-              <p className="text-gray-400 mb-8">The page you're looking for doesn't exist.</p>
-              <a 
-                href="/" 
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                Go Home
-              </a>
-            </div>
-          </div>
         } />
       </Routes>
     </div>

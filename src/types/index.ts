@@ -1,5 +1,6 @@
 // src/types/index.ts
 
+// User Types
 export interface User {
   id: string;
   email: string;
@@ -7,13 +8,359 @@ export interface User {
   lastName: string;
   avatar?: string;
   isAdmin: boolean;
-  isVerified: boolean;
+  isEmailVerified: boolean;
   phoneNumber?: string;
-  gender?: 'Male' | 'Female';
+  gender?: 'male' | 'female' | '';
   country?: string;
   dateOfBirth?: string;
   createdAt: string;
-  lastLogin?: string;
+  updatedAt: string;
+}
+
+export interface UserProfile extends User {
+  bio?: string;
+  preferences?: UserPreferences;
+}
+
+export interface UserPreferences {
+  id?: string;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  autoPlayVideos: boolean;
+  preferredVideoQuality: '360p' | '480p' | '720p' | '1080p' | 'auto';
+  preferredLanguage: string;
+  darkMode: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Content Types
+export interface ContentItem {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail?: string;
+  type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek';
+  duration: number; // in minutes for videos, estimated read time for stories
+  views: number;
+  likes: number;
+  tags: string[];
+  createdAt: string;
+  updatedAt?: string;
+  isFavorited?: boolean;
+  isBookmarked?: boolean;
+  watchProgress?: number; // 0.0 to 1.0
+  author?: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  category?: string;
+  slug?: string;
+  status?: 'draft' | 'published' | 'archived';
+  featuredAt?: string;
+  publishedAt?: string;
+}
+
+export interface Story extends ContentItem {
+  type: 'story';
+  content: string; // Main story content
+  estimatedReadTime: number;
+  readProgress?: number;
+  chapters?: StoryChapter[];
+  illustrations?: string[];
+}
+
+export interface StoryChapter {
+  id: string;
+  title: string;
+  content: string;
+  order: number;
+  estimatedReadTime: number;
+}
+
+export interface MediaContent extends ContentItem {
+  type: 'film' | 'content' | 'animation' | 'sneak-peek';
+  videoUrl: string;
+  videoSize?: number;
+  resolution?: string;
+  watchProgress?: number;
+  subtitles?: Subtitle[];
+}
+
+export interface Podcast extends ContentItem {
+  type: 'podcast';
+  audioUrl?: string;
+  videoUrl?: string; // For video podcasts
+  series?: PodcastSeries;
+  episodeNumber?: number;
+  seasonNumber?: number;
+  listenProgress?: number;
+  transcript?: string;
+}
+
+export interface PodcastSeries {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail?: string;
+  category: string;
+  tags: string[];
+  totalEpisodes: number;
+  isSubscribed?: boolean;
+}
+
+export interface Subtitle {
+  language: string;
+  url: string;
+  isDefault?: boolean;
+}
+
+// Library and Favorites Types
+export interface LibraryItem {
+  id: string;
+  content: ContentItem;
+  addedAt: string;
+  lastWatchedAt?: string;
+  isCompleted: boolean;
+  watchProgress: number;
+  notes?: string;
+}
+
+export interface FavoriteItem {
+  id: string;
+  content: ContentItem;
+  addedAt: string;
+  category?: 'loved' | 'liked' | 'want-to-watch';
+}
+
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string;
+  thumbnail?: string;
+  items: ContentItem[];
+  createdAt: string;
+  updatedAt: string;
+  isPublic: boolean;
+  totalDuration: number;
+  itemCount: number;
+}
+
+// Comment Types
+export interface Comment {
+  id: string;
+  content: string;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  contentType: ContentItem['type'];
+  contentId: string;
+  parentId?: string; // For nested comments
+  replies?: Comment[];
+  likes: number;
+  isLiked?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  isEdited?: boolean;
+}
+
+export interface CommentCreate {
+  content: string;
+  contentType: ContentItem['type'];
+  contentId: string;
+  parentId?: string;
+}
+
+// Authentication Types
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface SignupData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface EmailVerification {
+  email: string;
+  code: string;
+}
+
+export interface PasswordReset {
+  email: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface PasswordChange {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// API Response Types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+  errors?: Record<string, string[]>;
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next?: string;
+  previous?: string;
+  results: T[];
+}
+
+export interface SearchResults {
+  stories: Story[];
+  films: MediaContent[];
+  content: MediaContent[];
+  podcasts: Podcast[];
+  animations: MediaContent[];
+  sneakPeeks: MediaContent[];
+  total: number;
+}
+
+// Settings Types
+export interface NotificationSettings {
+  email: {
+    newContent: boolean;
+    favorites: boolean;
+    comments: boolean;
+    newsletter: boolean;
+  };
+  push: {
+    newContent: boolean;
+    favorites: boolean;
+    comments: boolean;
+    reminders: boolean;
+  };
+}
+
+export interface PrivacySettings {
+  profileVisibility: 'public' | 'private';
+  showWatchHistory: boolean;
+  showFavorites: boolean;
+  allowComments: boolean;
+  allowFollowers: boolean;
+}
+
+export interface PlaybackSettings {
+  autoPlay: boolean;
+  autoPlayNext: boolean;
+  defaultQuality: '360p' | '480p' | '720p' | '1080p' | 'auto';
+  playbackSpeed: number;
+  subtitlesEnabled: boolean;
+  subtitleLanguage: string;
+  volume: number;
+}
+
+// Admin Types
+export interface AdminStats {
+  totalUsers: number;
+  totalContent: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  recentSignups: number;
+  activeUsers: number;
+  contentByType: Record<string, number>;
+  topContent: ContentItem[];
+  recentActivity: AdminActivity[];
+}
+
+export interface AdminActivity {
+  id: string;
+  type: string;
+  description: string;
+  user: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+
+// Upload Types
+export interface FileUpload {
+  file: File;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  url?: string;
+  error?: string;
+}
+
+export interface ContentUpload {
+  title: string;
+  description: string;
+  tags: string[];
+  thumbnail?: FileUpload;
+  content?: FileUpload; // For video/audio files
+  status: 'draft' | 'uploading' | 'processing' | 'ready' | 'published';
+  slug?: string;
+  category?: string;
+}
+
+// Filter and Sort Types
+export interface ContentFilter {
+  type?: ContentItem['type'] | 'all';
+  category?: string;
+  tags?: string[];
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  duration?: {
+    min: number;
+    max: number;
+  };
+  quality?: string;
+}
+
+export interface SortOption {
+  value: string;
+  label: string;
+  field: string;
+  order: 'asc' | 'desc';
+}
+
+// Notification Types
+export interface Notification {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  title?: string;
+  message: string;
+  duration?: number;
+  persistent?: boolean;
+  actions?: NotificationAction[];
+  timestamp: string;
+  isRead?: boolean;
+}
+
+export interface NotificationAction {
+  label: string;
+  action: () => void;
+  style?: 'primary' | 'secondary' | 'danger';
+}
+
+// Redux State Types
+export interface RootState {
+  user: UserState;
+  ui: UIState;
+  content: ContentState;
 }
 
 export interface UserState {
@@ -21,330 +368,88 @@ export interface UserState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-}
-
-export interface AuthResponse {
-  access: string;
-  refresh: string;
-  user: User;
-  message: string;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterData {
-  first_name: string;
-  last_name: string;
-  username?: string;
-  email: string;
-  password: string;
-  password_confirm: string;
-}
-
-export interface Content {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  duration: string;
-  type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek';
-  tags: string[];
-  views: number;
-  likes: number;
-  releaseDate: string;
-  category?: string;
-  isTrending?: boolean;
-  isFeatured?: boolean;
-  slug?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface Story extends Content {
-  type: 'story';
-  excerpt: string;
-  content: string;
-  readTime: string;
-  author: string;
-}
-
-export interface Film extends Content {
-  type: 'film';
-  director: string;
-  cast?: string[];
-  genre: string;
-  rating?: string;
-  trailerUrl?: string;
-  videoUrl: string;
-}
-
-export interface ContentItem extends Content {
-  type: 'content';
-  videoUrl: string;
-  trailerUrl?: string;
-}
-
-export interface Podcast extends Content {
-  type: 'podcast';
-  host: string;
-  guests?: string[];
-  audioUrl?: string;
-  videoUrl?: string;
-  episodeNumber?: number;
-  season?: number;
-}
-
-export interface Animation extends Content {
-  type: 'animation';
-  style: '2D' | '3D' | 'Mixed';
-  complexity: 'Beginner' | 'Intermediate' | 'Advanced';
-  animationType: string;
-  videoUrl: string;
-}
-
-export interface SneakPeek extends Content {
-  type: 'sneak-peek';
-  crew: string;
-  videoUrl: string;
-}
-
-export interface ContentState {
-  items: Content[];
-  featuredContent: Content[];
-  trendingContent: Content[];
-  currentContent: Content | null;
-  isLoading: boolean;
-  error: string | null;
-  filters: {
-    query: string;
-    type: string;
-    tags: string[];
-    sortBy: 'newest' | 'oldest' | 'popular' | 'trending';
-  };
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-  };
-}
-
-export interface AdminStats {
-  totalUsers: number;
-  totalContent: number;
-  totalStories: number;
-  totalFilms: number;
-  totalPodcasts: number;
-  totalAnimations: number;
-  totalSneakPeeks: number;
-  totalViews: number;
-  totalLikes: number;
-  totalComments: number;
-  trendingContent: Content[];
-  mostLiked: Content[];
-  mostViewed: Content[];
-  mostCommented: Content[];
-  recentUsers: User[];
-}
-
-export interface AdminState {
-  stats: AdminStats | null;
-  isLoading: boolean;
-  error: string | null;
-}
-
-export interface ToastProps {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
-  message?: string;
-  duration?: number;
-  onClose: () => void;
+  preferences: UserPreferences | null;
 }
 
 export interface UIState {
-  isSidebarOpen: boolean;
-  theme: 'light' | 'dark';
-  notifications: ToastProps[];
-  modals: Record<string, boolean>;
-}
-
-export interface Comment {
-  id: string;
-  user: User;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  parentId?: string;
-  replies?: Comment[];
-  likes: number;
-  isLiked: boolean;
-}
-
-export interface CommentState {
-  comments: Comment[];
+  notifications: Notification[];
   isLoading: boolean;
   error: string | null;
+  theme: 'light' | 'dark';
+  sidebarOpen: boolean;
 }
 
-export interface UserPreferences {
-  theme: 'light' | 'dark' | 'auto';
-  language: string;
-  notifications: {
-    email: boolean;
-    push: boolean;
-    marketing: boolean;
+export interface ContentState {
+  currentContent: ContentItem | null;
+  isLoading: boolean;
+  error: string | null;
+  searchResults: ContentItem[];
+  searchQuery: string;
+  filters: ContentFilter;
+  sortBy: string;
+}
+
+// Event Types
+export interface VideoPlayerEvent {
+  type: 'play' | 'pause' | 'ended' | 'timeupdate' | 'loadstart' | 'canplay' | 'error';
+  currentTime?: number;
+  duration?: number;
+  buffered?: number;
+  error?: string;
+}
+
+export interface ReadingEvent {
+  type: 'start' | 'progress' | 'complete' | 'bookmark';
+  position?: number;
+  totalWords?: number;
+  chapter?: number;
+  timeSpent?: number;
+}
+
+// Utility Types
+export type ContentType = ContentItem['type'];
+export type UserRole = 'user' | 'admin' | 'moderator';
+export type ViewMode = 'grid' | 'list';
+export type LoadingState = 'idle' | 'loading' | 'succeeded' | 'failed';
+
+// Form Types
+export interface FormField {
+  name: string;
+  label: string;
+  type: 'text' | 'email' | 'password' | 'textarea' | 'select' | 'file' | 'checkbox' | 'radio' | 'date';
+  required?: boolean;
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  validation?: {
+    pattern?: RegExp;
+    minLength?: number;
+    maxLength?: number;
+    custom?: (value: any) => string | null;
   };
-  privacy: {
-    showProfile: boolean;
-    showActivity: boolean;
-  };
-  autoplay: boolean;
-  quality: 'auto' | '720p' | '1080p' | '4k';
+}
+
+export interface FormErrors {
+  [fieldName: string]: string;
+}
+
+// Analytics Types
+export interface AnalyticsEvent {
+  event: string;
+  properties: Record<string, any>;
+  timestamp: string;
+  userId?: string;
+  sessionId: string;
 }
 
 export interface UserActivity {
   id: string;
-  type: 'view' | 'like' | 'comment' | 'share';
-  contentId: string;
-  contentType: string;
+  userId: string;
+  activity: string;
+  contentId?: string;
+  contentType?: ContentType;
+  metadata: Record<string, any>;
   timestamp: string;
-  duration?: number;
-}
-
-export interface SearchFilters {
-  query?: string;
-  type?: string;
-  tags?: string[];
-  category?: string;
-  sortBy?: 'newest' | 'oldest' | 'popular' | 'trending';
-  dateRange?: {
-    start: string;
-    end: string;
-  };
-}
-
-export interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
-
-export interface APIResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-  pagination?: PaginationInfo;
-}
-
-export interface ErrorResponse {
-  error: string;
-  details?: any;
-  field_errors?: Record<string, string[]>;
-}
-
-export interface UploadProgress {
-  loaded: number;
-  total: number;
-  percentage: number;
-}
-
-export interface FileUpload {
-  file: File;
-  progress: UploadProgress;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
-  url?: string;
-  error?: string;
-}
-
-// Form types
-export interface ContactFormData {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-}
-
-export interface NewsletterFormData {
-  email: string;
-}
-
-export interface FeedbackFormData {
-  type: 'bug' | 'feature' | 'general';
-  subject: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high';
-}
-
-// AI-related types
-export interface AIPrompt {
-  id: string;
-  type: 'story' | 'animation' | 'subtitle' | 'voice';
-  prompt: string;
-  response?: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AISettings {
-  model: string;
-  temperature: number;
-  maxTokens: number;
-  systemPrompt?: string;
-}
-
-export interface VoiceSettings {
-  voice: string;
-  speed: number;
-  pitch: number;
-  volume: number;
-  language: string;
-}
-
-// Route types
-export interface RouteParams {
-  id?: string;
-  type?: string;
-  slug?: string;
-}
-
-export interface LocationState {
-  from?: Location;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-}
-
-// Media player types
-export interface PlayerState {
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  volume: number;
-  isMuted: boolean;
-  isFullscreen: boolean;
-  quality: string;
-  playbackRate: number;
-  subtitles: boolean;
-  subtitleTrack?: string;
-}
-
-export interface VideoSource {
-  url: string;
-  quality: string;
-  type: string;
-}
-
-export interface SubtitleTrack {
-  id: string;
-  language: string;
-  label: string;
-  url: string;
-  default?: boolean;
+  sessionId: string;
+  ipAddress?: string;
+  userAgent?: string;
 }

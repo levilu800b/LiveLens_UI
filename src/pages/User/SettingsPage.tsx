@@ -17,7 +17,8 @@ import {
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
 import { uiActions } from '../../store/reducers/uiReducers';
-import { authService } from '../../services/authService';
+import { authAPI } from '../../services/auth'; // ✅ Use your existing auth system
+import { secureAuth } from '../../utils/secureAuth'; // ✅ Use your existing secure auth
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 
@@ -70,7 +71,24 @@ const SettingsPage: React.FC = () => {
 
     try {
       setIsLoading(true);
-      await authService.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      
+      // Use fetch with your existing API structure
+      const response = await fetch('/api/auth/change-password/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          old_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
       
       dispatch(uiActions.addNotification({
         type: 'success',
@@ -99,8 +117,25 @@ const SettingsPage: React.FC = () => {
       // Update theme in UI store
       dispatch(uiActions.setTheme(preferences.darkMode ? 'dark' : 'light'));
       
-      // Here you would also update other preferences via API
-      // await authService.updatePreferences(preferences);
+      // Save preferences to backend
+      const response = await fetch('/api/auth/preferences/', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          email_notifications: preferences.emailNotifications,
+          push_notifications: preferences.pushNotifications,
+          auto_play_videos: preferences.autoPlayVideos,
+          preferred_video_quality: preferences.preferredVideoQuality,
+          dark_mode: preferences.darkMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update preferences');
+      }
       
       dispatch(uiActions.addNotification({
         type: 'success',
@@ -116,19 +151,43 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Please enter your password to confirm'
+      }));
+      return;
+    }
+
     try {
       setIsLoading(true);
-      await authService.deleteAccount(deletePassword);
+      
+      const response = await fetch('/api/auth/delete-account/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          password: deletePassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete account');
+      }
+
+      // Clear all auth data
+      secureAuth.clearAuth();
+      dispatch(userActions.resetUserInfo());
       
       dispatch(uiActions.addNotification({
         type: 'success',
         message: 'Account deleted successfully'
       }));
       
-      dispatch(userActions.logout());
       navigate('/');
     } catch (error: any) {
       dispatch(uiActions.addNotification({
@@ -143,295 +202,263 @@ const SettingsPage: React.FC = () => {
 
   const renderPreferences = () => (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Display Preferences</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              {preferences.darkMode ? <Moon className="h-5 w-5 mr-3" /> : <Sun className="h-5 w-5 mr-3" />}
-              <div>
-                <p className="text-sm font-medium text-gray-900">Dark Mode</p>
-                <p className="text-sm text-gray-500">Use dark theme across the platform</p>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.darkMode}
-                onChange={(e) => setPreferences({...preferences, darkMode: e.target.checked})}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Video Preferences</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Auto-play Videos</p>
-              <p className="text-sm text-gray-500">Automatically start playing videos when available</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.autoPlayVideos}
-                onChange={(e) => setPreferences({...preferences, autoPlayVideos: e.target.checked})}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-
+      <h3 className="text-lg font-medium text-gray-900">App Preferences</h3>
+      
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Preferred Video Quality
-            </label>
-            <select
-              value={preferences.preferredVideoQuality}
-              onChange={(e) => setPreferences({...preferences, preferredVideoQuality: e.target.value})}
-              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="auto">Auto (Recommended)</option>
-              <option value="1080p">1080p HD</option>
-              <option value="720p">720p</option>
-              <option value="480p">480p</option>
-              <option value="360p">360p</option>
-            </select>
+            <label className="text-sm font-medium text-gray-700">Dark Mode</label>
+            <p className="text-sm text-gray-500">Use dark theme across the app</p>
           </div>
+          <button
+            onClick={() => setPreferences(prev => ({ ...prev, darkMode: !prev.darkMode }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              preferences.darkMode ? 'bg-purple-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                preferences.darkMode ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Auto-play Videos</label>
+            <p className="text-sm text-gray-500">Automatically play videos when viewing</p>
+          </div>
+          <button
+            onClick={() => setPreferences(prev => ({ ...prev, autoPlayVideos: !prev.autoPlayVideos }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              preferences.autoPlayVideos ? 'bg-purple-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                preferences.autoPlayVideos ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Preferred Video Quality
+          </label>
+          <select
+            value={preferences.preferredVideoQuality}
+            onChange={(e) => setPreferences(prev => ({ ...prev, preferredVideoQuality: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="auto">Auto</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
+            <option value="360p">360p</option>
+          </select>
         </div>
       </div>
 
-      <div className="pt-4 border-t border-gray-200">
-        <button
-          onClick={handlePreferencesUpdate}
-          disabled={isLoading}
-          className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isLoading ? (
-            <LoadingSpinner size="sm" className="mr-2" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Save Preferences
-        </button>
-      </div>
+      <button
+        onClick={handlePreferencesUpdate}
+        disabled={isLoading}
+        className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+      >
+        {isLoading ? (
+          <LoadingSpinner size="sm" className="mr-2" />
+        ) : (
+          <Save className="h-4 w-4 mr-2" />
+        )}
+        Save Preferences
+      </button>
     </div>
   );
 
   const renderNotifications = () => (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Settings</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-              <p className="text-sm text-gray-500">Receive updates about new content and platform news</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.emailNotifications}
-                onChange={(e) => setPreferences({...preferences, emailNotifications: e.target.checked})}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+      <h3 className="text-lg font-medium text-gray-900">Notification Settings</h3>
+      
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Email Notifications</label>
+            <p className="text-sm text-gray-500">Receive updates via email</p>
           </div>
+          <button
+            onClick={() => setPreferences(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              preferences.emailNotifications ? 'bg-purple-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                preferences.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-              <p className="text-sm text-gray-500">Get notified about new episodes and releases</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.pushNotifications}
-                onChange={(e) => setPreferences({...preferences, pushNotifications: e.target.checked})}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Push Notifications</label>
+            <p className="text-sm text-gray-500">Receive push notifications in your browser</p>
           </div>
+          <button
+            onClick={() => setPreferences(prev => ({ ...prev, pushNotifications: !prev.pushNotifications }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              preferences.pushNotifications ? 'bg-purple-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                preferences.pushNotifications ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
-      <div className="pt-4 border-t border-gray-200">
-        <button
-          onClick={handlePreferencesUpdate}
-          disabled={isLoading}
-          className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isLoading ? (
-            <LoadingSpinner size="sm" className="mr-2" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Save Notification Settings
-        </button>
-      </div>
+      <button
+        onClick={handlePreferencesUpdate}
+        disabled={isLoading}
+        className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+      >
+        {isLoading ? (
+          <LoadingSpinner size="sm" className="mr-2" />
+        ) : (
+          <Save className="h-4 w-4 mr-2" />
+        )}
+        Save Notifications
+      </button>
     </div>
   );
 
   const renderSecurity = () => (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
-        <form onSubmit={handlePasswordChange} className="space-y-4">
-          <div>
-            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-              Current Password
-            </label>
-            <input
-              type="password"
-              id="currentPassword"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
+      <h3 className="text-lg font-medium text-gray-900">Security Settings</h3>
+      
+      <form onSubmit={handlePasswordChange} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Current Password
+          </label>
+          <input
+            type="password"
+            value={passwordData.currentPassword}
+            onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+          />
+        </div>
 
-          <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-              New Password
-            </label>
-            <input
-              type="password"
-              id="newPassword"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            New Password
+          </label>
+          <input
+            type="password"
+            value={passwordData.newPassword}
+            onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+            minLength={8}
+          />
+        </div>
 
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Confirm New Password
+          </label>
+          <input
+            type="password"
+            value={passwordData.confirmPassword}
+            onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+            minLength={8}
+          />
+        </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading ? (
-              <LoadingSpinner size="sm" className="mr-2" />
-            ) : (
-              <Key className="h-4 w-4 mr-2" />
-            )}
-            Change Password
-          </button>
-        </form>
-      </div>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+        >
+          {isLoading ? (
+            <LoadingSpinner size="sm" className="mr-2" />
+          ) : (
+            <Key className="h-4 w-4 mr-2" />
+          )}
+          Change Password
+        </button>
+      </form>
     </div>
   );
 
   const renderAccount = () => (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <dl className="space-y-2">
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Email</dt>
-              <dd className="text-sm text-gray-900">{userInfo?.email}</dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Member since</dt>
-              <dd className="text-sm text-gray-900">
-                {userInfo?.createdAt ? new Date(userInfo.createdAt).toLocaleDateString() : 'N/A'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Account type</dt>
-              <dd className="text-sm text-gray-900">
-                {userInfo?.isAdmin ? 'Administrator' : 'Standard User'}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </div>
-
-      {/* Delete Account Section */}
-      <div className="border-t border-gray-200 pt-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
-            <div className="flex-1">
-              <h4 className="text-sm font-medium text-red-800 mb-2">Delete Account</h4>
-              <p className="text-sm text-red-700 mb-4">
-                Once you delete your account, there is no going back. Please be certain.
-                All your data, including your library and favorites, will be permanently deleted.
-              </p>
-              
-              {!showDeleteConfirm ? (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
-                </button>
-              ) : (
-                <form onSubmit={handleDeleteAccount} className="space-y-4">
-                  <div>
-                    <label htmlFor="deletePassword" className="block text-sm font-medium text-red-700">
-                      Enter your password to confirm account deletion
-                    </label>
-                    <input
-                      type="password"
-                      id="deletePassword"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      className="mt-1 block w-full border-red-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
-                      placeholder="Your password"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="flex space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowDeleteConfirm(false);
-                        setDeletePassword('');
-                      }}
-                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <LoadingSpinner size="sm" className="mr-2" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 mr-2" />
-                      )}
-                      Permanently Delete Account
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+      <h3 className="text-lg font-medium text-gray-900">Account Management</h3>
+      
+      <div className="bg-red-50 border border-red-200 rounded-md p-4">
+        <div className="flex items-start">
+          <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 mr-3" />
+          <div className="flex-1">
+            <h4 className="text-sm font-medium text-red-800">Delete Account</h4>
+            <p className="text-sm text-red-700 mt-1">
+              Once you delete your account, there is no going back. Please be certain.
+            </p>
+            
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="mt-3 inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Account
+              </button>
+            ) : (
+              <form onSubmit={(e) => { e.preventDefault(); handleDeleteAccount(); }} className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-red-800 mb-1">
+                    Enter your password to confirm:
+                  </label>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <LoadingSpinner size="sm" className="mr-2" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Permanently Delete Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeletePassword('');
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>
