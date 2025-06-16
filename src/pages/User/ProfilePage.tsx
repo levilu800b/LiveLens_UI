@@ -1,10 +1,10 @@
-// src/pages/User/ProfilePage.tsx
-import React, { useState} from 'react';
+// src/pages/User/ProfilePage.tsx - Fixed to use existing auth system
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { User, Camera, Save, Edit3 } from 'lucide-react';
+import { User, Camera, Save, Edit3, X } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
-import { authAPI } from '../../services/auth'; // ✅ Use your existing auth system
+import { authAPI } from '../../services/auth'; // ✅ Use existing auth service
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import { uiActions } from '../../store/reducers/uiReducers';
@@ -15,16 +15,31 @@ const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: userInfo?.firstName || '',
-    lastName: userInfo?.lastName || '',
-    email: userInfo?.email || '',
-    phoneNumber: userInfo?.phoneNumber || '',
-    gender: userInfo?.gender || '',
-    country: userInfo?.country || '',
-    dateOfBirth: userInfo?.dateOfBirth || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    gender: '',
+    country: '',
+    dateOfBirth: '',
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Initialize form data when userInfo changes
+  useEffect(() => {
+    if (userInfo) {
+      setFormData({
+        firstName: userInfo.firstName || '',
+        lastName: userInfo.lastName || '',
+        email: userInfo.email || '',
+        phoneNumber: userInfo.phoneNumber || '',
+        gender: userInfo.gender || '',
+        country: userInfo.country || '',
+        dateOfBirth: userInfo.dateOfBirth || '',
+      });
+    }
+  }, [userInfo]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -50,47 +65,78 @@ const ProfilePage: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Check authentication using the existing auth service
+      if (!authAPI.isAuthenticated()) {
+        throw new Error('You are not authenticated. Please login again.');
+      }
+
+      const token = authAPI.getAccessToken();
+      if (!token) {
+        throw new Error('No authentication token found. Please login again.');
+      }
+
       // Create FormData for file upload
       const formDataToSend = new FormData();
-      formDataToSend.append('first_name', formData.firstName);
-      formDataToSend.append('last_name', formData.lastName);
-      formDataToSend.append('phone_number', formData.phoneNumber);
+      
+      // Send data with frontend field names - backend serializer handles conversion
+      formDataToSend.append('firstName', formData.firstName);
+      formDataToSend.append('lastName', formData.lastName);
+      formDataToSend.append('phoneNumber', formData.phoneNumber);
       formDataToSend.append('gender', formData.gender);
       formDataToSend.append('country', formData.country);
-      formDataToSend.append('date_of_birth', formData.dateOfBirth);
+      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
 
       if (avatarFile) {
         formDataToSend.append('avatar', avatarFile);
       }
 
-      // Use your existing auth API
       const response = await fetch('/api/auth/profile/', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: formDataToSend,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.detail || 'Failed to update profile');
       }
 
-      const updatedUser = await response.json();
+      const responseData = await response.json();
       
-      // Update user in localStorage and Redux
-      localStorage.setItem('account', JSON.stringify(updatedUser));
+      // Backend returns { message: '...', user: {...} }
+      const updatedUser = responseData.user || responseData;
+      
+      // Update Redux store
       dispatch(userActions.setUserInfo(updatedUser));
       
+      // Show success notification
       dispatch(uiActions.addNotification({
         type: 'success',
-        message: 'Profile updated successfully!'
+        message: responseData.message || 'Profile updated successfully!'
       }));
       
+      // Reset form state
       setIsEditing(false);
       setAvatarFile(null);
       setAvatarPreview(null);
+      
     } catch (error: any) {
+      console.error('Profile update error:', error);
+      
+      // If authentication error, redirect to login
+      if (error.message.includes('authentication') || error.message.includes('login')) {
+        dispatch(uiActions.addNotification({
+          type: 'error',
+          message: 'Your session has expired. Please login again.'
+        }));
+        
+        // Use your existing logout function
+        authAPI.logout();
+        return;
+      }
+      
       dispatch(uiActions.addNotification({
         type: 'error',
         message: error.message || 'Failed to update profile'
@@ -101,19 +147,32 @@ const ProfilePage: React.FC = () => {
   };
 
   const cancelEdit = () => {
-    setFormData({
-      firstName: userInfo?.firstName || '',
-      lastName: userInfo?.lastName || '',
-      email: userInfo?.email || '',
-      phoneNumber: userInfo?.phoneNumber || '',
-      gender: userInfo?.gender || '',
-      country: userInfo?.country || '',
-      dateOfBirth: userInfo?.dateOfBirth || '',
-    });
+    // Reset form data to current user info
+    if (userInfo) {
+      setFormData({
+        firstName: userInfo.firstName || '',
+        lastName: userInfo.lastName || '',
+        email: userInfo.email || '',
+        phoneNumber: userInfo.phoneNumber || '',
+        gender: userInfo.gender || '',
+        country: userInfo.country || '',
+        dateOfBirth: userInfo.dateOfBirth || '',
+      });
+    }
     setAvatarFile(null);
     setAvatarPreview(null);
     setIsEditing(false);
   };
+
+  if (!userInfo) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -127,7 +186,7 @@ const ProfilePage: React.FC = () => {
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     <Edit3 className="h-4 w-4 mr-2" />
                     Edit Profile
@@ -135,8 +194,9 @@ const ProfilePage: React.FC = () => {
                 ) : (
                   <button
                     onClick={cancelEdit}
-                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
+                    <X className="h-4 w-4 mr-2" />
                     Cancel
                   </button>
                 )}
@@ -155,7 +215,7 @@ const ProfilePage: React.FC = () => {
                         alt="Avatar preview" 
                         className="h-full w-full object-cover"
                       />
-                    ) : userInfo?.avatar ? (
+                    ) : userInfo.avatar ? (
                       <img 
                         src={userInfo.avatar} 
                         alt="Current avatar" 
@@ -168,7 +228,7 @@ const ProfilePage: React.FC = () => {
                     )}
                   </div>
                   {isEditing && (
-                    <label className="absolute bottom-0 right-0 p-1 bg-white rounded-full shadow-lg cursor-pointer border-2 border-gray-200 hover:bg-gray-50">
+                    <label className="absolute bottom-0 right-0 p-1 bg-white rounded-full shadow-lg cursor-pointer border-2 border-gray-200 hover:bg-gray-50 transition-colors">
                       <Camera className="h-4 w-4 text-gray-600" />
                       <input
                         type="file"
@@ -181,14 +241,20 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">
-                    {userInfo?.firstName} {userInfo?.lastName}
+                    {userInfo.firstName} {userInfo.lastName}
                   </h3>
-                  <p className="text-sm text-gray-500">{userInfo?.email}</p>
+                  <p className="text-sm text-gray-500">{userInfo.email}</p>
+                  {userInfo.isAdmin && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      Admin
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* First Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
@@ -199,10 +265,11 @@ const ProfilePage: React.FC = () => {
                     value={formData.firstName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
 
+                {/* Last Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
@@ -213,23 +280,26 @@ const ProfilePage: React.FC = () => {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
 
+                {/* Email (Read-only) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
+                    Email Address
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
-                    disabled={true} // Email should not be editable
+                    disabled
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
                 </div>
 
+                {/* Phone Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
@@ -240,27 +310,30 @@ const ProfilePage: React.FC = () => {
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
+                    placeholder="Enter your phone number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gender
-                  </label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
+                {/* Gender */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Gender
+  </label>
+  <select
+    name="gender"
+    value={formData.gender}
+    onChange={handleInputChange}
+    disabled={!isEditing}
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+  >
+    <option value="">Select gender</option>
+    <option value="M">Male</option>
+    <option value="F">Female</option>
+  </select>
+</div>
 
+                {/* Country */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Country
@@ -271,11 +344,13 @@ const ProfilePage: React.FC = () => {
                     value={formData.country}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
+                    placeholder="Enter your country"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
 
-                <div>
+                {/* Date of Birth */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date of Birth
                   </label>
@@ -285,32 +360,37 @@ const ProfilePage: React.FC = () => {
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-50"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
               </div>
 
               {/* Save Button */}
               {isEditing && (
-                <div className="flex justify-end space-x-4">
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={cancelEdit}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                    className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-md text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </>
                     ) : (
-                      <Save className="h-4 w-4 mr-2" />
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </>
                     )}
-                    Save Changes
                   </button>
                 </div>
               )}
