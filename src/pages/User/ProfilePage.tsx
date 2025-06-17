@@ -4,11 +4,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import { User, Camera, Save, Edit3, X } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
-import { authAPI } from '../../services/auth'; // ✅ Use existing auth service
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import { uiActions } from '../../store/reducers/uiReducers';
 import { secureUserStorage } from '../../utils/secureStorage';
+import { authAPI, profileAPI } from '../../services/api';
 
 
 const ProfilePage: React.FC = () => {
@@ -63,93 +63,72 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      // Check authentication using the existing auth service
-      if (!authAPI.isAuthenticated()) {
-        throw new Error('You are not authenticated. Please login again.');
-      }
+  try {
+    if (!userInfo) {
+      throw new Error('User not found. Please login again.');
+    }
 
-      const token = authAPI.getAccessToken();
-      if (!token) {
-        throw new Error('No authentication token found. Please login again.');
-      }
+    // Create FormData for file upload
+    const formDataToSend = new FormData();
+    
+    // Send data with frontend field names - backend serializer handles conversion
+    formDataToSend.append('firstName', formData.firstName);
+    formDataToSend.append('lastName', formData.lastName);
+    formDataToSend.append('phoneNumber', formData.phoneNumber);
+    formDataToSend.append('gender', formData.gender);
+    formDataToSend.append('country', formData.country);
+    formDataToSend.append('dateOfBirth', formData.dateOfBirth);
 
-      // Create FormData for file upload
-      const formDataToSend = new FormData();
-      
-      // Send data with frontend field names - backend serializer handles conversion
-      formDataToSend.append('firstName', formData.firstName);
-      formDataToSend.append('lastName', formData.lastName);
-      formDataToSend.append('phoneNumber', formData.phoneNumber);
-      formDataToSend.append('gender', formData.gender);
-      formDataToSend.append('country', formData.country);
-      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
+    if (avatarFile) {
+      formDataToSend.append('avatar', avatarFile);
+    }
 
-      if (avatarFile) {
-        formDataToSend.append('avatar', avatarFile);
-      }
-
-      const response = await fetch('/api/auth/profile/', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || errorData.detail || 'Failed to update profile');
-      }
-
-      const responseData = await response.json();
-
-      
-      
-      // Backend returns { message: '...', user: {...} }
-      const updatedUser = responseData.user || responseData;
-      secureUserStorage.setUser(updatedUser);
-      
-      // Update Redux store
-      dispatch(userActions.setUserInfo(updatedUser));
-      
-      // Show success notification
-      dispatch(uiActions.addNotification({
-        type: 'success',
-        message: responseData.message || 'Profile updated successfully!'
-      }));
-      
-      // Reset form state
-      setIsEditing(false);
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      
-    } catch (error: any) {
-      console.error('Profile update error:', error);
-      
-      // If authentication error, redirect to login
-      if (error.message.includes('authentication') || error.message.includes('login')) {
-        dispatch(uiActions.addNotification({
-          type: 'error',
-          message: 'Your session has expired. Please login again.'
-        }));
-        
-        // Use your existing logout function
-        authAPI.logout();
-        return;
-      }
-      
+    // Use the profileAPI service (make sure to import it)
+    const responseData = await profileAPI.updateProfile(formDataToSend);
+    
+    // Backend returns { message: '...', user: {...} }
+    const updatedUser = responseData.user || responseData;
+    secureUserStorage.setUser(updatedUser);
+    
+    // Update Redux store
+    dispatch(userActions.setUserInfo(updatedUser));
+    
+    // Show success notification
+    dispatch(uiActions.addNotification({
+      type: 'success',
+      message: responseData.message || 'Profile updated successfully!'
+    }));
+    
+    // Reset form state
+    setIsEditing(false);
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    
+  } catch (error: any) {
+    console.error('Profile update error:', error);
+    
+    // If authentication error, redirect to login
+    if (error.message.includes('authentication') || error.message.includes('login') || error.message.includes('session has expired')) {
       dispatch(uiActions.addNotification({
         type: 'error',
-        message: error.message || 'Failed to update profile'
+        message: 'Your session has expired. Please login again.'
       }));
-    } finally {
-      setIsLoading(false);
+      // Clear tokens and redirect to login
+      authAPI.clearTokens();
+      navigate('/signin');
+    } else {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: error.message || 'Failed to update profile. Please try again.'
+      }));
     }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const cancelEdit = () => {
     // Reset form data to current user info
