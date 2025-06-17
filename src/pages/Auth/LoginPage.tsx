@@ -23,6 +23,8 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  
+
   const from = location.state?.from?.pathname || '/';
   const successMessage = location.state?.message;
 

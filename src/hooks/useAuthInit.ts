@@ -1,29 +1,23 @@
-// src/hooks/useAuthInit.ts - MINIMAL FIX (your exact logic + loading state)
+// src/hooks/useAuthInit.ts - FIXED TO MATCH STORE
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { secureAuth } from '../utils/secureAuth';
+import { secureUserStorage } from '../utils/secureStorage'; // SAME import as store
 import { userActions } from '../store/reducers/userReducers';
 
 export const useAuthInit = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Restore authentication state on app startup
     const initializeAuth = () => {
-      // 🆕 ONLY ADDITION: Set loading to true at start
       dispatch(userActions.setLoading(true));
       
       try {
-        // 👇 YOUR EXACT EXISTING LOGIC - NO CHANGES
-        if (secureAuth.hasValidSession()) {
-          const user = secureAuth.getUser();
-          if (user) {
-            // Restore user to Redux state
-            dispatch(userActions.setUserInfo(user));
-          }
+        // Use the EXACT SAME method as your store
+        const user = secureUserStorage.getUser();        
+        if (user) {
+          dispatch(userActions.setUserInfo(user));
         }
       } finally {
-        // 🆕 ONLY ADDITION: Set loading to false when done
         dispatch(userActions.setLoading(false));
       }
     };
@@ -31,3 +25,4 @@ export const useAuthInit = () => {
     initializeAuth();
   }, [dispatch]);
 };
+

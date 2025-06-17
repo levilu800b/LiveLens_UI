@@ -1,5 +1,6 @@
 // src/services/auth.ts - UPDATED FOR ENCRYPTED STORAGE
 import { secureAuth } from '../utils/secureAuth';
+import { secureUserStorage } from '../utils/secureStorage';
 
 const API_BASE = '/api/auth';
 
@@ -20,26 +21,32 @@ export const authAPI = {
   },
 
   login: async (email: string, password: string) => {
-    const response = await fetch(`${API_BASE}/login/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+  const response = await fetch(`${API_BASE}/login/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
-    }
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Login failed');
+  }
 
-    const data = await response.json();
-    
-    // Store everything encrypted
-    if (data.access_token && data.refresh_token && data.user) {
-      secureAuth.setAuth(data.access_token, data.refresh_token, data.user);
-    }
-    
-    return { user: data.user };
-  },
+  const data = await response.json();
+  
+  // Store tokens in localStorage (for API calls)
+  if (data.access_token && data.refresh_token) {
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('refresh_token', data.refresh_token);
+  }
+  
+  // Store user data in the SAME storage system as your store initialization
+  if (data.user) {
+    secureUserStorage.setUser(data.user); // ✅ Use the same storage system!
+  }
+  
+  return { user: data.user };
+},
 
   verifyEmail: async (email: string, code: string) => {
     const response = await fetch(`${API_BASE}/verify-email/`, {

@@ -1,13 +1,40 @@
-// src/store/index.ts
+// src/store/index.ts - WITH DATA MIGRATION
 import { configureStore } from '@reduxjs/toolkit';
 import { userReducer } from './reducers/userReducers';
 import { contentReducer } from './reducers/contentReducers';
 import { adminReducer } from './reducers/adminReducers';
 import { uiReducer } from './reducers/uiReducers';
+import { secureUserStorage } from '../utils/secureStorage';
+import { useDispatch } from 'react-redux';
 
-const userInfoFromStorage = localStorage.getItem('account')
-	? JSON.parse(localStorage.getItem('account') as string)
-	: null;
+
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+
+
+
+const migrateUserData = () => {
+  try {    
+	const localStorageUser = localStorage.getItem('account');
+	
+	const secureStorageUser = secureUserStorage.getUser();
+    
+    if (localStorageUser && !secureStorageUser) {
+      const userData = JSON.parse(localStorageUser);
+      secureUserStorage.setUser(userData);
+      localStorage.removeItem('account');
+      return userData;
+    }
+    
+    return secureStorageUser;
+  } catch (error) {
+    console.error('Migration failed:', error);
+    return null;
+  }
+};
+
+
+// Use migrated data
+const userInfoFromStorage = migrateUserData();
 
 const initialState = {
 	user: { userInfo: userInfoFromStorage, isAuthenticated: !!userInfoFromStorage, isLoading: false, error: null },

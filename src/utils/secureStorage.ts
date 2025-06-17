@@ -94,16 +94,29 @@ export const secureTokenManager = SecureTokenManager.getInstance();
 export const secureUserStorage = {
   setUser: (userData: any) => {
     if (userData && userData.id) {
+      // Store in BOTH sessionStorage AND localStorage for persistence
       sessionStorage.setItem('account', JSON.stringify(userData));
+      localStorage.setItem('user_session', JSON.stringify(userData));
     }
   },
 
   getUser: () => {
-    try {
-      const stored = sessionStorage.getItem('account');
+    try {      
+      // Try sessionStorage first
+      let stored = sessionStorage.getItem('account');
+      
+      // If sessionStorage is empty, try localStorage
+      if (!stored) {
+        stored = localStorage.getItem('user_session');
+        
+        // If found in localStorage, restore to sessionStorage
+        if (stored) {
+          sessionStorage.setItem('account', stored);
+        }
+      }
+      
       if (stored) {
         const user = JSON.parse(stored);
-        // Validate user data
         if (user && user.id && user.email) {
           return user;
         }
@@ -116,5 +129,6 @@ export const secureUserStorage = {
 
   clearUser: () => {
     sessionStorage.removeItem('account');
+    localStorage.removeItem('user_session');
   }
 };

@@ -84,7 +84,6 @@ const AddStoryPage: React.FC = () => {
       
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Story submitted:', Object.fromEntries(submitData.entries()));
       navigate('/admin');
     } catch (error) {
       console.error('Error creating story:', error);

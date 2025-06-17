@@ -8,6 +8,8 @@ import { authAPI } from '../../services/auth'; // ✅ Use existing auth service
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import { uiActions } from '../../store/reducers/uiReducers';
+import { secureUserStorage } from '../../utils/secureStorage';
+
 
 const ProfilePage: React.FC = () => {
   const dispatch = useDispatch();
@@ -104,9 +106,12 @@ const ProfilePage: React.FC = () => {
       }
 
       const responseData = await response.json();
+
+      
       
       // Backend returns { message: '...', user: {...} }
       const updatedUser = responseData.user || responseData;
+      secureUserStorage.setUser(updatedUser);
       
       // Update Redux store
       dispatch(userActions.setUserInfo(updatedUser));

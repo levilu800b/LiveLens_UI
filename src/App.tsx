@@ -1,5 +1,6 @@
 // src/App.tsx
 import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import HomePage from './pages/Home/Homepage/HomePage';
 import StoriesPage from './pages/Stories/StoriesPage';
 import MediaPage from './pages/Media/MediaPage';
@@ -36,6 +37,50 @@ const AddSneakPeekPage = () => <div className="min-h-screen bg-gray-900 text-whi
 
 function App() {
   useAuthInit();
+
+  useEffect(() => {  
+  const originalClear = sessionStorage.clear;
+  const originalRemove = sessionStorage.removeItem;
+  
+  sessionStorage.clear = function() {
+    console.error('🚨 sessionStorage.clear() called!');
+    console.trace('sessionStorage.clear stack trace:');
+    return originalClear.call(this);
+  };
+  
+  sessionStorage.removeItem = function(key) {
+    if (key === 'account') {
+      console.error('🚨 sessionStorage.removeItem("account") called!');
+      console.trace('sessionStorage.removeItem stack trace:');
+    }
+    return originalRemove.call(this, key);
+  };
+  
+  // Also monitor localStorage
+  const originalLocalClear = localStorage.clear;
+  const originalLocalRemove = localStorage.removeItem;
+  
+  localStorage.clear = function() {
+    console.error('🚨 localStorage.clear() called!');
+    console.trace('localStorage.clear stack trace:');
+    return originalLocalClear.call(this);
+  };
+  
+  localStorage.removeItem = function(key) {
+    if (key === 'user_session') {
+      console.error('🚨 localStorage.removeItem("user_session") called!');
+      console.trace('localStorage.removeItem stack trace:');
+    }
+    return originalLocalRemove.call(this, key);
+  };
+
+  return () => {
+    sessionStorage.clear = originalClear;
+    sessionStorage.removeItem = originalRemove;
+    localStorage.clear = originalLocalClear;
+    localStorage.removeItem = originalLocalRemove;
+  };
+}, []);
 
   return (
     <div className="App">

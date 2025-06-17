@@ -17,13 +17,18 @@ import {
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
+import { secureUserStorage } from '../../utils/secureStorage'; // Add this import
+import { useAppDispatch } from '../../store';
+
 
 const Header = () => {
+  const dispatch = useAppDispatch(); // Use typed dispatch  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMediaDropdownOpen, setIsMediaDropdownOpen] = useState(false);
   
   const { userInfo } = useSelector((state: RootState) => state.user) as {
+    
     userInfo: {
       avatar?: string;
       firstName?: string;
@@ -33,8 +38,8 @@ const Header = () => {
       // add other properties as needed
     } | null;
   };
+
   const isAuthenticated = !!userInfo;
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Reordered navigation items - Media will be inserted between Stories and Podcasts
@@ -61,12 +66,20 @@ const Header = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' }
   ];
 
-  const handleSignOut = () => {
-    dispatch(userActions.resetUserInfo());
-    localStorage.removeItem('account');
-    navigate('/');
-    setIsProfileDropdownOpen(false);
-  };
+  const handleSignOut = () => {  
+  // Clear Redux state
+  dispatch(userActions.resetUserInfo());
+  
+  // Clear ONLY auth-related data
+  secureUserStorage.clearUser();
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('account');
+
+  
+  navigate('/');
+  setIsProfileDropdownOpen(false);
+};
 
   const handleMenuClick = () => {
     setIsProfileDropdownOpen(false);

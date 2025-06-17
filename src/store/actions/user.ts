@@ -1,48 +1,48 @@
-// src/store/actions/user.ts
+// src/store/actions/user.ts - FIXED TYPING
 import { userActions } from '../reducers/userReducers';
 import { authAPI } from '../../services/api';
-import type { Dispatch } from 'redux';
+import { secureUserStorage } from '../../utils/secureStorage';
+import type { AppDispatch } from '../index'; // Use AppDispatch instead of Dispatch
 
-export const logout = () => async (dispatch: Dispatch) => {
+export const logout = () => async (dispatch: AppDispatch) => {
   try {
-    // Get refresh token from localStorage
     const refreshToken = localStorage.getItem('refresh_token');
     
     if (refreshToken) {
-      // Call backend logout API
       await authAPI.logout(refreshToken);
     }
   } catch (error) {
-    // Log error but don't prevent logout
     console.warn('Logout API call failed:', error);
   } finally {
-    // Always clear Redux state and localStorage
+    // Clear Redux state
     dispatch(userActions.resetUserInfo());
     
-    // Clear all auth-related items from localStorage
+    // Clear ONLY auth-related storage items (not everything)
+    secureUserStorage.clearUser();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('account');
-    
-    // Clear any other app-specific data
     localStorage.removeItem('user_preferences');
-    sessionStorage.clear();
+    
+    // Don't use localStorage.clear() or sessionStorage.clear() - too aggressive!
+    
   }
 };
 
-// Login action
-export const login = (userData: any, tokens: { access_token: string; refresh_token: string }) => (dispatch: Dispatch) => {
-  // Store tokens
+// Fix other actions too:
+export const login = (userData: any, tokens: { access_token: string; refresh_token: string }) => (dispatch: AppDispatch) => {
   localStorage.setItem('access_token', tokens.access_token);
   localStorage.setItem('refresh_token', tokens.refresh_token);
-  localStorage.setItem('account', JSON.stringify(userData));
   
-  // Update Redux store
+  
+  secureUserStorage.setUser(userData);
+  
+  // Verify it was stored
   dispatch(userActions.setUserInfo(userData));
-};
+  };
 
-// Check auth status on app initialization
-export const checkAuthStatus = () => (dispatch: Dispatch) => {
+
+export const checkAuthStatus = () => (dispatch: AppDispatch) => {
   try {
     const storedUser = localStorage.getItem('account');
     const accessToken = localStorage.getItem('access_token');
@@ -51,7 +51,6 @@ export const checkAuthStatus = () => (dispatch: Dispatch) => {
       const userData = JSON.parse(storedUser);
       dispatch(userActions.setUserInfo(userData));
     } else {
-      // If no valid auth data, clear everything
       dispatch(logout());
     }
   } catch (error) {
