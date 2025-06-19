@@ -1,36 +1,64 @@
-// src/services/contentService.ts
+// src/services/contentService.ts - MINIMAL FIX FOR YOUR CURRENT SETUP
 import type { ContentItem } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Helper function to get auth headers
+// Helper function to get auth headers - FIXED to work with your existing auth
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  // Your auth system stores token as 'access_token' (confirmed working with profile page)
+  const token = localStorage.getItem('access_token');
+  
+  if (!token) {
+    console.warn('⚠️ No access token found - user may need to log in again');
+  }
+  
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
   };
 };
 
-// Helper function for API requests
+// Helper function for API requests with better error handling
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const headers = getAuthHeaders();
+  
+  console.log('🚀 Making request to:', `${API_BASE_URL}${endpoint}`);
+  
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: getAuthHeaders(),
+    headers,
     ...options,
   });
 
+  console.log('📡 Response:', response.status, response.statusText);
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || errorData.detail || 'An error occurred');
+    
+    // Handle authentication errors
+    if (response.status === 401) {
+      console.error('🚫 Authentication failed');
+      // Clear tokens and redirect (matches your existing auth flow)
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('account');
+      window.location.href = '/login';
+      throw new Error('Your session has expired. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log('✅ Request successful');
+  
+  return data;
 };
 
 export const contentService = {
   // User Library Functions
   async getUserLibrary(): Promise<ContentItem[]> {
     try {
+      console.log('📚 Fetching user library...');
       const data = await apiRequest('/user/library/');
       
       // Transform backend data to frontend format
@@ -91,8 +119,8 @@ export const contentService = {
         })));
       }
 
-      if (data.listened_podcasts) {
-        transformedData.push(...data.listened_podcasts.map((podcast: any) => ({
+      if (data.watched_podcasts) {
+        transformedData.push(...data.watched_podcasts.map((podcast: any) => ({
           id: podcast.id,
           title: podcast.title,
           description: podcast.description,
@@ -127,12 +155,42 @@ export const contentService = {
         })));
       }
 
+      if (data.watched_sneak_peeks) {
+        transformedData.push(...data.watched_sneak_peeks.map((sneakPeek: any) => ({
+          id: sneakPeek.id,
+          title: sneakPeek.title,
+          description: sneakPeek.description,
+          thumbnail: sneakPeek.thumbnail,
+          type: 'sneak-peek' as const,
+          duration: sneakPeek.duration || 0,
+          views: sneakPeek.views || 0,
+          likes: sneakPeek.likes || 0,
+          tags: sneakPeek.tags || [],
+          createdAt: sneakPeek.created_at,
+          watchProgress: sneakPeek.watch_progress || 0,
+          isFavorited: sneakPeek.is_favorited || false,
+          isBookmarked: sneakPeek.is_bookmarked || false,
+        })));
+      }
+
+      console.log('✅ Library data transformed:', {
+        totalItems: transformedData.length,
+        byType: {
+          stories: data.watched_stories?.length || 0,
+          films: data.watched_films?.length || 0,
+          content: data.watched_content?.length || 0,
+          podcasts: data.watched_podcasts?.length || 0,
+          animations: data.watched_animations?.length || 0,
+          sneakPeeks: data.watched_sneak_peeks?.length || 0,
+        }
+      });
+
       // Sort by most recently watched
       return transformedData.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } catch (error) {
-      console.error('Error fetching user library:', error);
+      console.error('❌ Error fetching user library:', error);
       throw error;
     }
   },
@@ -140,6 +198,7 @@ export const contentService = {
   // User Favorites Functions
   async getUserFavorites(): Promise<ContentItem[]> {
     try {
+      console.log('⭐ Fetching user favorites...');
       const data = await apiRequest('/user/favorites/');
       
       // Transform backend data to frontend format similar to library
@@ -166,12 +225,14 @@ export const contentService = {
         }
       });
 
+      console.log('⭐ Favorites loaded:', transformedData.length, 'items');
+
       // Sort by most recently favorited
       return transformedData.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } catch (error) {
-      console.error('Error fetching user favorites:', error);
+      console.error('❌ Error fetching user favorites:', error);
       throw error;
     }
   },
@@ -179,7 +240,6 @@ export const contentService = {
   // Favorite/Unfavorite Content
   async favoriteContent(contentType: string, contentId: string): Promise<void> {
     try {
-      // Map frontend content types to backend endpoints
       const typeMap: Record<string, string> = {
         'story': 'stories',
         'film': 'media/films',
@@ -198,7 +258,7 @@ export const contentService = {
         method: 'POST',
       });
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error('❌ Error favoriting content:', error);
       throw error;
     }
   },
@@ -224,17 +284,13 @@ export const contentService = {
         method: 'POST',
       });
     } catch (error) {
-      console.error('Error toggling bookmark:', error);
+      console.error('❌ Error bookmarking content:', error);
       throw error;
     }
   },
 
-  // Update Watch Progress
-  async updateWatchProgress(
-    contentType: string, 
-    contentId: string, 
-    progress: number
-  ): Promise<void> {
+  // Track Watch Progress
+  async trackProgress(contentType: string, contentId: string, progress: number): Promise<void> {
     try {
       const typeMap: Record<string, string> = {
         'story': 'stories',
@@ -250,145 +306,13 @@ export const contentService = {
         throw new Error('Invalid content type');
       }
 
-      await apiRequest(`/${endpoint}/${contentId}/progress/`, {
+      await apiRequest(`/${endpoint}/${contentId}/track-progress/`, {
         method: 'POST',
         body: JSON.stringify({ progress }),
       });
     } catch (error) {
-      console.error('Error updating watch progress:', error);
+      console.error('❌ Error tracking progress:', error);
       throw error;
     }
-  },
-
-  // Mark Content as Watched/Read
-  async markAsWatched(contentType: string, contentId: string): Promise<void> {
-    try {
-      await this.updateWatchProgress(contentType, contentId, 1.0);
-    } catch (error) {
-      console.error('Error marking as watched:', error);
-      throw error;
-    }
-  },
-
-  // Get Content Details
-  async getContentDetails(contentType: string, contentId: string): Promise<ContentItem> {
-    try {
-      const typeMap: Record<string, string> = {
-        'story': 'stories',
-        'film': 'media/films',
-        'content': 'media/content',
-        'podcast': 'podcasts',
-        'animation': 'animations',
-        'sneak-peek': 'sneak-peeks'
-      };
-
-      const endpoint = typeMap[contentType];
-      if (!endpoint) {
-        throw new Error('Invalid content type');
-      }
-
-      const data = await apiRequest(`/${endpoint}/${contentId}/`);
-      
-      return {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        thumbnail: data.thumbnail,
-        type: contentType as ContentItem['type'],
-        duration: data.duration || data.estimated_read_time || 0,
-        views: data.views || data.plays || 0,
-        likes: data.likes || 0,
-        tags: data.tags || [],
-        createdAt: data.created_at,
-        isFavorited: data.is_favorited || false,
-        isBookmarked: data.is_bookmarked || false,
-        watchProgress: data.watch_progress || data.read_progress || data.listen_progress || 0,
-      };
-    } catch (error) {
-      console.error('Error fetching content details:', error);
-      throw error;
-    }
-  },
-
-  // Search Content
-  async searchContent(query: string, contentType?: string): Promise<ContentItem[]> {
-    try {
-      const searchParams = new URLSearchParams({ q: query });
-      if (contentType && contentType !== 'all') {
-        searchParams.append('type', contentType);
-      }
-
-      const data = await apiRequest(`/search/?${searchParams.toString()}`);
-      
-      // Transform search results
-      return data.results?.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        thumbnail: item.thumbnail,
-        type: item.content_type as ContentItem['type'],
-        duration: item.duration || item.estimated_read_time || 0,
-        views: item.views || item.plays || 0,
-        likes: item.likes || 0,
-        tags: item.tags || [],
-        createdAt: item.created_at,
-        isFavorited: item.is_favorited || false,
-        isBookmarked: item.is_bookmarked || false,
-      })) || [];
-    } catch (error) {
-      console.error('Error searching content:', error);
-      throw error;
-    }
-  },
-
-  // Like/Unlike Content
-  async likeContent(contentType: string, contentId: string): Promise<void> {
-    try {
-      const typeMap: Record<string, string> = {
-        'story': 'stories',
-        'film': 'media/films',
-        'content': 'media/content',
-        'podcast': 'podcasts',
-        'animation': 'animations',
-        'sneak-peek': 'sneak-peeks'
-      };
-
-      const endpoint = typeMap[contentType];
-      if (!endpoint) {
-        throw new Error('Invalid content type');
-      }
-
-      await apiRequest(`/${endpoint}/${contentId}/like/`, {
-        method: 'POST',
-      });
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      throw error;
-    }
-  },
-
-  // Get Recommendations
-  async getRecommendations(limit: number = 10): Promise<ContentItem[]> {
-    try {
-      const data = await apiRequest(`/user/recommendations/?limit=${limit}`);
-      
-      return data.recommendations?.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        thumbnail: item.thumbnail,
-        type: item.content_type as ContentItem['type'],
-        duration: item.duration || item.estimated_read_time || 0,
-        views: item.views || item.plays || 0,
-        likes: item.likes || 0,
-        tags: item.tags || [],
-        createdAt: item.created_at,
-        isFavorited: item.is_favorited || false,
-        isBookmarked: item.is_bookmarked || false,
-      })) || [];
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
-      return []; // Return empty array instead of throwing for recommendations
-    }
-  },
+  }
 };

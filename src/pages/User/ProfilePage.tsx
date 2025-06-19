@@ -1,18 +1,18 @@
 // src/pages/User/ProfilePage.tsx - Fixed to use existing auth system
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { User, Camera, Save, Edit3, X } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import { uiActions } from '../../store/reducers/uiReducers';
-import { secureUserStorage } from '../../utils/secureStorage';
-import { authAPI, profileAPI } from '../../services/api';
-
+import unifiedAuth from '../../utils/unifiedAuth';
 
 const ProfilePage: React.FC = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { userInfo } = useSelector((state: RootState) => state.user);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,15 +86,14 @@ const ProfilePage: React.FC = () => {
       formDataToSend.append('avatar', avatarFile);
     }
 
-    // Use the profileAPI service (make sure to import it)
-    const responseData = await profileAPI.updateProfile(formDataToSend);
-    
-    // Backend returns { message: '...', user: {...} }
-    const updatedUser = responseData.user || responseData;
-    secureUserStorage.setUser(updatedUser);
-    
-    // Update Redux store
-    dispatch(userActions.setUserInfo(updatedUser));
+const responseData = await unifiedAuth.profile.updateProfile(formDataToSend);
+const updatedUser = responseData.user || responseData.updatedUser || responseData.data || null;
+if (updatedUser) {
+  unifiedAuth.user.setUser(updatedUser);
+
+  // Update Redux store
+  dispatch(userActions.setUserInfo(updatedUser));
+}
     
     // Show success notification
     dispatch(uiActions.addNotification({
@@ -117,7 +116,7 @@ const ProfilePage: React.FC = () => {
         message: 'Your session has expired. Please login again.'
       }));
       // Clear tokens and redirect to login
-      authAPI.clearTokens();
+      unifiedAuth.clearTokens();
       navigate('/signin');
     } else {
       dispatch(uiActions.addNotification({

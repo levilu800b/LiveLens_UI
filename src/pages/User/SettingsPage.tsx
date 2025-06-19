@@ -17,10 +17,11 @@ import {
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
 import { uiActions } from '../../store/reducers/uiReducers';
-import { authAPI } from '../../services/auth'; // ✅ Use your existing auth system
-import { secureAuth } from '../../utils/secureAuth'; // ✅ Use your existing secure auth
+import secureAuth from '../../utils/secureAuth';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import unifiedAuth from '../../utils/unifiedAuth';
+
 
 const SettingsPage: React.FC = () => {
   const dispatch = useDispatch();

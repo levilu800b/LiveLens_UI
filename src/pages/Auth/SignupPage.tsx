@@ -1,8 +1,7 @@
 // src/pages/Auth/SignupPage.tsx
-import React, { use, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Mail, Lock, UserPlus, Chrome } from 'lucide-react';
-import { authAPI } from '../../services/auth'; // Adjust the import based on your API structure
 import { googleAuthService } from '../../services/googleAuth';
 import { userActions } from '../../store/reducers/userReducers';
 import { useDispatch } from 'react-redux';

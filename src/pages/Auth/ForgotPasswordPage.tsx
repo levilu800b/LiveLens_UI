@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Loader2, ArrowLeft, Check } from 'lucide-react';
-import { authAPI } from '../../services/auth';
+import unifiedAuth from '../../utils/unifiedAuth';
+
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -19,7 +20,7 @@ const ForgotPasswordPage = () => {
 
   try {
     // Make real API call to request password reset
-    await authAPI.requestPasswordReset(email);
+    await unifiedAuth.requestPasswordReset(email);
     
     setIsSubmitted(true);
     // Navigate to reset password page after a delay

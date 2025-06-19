@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Loader2, ArrowLeft, Key } from 'lucide-react';
-import { authAPI } from '../../services/auth';
+import unifiedAuth from '../../utils/unifiedAuth';
 
 const ResetPasswordPage = () => {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
@@ -79,7 +79,7 @@ const ResetPasswordPage = () => {
 
   try {
     // Make real API call to verify reset code
-    await authAPI.verifyPasswordResetCode(email, code);
+    await unifiedAuth.verifyPasswordResetCode(email, code);
     setStep(2); // Move to password reset step
   } catch (error: any) {
     console.error('Code verification error:', error);
@@ -121,7 +121,7 @@ const ResetPasswordPage = () => {
 
   try {
     // Make real API call to reset password
-    await authAPI.confirmPasswordReset(
+    await unifiedAuth.confirmPasswordReset(
       email,
       verificationCode.join(''),
       passwords.newPassword,

@@ -4,7 +4,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
-import { authAPI } from '../../services/auth';
 
 const VerifyEmailPage = () => {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);

@@ -3,6 +3,8 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../store';
+import unifiedAuth from '../../utils/unifiedAuth';
+
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,6 +25,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       </div>
     );
   }
+
+  if (!isLoading && !userInfo && !unifiedAuth.isLoggedIn()) {
+  return <Navigate to="/login" state={{ from: location }} replace />;
+}
 
   // Check authentication after loading is complete
   if (!userInfo) {

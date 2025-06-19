@@ -17,8 +17,10 @@ import {
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
-import { secureUserStorage } from '../../utils/secureStorage'; // Add this import
+import unifiedAuth from '../../utils/unifiedAuth';
 import { useAppDispatch } from '../../store';
+import { performCompleteLogout } from '../../utils/authUtils';
+
 
 
 const Header = () => {
@@ -66,20 +68,14 @@ const Header = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' }
   ];
 
-  const handleSignOut = () => {  
-  // Clear Redux state
-  dispatch(userActions.resetUserInfo());
-  
-  // Clear ONLY auth-related data
-  secureUserStorage.clearUser();
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('account');
-
-  
-  navigate('/');
-  setIsProfileDropdownOpen(false);
-};
+  const handleSignOut = () => {
+    performCompleteLogout().then(() => {
+      dispatch(userActions.logout());
+      navigate('/login');
+    }).catch((error) => {
+      console.error('Logout failed:', error);
+    });
+  }
 
   const handleMenuClick = () => {
     setIsProfileDropdownOpen(false);

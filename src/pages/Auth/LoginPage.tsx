@@ -4,9 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
-import { authAPI } from '../../services/auth';
 import { googleAuthService } from '../../services/googleAuth';
-import { secureUserStorage } from '../../utils/secureStorage';
+import unifiedAuth from '../../utils/unifiedAuth';
 import Logger from '../../utils/logger';
 
 
@@ -61,7 +60,7 @@ const LoginPage: React.FC = () => {
   setErrors({});
 
   try {
-    const response = await authAPI.login(formData.email, formData.password);
+const response = await unifiedAuth.auth.login(formData.email, formData.password);
     
     // REMOVE: localStorage.setItem('access_token', response.access_token);
     // REMOVE: localStorage.setItem('refresh_token', response.refresh_token);

@@ -4,7 +4,7 @@ import { userReducer } from './reducers/userReducers';
 import { contentReducer } from './reducers/contentReducers';
 import { adminReducer } from './reducers/adminReducers';
 import { uiReducer } from './reducers/uiReducers';
-import { secureUserStorage } from '../utils/secureStorage';
+import unifiedAuth from '../utils/unifiedAuth';
 import { useDispatch } from 'react-redux';
 
 
@@ -16,16 +16,16 @@ const migrateUserData = () => {
   try {    
 	const localStorageUser = localStorage.getItem('account');
 	
-	const secureStorageUser = secureUserStorage.getUser();
+const user = unifiedAuth.user.getUser();
     
-    if (localStorageUser && !secureStorageUser) {
+    if (localStorageUser && !user) {
       const userData = JSON.parse(localStorageUser);
       secureUserStorage.setUser(userData);
       localStorage.removeItem('account');
       return userData;
     }
     
-    return secureStorageUser;
+    return user;
   } catch (error) {
     console.error('Migration failed:', error);
     return null;
