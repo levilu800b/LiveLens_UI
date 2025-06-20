@@ -22,6 +22,9 @@ import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import unifiedAuth from '../../utils/unifiedAuth';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+
 
 const SettingsPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -60,56 +63,93 @@ const SettingsPage: React.FC = () => {
   ];
 
   const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  // Validate passwords match
+  if (passwordData.newPassword !== passwordData.confirmPassword) {
+    dispatch(uiActions.addNotification({
+      type: 'error',
+      message: 'New passwords do not match'
+    }));
+    return;
+  }
+
+  // Validate password length
+  if (passwordData.newPassword.length < 8) {
+    dispatch(uiActions.addNotification({
+      type: 'error',
+      message: 'New password must be at least 8 characters long'
+    }));
+    return;
+  }
+
+  // Validate current password is not empty
+  if (!passwordData.currentPassword) {
+    dispatch(uiActions.addNotification({
+      type: 'error',
+      message: 'Please enter your current password'
+    }));
+    return;
+  }
+
+  try {
+    setIsLoading(true);
     
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      dispatch(uiActions.addNotification({
-        type: 'error',
-        message: 'New passwords do not match'
-      }));
-      return;
-    }
+    // FIXED: Include all required fields for the API
+    const response = await fetch('/api/auth/change-password/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+      body: JSON.stringify({
+        old_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        new_password_confirm: passwordData.confirmPassword, // FIXED: Added missing field
+      }),
+    });
 
-    try {
-      setIsLoading(true);
+    if (!response.ok) {
+      const errorData = await response.json();
       
-      // Use fetch with your existing API structure
-      const response = await fetch('/api/auth/change-password/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        body: JSON.stringify({
-          old_password: passwordData.currentPassword,
-          new_password: passwordData.newPassword,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to change password');
+      // Handle specific validation errors
+      if (errorData.old_password) {
+        throw new Error(errorData.old_password[0] || 'Invalid current password');
+      } else if (errorData.new_password) {
+        throw new Error(errorData.new_password[0] || 'Invalid new password');
+      } else if (errorData.new_password_confirm) {
+        throw new Error(errorData.new_password_confirm[0] || 'Password confirmation error');
+      } else if (errorData.non_field_errors) {
+        throw new Error(errorData.non_field_errors[0] || 'Passwords do not match');
+      } else {
+        throw new Error(errorData.message || errorData.error || 'Failed to change password');
       }
-      
-      dispatch(uiActions.addNotification({
-        type: 'success',
-        message: 'Password changed successfully'
-      }));
-      
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-    } catch (error: any) {
-      dispatch(uiActions.addNotification({
-        type: 'error',
-        message: error.message || 'Failed to change password'
-      }));
-    } finally {
-      setIsLoading(false);
     }
-  };
+    
+    const responseData = await response.json();
+    
+    dispatch(uiActions.addNotification({
+      type: 'success',
+      message: responseData.message || 'Password changed successfully'
+    }));
+    
+    // Clear the form after successful change
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    
+  } catch (error: any) {
+    console.error('Password change error:', error);
+    dispatch(uiActions.addNotification({
+      type: 'error',
+      message: error.message || 'Failed to change password. Please try again.'
+    }));
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handlePreferencesUpdate = async () => {
     try {
@@ -119,7 +159,7 @@ const SettingsPage: React.FC = () => {
       dispatch(uiActions.setTheme(preferences.darkMode ? 'dark' : 'light'));
       
       // Save preferences to backend
-      const response = await fetch('/api/auth/preferences/', {
+const response = await fetch(`${API_BASE_URL}/auth/preferences/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +204,7 @@ const SettingsPage: React.FC = () => {
     try {
       setIsLoading(true);
       
-      const response = await fetch('/api/auth/delete-account/', {
+const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
