@@ -1,4 +1,4 @@
-// src/pages/User/ProfilePage.tsx - Fixed to use existing auth system
+// src/pages/User/ProfilePage.tsx - Fixed to use existing auth system with date handling fix
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -31,12 +31,17 @@ const ProfilePage: React.FC = () => {
   // Initialize form data when userInfo changes
   useEffect(() => {
     if (userInfo) {
+      // Convert backend gender values to frontend display values
+      const displayGender = userInfo.gender === 'M' ? 'Male' : 
+                           userInfo.gender === 'F' ? 'Female' : 
+                           userInfo.gender || '';
+      
       setFormData({
         firstName: userInfo.firstName || '',
         lastName: userInfo.lastName || '',
         email: userInfo.email || '',
         phoneNumber: userInfo.phoneNumber || '',
-        gender: userInfo.gender || '',
+        gender: displayGender,
         country: userInfo.country || '',
         dateOfBirth: userInfo.dateOfBirth || '',
       });
@@ -63,81 +68,119 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
-  try {
-    if (!userInfo) {
-      throw new Error('User not found. Please login again.');
-    }
+    try {
+      if (!userInfo) {
+        throw new Error('User not found. Please login again.');
+      }
 
-    // Create FormData for file upload
-    const formDataToSend = new FormData();
-    
-    // Send data with frontend field names - backend serializer handles conversion
-    formDataToSend.append('firstName', formData.firstName);
-    formDataToSend.append('lastName', formData.lastName);
-    formDataToSend.append('phoneNumber', formData.phoneNumber);
-    formDataToSend.append('gender', formData.gender);
-    formDataToSend.append('country', formData.country);
-    formDataToSend.append('dateOfBirth', formData.dateOfBirth);
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Send data with frontend field names - backend serializer handles conversion
+      formDataToSend.append('firstName', formData.firstName.trim());
+      formDataToSend.append('lastName', formData.lastName.trim());
+      formDataToSend.append('phoneNumber', formData.phoneNumber.trim());
+      formDataToSend.append('gender', formData.gender);
+      formDataToSend.append('country', formData.country.trim());
+      
+      // ✅ CRITICAL FIX: Only send dateOfBirth if it has a valid value
+      if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
+        formDataToSend.append('dateOfBirth', formData.dateOfBirth.trim());
+        console.log('📅 Date of birth included:', formData.dateOfBirth.trim());
+      } else {
+        // Don't send empty date field at all, let backend handle it as null
+        console.log('📅 Date of birth empty, not sending field');
+      }
 
-    if (avatarFile) {
-      formDataToSend.append('avatar', avatarFile);
-    }
+      if (avatarFile) {
+        formDataToSend.append('avatar', avatarFile);
+      }
 
-const responseData = await unifiedAuth.profile.updateProfile(formDataToSend);
-const updatedUser = responseData.user || responseData.updatedUser || responseData.data || null;
-if (updatedUser) {
-  unifiedAuth.user.setUser(updatedUser);
+      // Log what we're sending for debugging
+      console.log('📤 Profile update - sending data:');
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`  ${key}:`, typeof value === 'string' ? value : '[File]');
+      }
 
-  // Update Redux store
-  dispatch(userActions.setUserInfo(updatedUser));
-}
-    
-    // Show success notification
-    dispatch(uiActions.addNotification({
-      type: 'success',
-      message: responseData.message || 'Profile updated successfully!'
-    }));
-    
-    // Reset form state
-    setIsEditing(false);
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    
-  } catch (error: any) {
-    console.error('Profile update error:', error);
-    
-    // If authentication error, redirect to login
-    if (error.message.includes('authentication') || error.message.includes('login') || error.message.includes('session has expired')) {
+      const responseData = await unifiedAuth.profile.updateProfile(formDataToSend);
+      const updatedUser = responseData.user || responseData.updatedUser || responseData.data || null;
+      
+      console.log('📥 Received updated user data:', updatedUser);
+      
+      if (updatedUser) {
+        unifiedAuth.user.setUser(updatedUser);
+        // Update Redux store
+        dispatch(userActions.setUserInfo(updatedUser));
+      }
+      
+      // Show success notification
       dispatch(uiActions.addNotification({
-        type: 'error',
-        message: 'Your session has expired. Please login again.'
+        type: 'success',
+        message: responseData.message || 'Profile updated successfully!'
       }));
-      // Clear tokens and redirect to login
-      unifiedAuth.clearTokens();
-      navigate('/signin');
-    } else {
-      dispatch(uiActions.addNotification({
-        type: 'error',
-        message: error.message || 'Failed to update profile. Please try again.'
-      }));
+      
+      // Reset form state
+      setIsEditing(false);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      
+      console.log('✅ Profile update successful');
+      
+    } catch (error: any) {
+      console.error('❌ Profile update error:', error);
+      
+      // If authentication error, redirect to login
+      if (error.message.includes('authentication') || 
+          error.message.includes('login') || 
+          error.message.includes('session has expired') ||
+          error.message.includes('expired')) {
+        dispatch(uiActions.addNotification({
+          type: 'error',
+          message: 'Your session has expired. Please login again.'
+        }));
+        // Clear tokens and redirect to login
+        unifiedAuth.clearTokens();
+        unifiedAuth.user.clearUser();
+        dispatch(userActions.clearUserInfo());
+        navigate('/login');
+      } else {
+        // Provide better error messages for validation issues
+        let errorMessage = error.message || 'Failed to update profile. Please try again.';
+        
+        // Handle specific validation errors
+        if (error.message.includes('Date has wrong format')) {
+          errorMessage = 'Please enter a valid date of birth or leave it empty.';
+        } else if (error.message.includes('Validation errors')) {
+          errorMessage = error.message; // Use the detailed validation message
+        }
+        
+        dispatch(uiActions.addNotification({
+          type: 'error',
+          message: errorMessage
+        }));
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const cancelEdit = () => {
     // Reset form data to current user info
     if (userInfo) {
+      // Convert backend gender values to frontend display values
+      const displayGender = userInfo.gender === 'M' ? 'Male' : 
+                           userInfo.gender === 'F' ? 'Female' : 
+                           userInfo.gender || '';
+      
       setFormData({
         firstName: userInfo.firstName || '',
         lastName: userInfo.lastName || '',
         email: userInfo.email || '',
         phoneNumber: userInfo.phoneNumber || '',
-        gender: userInfo.gender || '',
+        gender: displayGender,
         country: userInfo.country || '',
         dateOfBirth: userInfo.dateOfBirth || '',
       });
@@ -232,6 +275,12 @@ if (updatedUser) {
                       Admin
                     </span>
                   )}
+                  {/* Google account indicator */}
+                  {userInfo.email?.includes('@gmail.com') && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
+                      Google Account
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -299,22 +348,23 @@ if (updatedUser) {
                 </div>
 
                 {/* Gender */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Gender
-  </label>
-  <select
-    name="gender"
-    value={formData.gender}
-    onChange={handleInputChange}
-    disabled={!isEditing}
-    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-  >
-    <option value="">Select gender</option>
-    <option value="M">Male</option>
-    <option value="F">Female</option>
-  </select>
-</div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  {/* Backend stores M/F, frontend displays Male/Female */}
+                </div>
 
                 {/* Country */}
                 <div>
@@ -345,6 +395,9 @@ if (updatedUser) {
                     disabled={!isEditing}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Leave empty if you prefer not to provide your date of birth
+                  </p>
                 </div>
               </div>
 

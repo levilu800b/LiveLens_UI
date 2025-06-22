@@ -1,115 +1,102 @@
-// src/utils/unifiedAuth.ts - SINGLE SOURCE OF TRUTH FOR AUTHENTICATION
-import type { User } from '../types';
-
+// src/utils/unifiedAuth.ts - FIXED VERSION with Google Signup Support
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// Storage Keys - Single source of truth
-const STORAGE_KEYS = {
-  ACCESS_TOKEN: 'access_token',
-  REFRESH_TOKEN: 'refresh_token',
-  USER_DATA: 'account',
-} as const;
 
 // ===== TOKEN MANAGEMENT =====
 export const tokenManager = {
   getAccessToken: (): string | null => {
-    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    return localStorage.getItem('access_token');
   },
 
   getRefreshToken: (): string | null => {
-    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    return localStorage.getItem('refresh_token');
   },
 
   setTokens: (accessToken: string, refreshToken: string): void => {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
   },
 
   clearTokens: (): void => {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
   },
 
   isTokenExpired: (token: string): boolean => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 < Date.now();
+      return Date.now() >= payload.exp * 1000;
     } catch {
       return true;
     }
-  },
-
-  isAuthenticated: (): boolean => {
-    const token = tokenManager.getAccessToken();
-    const user = userManager.getUser();
-    return !!(token && user && !tokenManager.isTokenExpired(token));
   }
 };
 
-// ===== USER DATA MANAGEMENT =====
+// ===== USER MANAGEMENT =====
 export const userManager = {
-  getUser: (): User | null => {
-    const userJson = localStorage.getItem(STORAGE_KEYS.USER_DATA);
-    if (!userJson) return null;
-    
-    try {
-      return JSON.parse(userJson);
-    } catch {
-      return null;
-    }
+  getUser: () => {
+    const userData = localStorage.getItem('account');
+    return userData ? JSON.parse(userData) : null;
   },
 
-  setUser: (user: User): void => {
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
+  setUser: (user: any) => {
+    localStorage.setItem('account', JSON.stringify(user));
   },
 
-  clearUser: (): void => {
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+  clearUser: () => {
+    localStorage.removeItem('account');
   }
 };
 
-// ===== HTTP REQUEST HELPER =====
-const makeAuthenticatedRequest = async (
-  endpoint: string, 
-  options: RequestInit = {}
-): Promise<any> => {
+// ===== HTTP CLIENT =====
+const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}): Promise<any> => {
   const token = tokenManager.getAccessToken();
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+  if (token && !tokenManager.isTokenExpired(token)) {
+    options.headers = {
       ...options.headers,
-    },
-  });
+      'Authorization': `Bearer ${token}`,
+    };
+  }
 
-  // Handle 401 - Try to refresh token
-  if (response.status === 401 && token) {
-    try {
-      await authService.refreshToken();
-      const newToken = tokenManager.getAccessToken();
-      
-      if (newToken) {
-        const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${newToken}`,
-            ...options.headers,
-          },
+  const response = await fetch(url, options);
+
+  // Handle token expiration
+  if (response.status === 401) {
+    const refreshToken = tokenManager.getRefreshToken();
+    if (refreshToken) {
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: refreshToken }),
         });
-        
-        if (retryResponse.ok) {
-          return retryResponse.json();
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          tokenManager.setTokens(data.access, refreshToken);
+          
+          // Retry original request with new token
+          options.headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${data.access}`,
+          };
+          return fetch(url, options).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          });
         }
+      } catch (error) {
+        console.error('Token refresh failed:', error);
       }
-    } catch (refreshError) {
-      console.error('Token refresh failed:', refreshError);
-      authService.logout();
-      throw new Error('Your session has expired. Please login again.');
     }
+    
+    // Clear invalid tokens and redirect
+    tokenManager.clearTokens();
+    userManager.clearUser();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+    throw new Error('Session expired. Please login again.');
   }
 
   if (!response.ok) {
@@ -176,6 +163,39 @@ export const authService = {
     return data;
   },
 
+  // Google Signup - NEW METHOD
+  googleSignup: async (googleData: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    google_id: string;
+    avatar_url?: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/auth/google-signup/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(googleData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Google signup failed');
+    }
+
+    const data = await response.json();
+    
+    // Store tokens and user data
+    if (data.access_token && data.refresh_token) {
+      tokenManager.setTokens(data.access_token, data.refresh_token);
+    }
+    
+    if (data.user) {
+      userManager.setUser(data.user);
+    }
+
+    return data;
+  },
+
   // Register
   register: async (userData: {
     first_name: string;
@@ -183,10 +203,17 @@ export const authService = {
     email: string;
     password: string;
   }) => {
+    // Generate username from email
+    const username = userData.email.split('@')[0];
+    
     const response = await fetch(`${API_BASE_URL}/auth/register/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        ...userData,
+        username,
+        password_confirm: userData.password
+      }),
     });
 
     if (!response.ok) {
@@ -209,11 +236,11 @@ export const authService = {
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
       } catch (error) {
-        console.warn('Logout API call failed:', error);
+        console.error('Logout API call failed:', error);
       }
     }
-    
-    // Clear all auth data
+
+    // Clear local storage regardless of API call success
     tokenManager.clearTokens();
     userManager.clearUser();
   },
@@ -221,7 +248,6 @@ export const authService = {
   // Refresh Token
   refreshToken: async () => {
     const refreshToken = tokenManager.getRefreshToken();
-    
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -233,102 +259,64 @@ export const authService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Token refresh failed');
+      throw new Error('Token refresh failed');
     }
 
     const data = await response.json();
-    
-    // Update access token
-    if (data.access) {
-      tokenManager.setTokens(data.access, refreshToken);
-    }
-
+    tokenManager.setTokens(data.access, refreshToken);
     return data;
   }
 };
 
 // ===== PROFILE SERVICE =====
 export const profileService = {
-  // Get Profile
   getProfile: async () => {
-    return makeAuthenticatedRequest('/auth/profile/');
+    return makeAuthenticatedRequest(`${API_BASE_URL}/auth/profile/`);
   },
 
-  // Update Profile (supports FormData for file uploads)
-  updateProfile: async (formData: FormData) => {
-    const token = tokenManager.getAccessToken();
-    if (!token) {
-      throw new Error('No authentication token found. Please login again.');
+  updateProfile: async (profileData: any) => {
+    if (profileData instanceof FormData) {
+      // Handle file uploads
+      return makeAuthenticatedRequest(`${API_BASE_URL}/auth/profile/`, {
+        method: 'PUT',
+        body: profileData,
+      });
+    } else {
+      // Handle JSON data
+      return makeAuthenticatedRequest(`${API_BASE_URL}/auth/profile/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData),
+      });
     }
-
-    const response = await fetch(`${API_BASE_URL}/auth/profile/`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Don't set Content-Type for FormData
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      // Handle 401 with token refresh
-      if (response.status === 401) {
-        try {
-          await authService.refreshToken();
-          const newToken = tokenManager.getAccessToken();
-          
-          if (newToken) {
-            const retryResponse = await fetch(`${API_BASE_URL}/auth/profile/`, {
-              method: 'PUT',
-              headers: { Authorization: `Bearer ${newToken}` },
-              body: formData,
-            });
-            
-            if (retryResponse.ok) {
-              return retryResponse.json();
-            }
-          }
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-        }
-        
-        throw new Error('Your session has expired. Please login again.');
-      }
-      
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.detail || 'Failed to update profile');
-    }
-
-    return response.json();
   }
 };
 
-// ===== CONTENT SERVICE HELPER =====
-export const contentService = {
-  // Make authenticated requests for content
-  request: async (endpoint: string, options: RequestInit = {}) => {
-    return makeAuthenticatedRequest(endpoint, options);
-  }
-};
-
-// ===== DEFAULT EXPORT - UNIFIED AUTH =====
-export default {
+// ===== MAIN UNIFIED AUTH OBJECT =====
+const unifiedAuth = {
   // Token management
-  ...tokenManager,
+  getAccessToken: tokenManager.getAccessToken,
+  getRefreshToken: tokenManager.getRefreshToken,
+  setTokens: tokenManager.setTokens,
+  clearTokens: tokenManager.clearTokens,
   
-  // User management
-  user: userManager,
-  
-  // Auth operations
+  // Authentication status
+  isAuthenticated: (): boolean => {
+    const token = tokenManager.getAccessToken();
+    return token !== null && !tokenManager.isTokenExpired(token);
+  },
+
+  isLoggedIn: (): boolean => {
+    return unifiedAuth.isAuthenticated() && userManager.getUser() !== null;
+  },
+
+  // Services
   auth: authService,
-  
-  // Profile operations
   profile: profileService,
-  
-  // Content requests
-  content: contentService,
-  
-  // Quick auth check
-  isLoggedIn: tokenManager.isAuthenticated,
+  user: userManager,
+
+  // HTTP client for authenticated requests
+  request: makeAuthenticatedRequest,
 };
+
+export default unifiedAuth;

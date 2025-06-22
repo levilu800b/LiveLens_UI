@@ -1,4 +1,4 @@
-// src/pages/Auth/LoginPage.tsx
+// src/pages/Auth/LoginPage.tsx - FIXED VERSION
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -6,8 +6,6 @@ import { Eye, EyeOff, Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
 import { googleAuthService } from '../../services/googleAuth';
 import unifiedAuth from '../../utils/unifiedAuth';
-import Logger from '../../utils/logger';
-
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,8 +19,6 @@ const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-
-  
 
   const from = location.state?.from?.pathname || '/';
   const successMessage = location.state?.message;
@@ -53,58 +49,65 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  setIsLoading(true);
-  setErrors({});
-
-  try {
-const response = await unifiedAuth.auth.login(formData.email, formData.password);
-    
-    // REMOVE: localStorage.setItem('access_token', response.access_token);
-    // REMOVE: localStorage.setItem('refresh_token', response.refresh_token);
-    // REMOVE: localStorage.setItem('account', JSON.stringify(response.user));
-    
-    // The new auth.login() already stores tokens securely!
-    // Just update Redux:
-    dispatch(userActions.setUserInfo(response.user));
-    navigate(from, { replace: true });
-  } catch (error: any) {
-    setErrors({ submit: error.message || 'Login failed. Please try again.' });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-  const handleGoogleSignIn = async () => {
-  try {
     setIsLoading(true);
     setErrors({});
 
-    const googleUser = await googleAuthService.signIn();
-    const response = await authAPI.googleLogin({
-      email: googleUser.email,
-      google_id: googleUser.google_id
-    });
-    
-    // REMOVE ALL localStorage calls - the new auth.googleLogin() handles storage!
-    // Just update Redux:
-    dispatch(userActions.setUserInfo(response.user));
-    navigate(from, { replace: true });
-    
-  } catch (error: any) {
-    setErrors({ 
-      submit: error.message || 'Google sign-in failed. Please try again.' 
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      const response = await unifiedAuth.auth.login(formData.email, formData.password);
+      
+      // Update Redux store
+      dispatch(userActions.setUserInfo(response.user));
+      navigate(from, { replace: true });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setErrors({ submit: error.message || 'Login failed. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setErrors({});
+
+      // Check if Google Client ID is configured
+      if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+        throw new Error('Google OAuth not configured. Please add VITE_GOOGLE_CLIENT_ID to your environment variables.');
+      }
+
+      // Get Google user data
+      console.log('Starting Google sign-in...');
+      const googleUser = await googleAuthService.signIn();
+      console.log('Google user data received:', { email: googleUser.email });
+
+      // Call the unified auth Google login
+      const response = await unifiedAuth.auth.googleLogin({
+        email: googleUser.email,
+        google_id: googleUser.google_id
+      });
+
+      console.log('Google login successful');
+      
+      // Update Redux store
+      dispatch(userActions.setUserInfo(response.user));
+      navigate(from, { replace: true });
+      
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      setErrors({ 
+        submit: error.message || 'Google sign-in failed. Please try again.' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -141,20 +144,18 @@ const response = await unifiedAuth.auth.login(formData.email, formData.password)
 
         {/* Login Form */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
-        <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Error Message */}
             {errors.submit && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                 <p className="text-red-400 text-sm">{errors.submit}</p>
               </div>
             )}
-          
 
-          <div className="space-y-4">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
+                Email address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -168,13 +169,9 @@ const response = await unifiedAuth.auth.login(formData.email, formData.password)
                   value={formData.email}
                   onChange={handleInputChange}
                   className={`
-                    block w-full pl-10 pr-3 py-3 border rounded-lg
-                    bg-slate-800/50 text-white placeholder-gray-400
-                    focus:outline-none focus:ring-2 transition-colors
-                    ${errors.email 
-                      ? 'border-red-500 focus:ring-red-500' 
-                      : 'border-gray-600 focus:ring-purple-500 focus:border-purple-500'
-                    }
+                    block w-full pl-10 pr-3 py-3 border rounded-lg bg-slate-800/50 text-white
+                    placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500
+                    ${errors.email ? 'border-red-500' : 'border-gray-600 focus:border-purple-500'}
                   `}
                   placeholder="Enter your email"
                 />
@@ -201,13 +198,9 @@ const response = await unifiedAuth.auth.login(formData.email, formData.password)
                   value={formData.password}
                   onChange={handleInputChange}
                   className={`
-                    block w-full pl-10 pr-10 py-3 border rounded-lg
-                    bg-slate-800/50 text-white placeholder-gray-400
-                    focus:outline-none focus:ring-2 transition-colors
-                    ${errors.password 
-                      ? 'border-red-500 focus:ring-red-500' 
-                      : 'border-gray-600 focus:ring-purple-500 focus:border-purple-500'
-                    }
+                    block w-full pl-10 pr-10 py-3 border rounded-lg bg-slate-800/50 text-white
+                    placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500
+                    ${errors.password ? 'border-red-500' : 'border-gray-600 focus:border-purple-500'}
                   `}
                   placeholder="Enter your password"
                 />
@@ -217,9 +210,9 @@ const response = await unifiedAuth.auth.login(formData.email, formData.password)
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-white" />
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-white" />
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-300" />
                   )}
                 </button>
               </div>
@@ -227,75 +220,62 @@ const response = await unifiedAuth.auth.login(formData.email, formData.password)
                 <p className="mt-1 text-sm text-red-400">{errors.password}</p>
               )}
             </div>
-          </div>
 
-          {/* Forgot Password Link */}
-          <div className="flex items-center justify-end">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+
+            {/* Sign In Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center"
             >
-              Forgot your password?
-            </Link>
-          </div>
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5 mr-2" />
+                  Sign In
+                </>
+              )}
+            </button>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="
-              group relative w-full flex justify-center py-3 px-4 border border-transparent
-              text-sm font-medium rounded-lg text-white 
-              bg-gradient-to-r from-purple-600 to-pink-600
-              hover:from-purple-700 hover:to-pink-700
-              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-all duration-200 transform hover:scale-105
-            "
-          >
-            {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <LogIn className="w-5 h-5 mr-2" />
-                Sign In
-              </>
-            )}
-          </button>
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-slate-900 text-gray-400">Or continue with</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-slate-900 text-gray-400">Or continue with</span>
-            </div>
-          </div>
 
-          {/* Google Sign In */}
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            className="
-              w-full flex justify-center items-center py-3 px-4 border border-gray-600
-              rounded-lg text-white bg-slate-800/50 hover:bg-slate-700/50
-              transition-colors duration-200
-            "
-          >
-            <Chrome className="w-5 h-5 mr-2" />
-            Sign in with Google
-          </button>
+            {/* Google Sign In */}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-600 rounded-lg text-white bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Chrome className="w-5 h-5 mr-2" />
+              Sign in with Google
+            </button>
 
-          {/* Sign Up Link */}
-          <p className="text-center text-sm text-gray-400">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-medium text-purple-400 hover:text-purple-300 transition-colors">
-              Sign up here
-            </Link>
-          </p>
-        </form>
-        </div>
+            {/* Sign Up Link */}
+            <p className="text-center text-sm text-gray-400">
+              Don't have an account?{' '}
+              <Link to="/signup" className="font-medium text-purple-400 hover:text-purple-300 transition-colors">
+                Sign up here
+              </Link>
+            </p>
+          </form>
         </div>
       </div>
     </div>
