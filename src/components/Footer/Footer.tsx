@@ -1,3 +1,5 @@
+// src/components/Footer/Footer.tsx (Updated version with newsletter functionality)
+import React, { useState } from 'react';
 import { 
   Instagram, 
   Twitter, 
@@ -7,10 +9,43 @@ import {
   Phone, 
   MapPin,
   Heart,
-  ExternalLink
+  ExternalLink,
+  CheckCircle,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 
+// Newsletter subscription service
+const newsletterService = {
+  subscribe: async (email: string) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/email-notifications/newsletter/subscribe/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        source: 'footer'
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to subscribe');
+    }
+
+    return response.json();
+  }
+};
+
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{
+    type: 'success' | 'error' | null;
+    text: string;
+  }>({ type: null, text: '' });
+
   const socialLinks = [
     { icon: Instagram, href: '#', label: 'Instagram' },
     { icon: Twitter, href: '#', label: 'Twitter' },
@@ -43,6 +78,51 @@ const Footer = () => {
     'DMCA',
     'Community Guidelines'
   ];
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      setMessage({ type: 'error', text: 'Please enter your email address' });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setMessage({ type: 'error', text: 'Please enter a valid email address' });
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage({ type: null, text: '' });
+
+    try {
+      const result = await newsletterService.subscribe(email);
+      setMessage({ 
+        type: 'success', 
+        text: result.message || 'Successfully subscribed! Please check your email to confirm.' 
+      });
+      setEmail(''); // Clear the input
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to subscribe. Please try again.' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Clear message after 5 seconds
+  React.useEffect(() => {
+    if (message.type) {
+      const timer = setTimeout(() => {
+        setMessage({ type: null, text: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   return (
     <footer className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white">
@@ -158,15 +238,45 @@ const Footer = () => {
               <h3 className="text-lg font-semibold text-white mb-1">Stay Updated</h3>
               <p className="text-gray-300 text-sm">Get the latest content delivered to your inbox.</p>
             </div>
-            <div className="flex w-full md:w-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="bg-slate-700/50 border border-white/20 rounded-l-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent flex-1 md:w-64"
-              />
-              <button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-6 py-2 rounded-r-full text-white font-medium transition-all duration-200 hover:scale-105">
-                Subscribe
-              </button>
+            
+            <div className="w-full md:w-auto">
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col">
+                <div className="flex mb-2">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    className="bg-slate-700/50 border border-white/20 rounded-l-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent flex-1 md:w-64 disabled:opacity-50"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-6 py-2 rounded-r-full text-white font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Subscribe'
+                    )}
+                  </button>
+                </div>
+                
+                {/* Message display */}
+                {message.type && (
+                  <div className={`flex items-center text-sm mt-2 ${
+                    message.type === 'success' ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {message.type === 'success' ? (
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                    )}
+                    {message.text}
+                  </div>
+                )}
+              </form>
             </div>
           </div>
         </div>
