@@ -15,6 +15,9 @@ import VerifyEmailPage from './pages/Auth/VerifyEmailPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import ContentManagement from './pages/Admin/ContentManagement';
+import UserManagement from './pages/Admin/UserManagement';
+import Analytics from './pages/Admin/Analytics';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import { useAuthInit } from './hooks/useAuthInit';
@@ -131,6 +134,26 @@ function App() {
         <Route path="/admin" element={
           <AdminRoute>
             <AdminDashboard />
+          </AdminRoute>
+        } />
+        <Route path="/admin/dashboard" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
+        <Route path="/admin/content" element={
+          <AdminRoute>
+            <ContentManagement />
+          </AdminRoute>
+        } />
+        <Route path="/admin/users" element={
+          <AdminRoute>
+            <UserManagement />
+          </AdminRoute>
+        } />
+        <Route path="/admin/analytics" element={
+          <AdminRoute>
+            <Analytics />
           </AdminRoute>
         } />
         <Route path="/admin/add-film" element={
