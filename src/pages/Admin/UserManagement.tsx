@@ -16,7 +16,7 @@ import {
 
 import adminService from '../../services/adminService';
 import type { User as UserType } from '../../services/adminService';
-import AdminNavigation from '../../components/Admin/AdminNavigation';
+import AdminLayout from '../../components/Admin/AdminLayout';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
@@ -156,20 +156,20 @@ const UserManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavigation />
-      
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="mt-2 text-gray-600">Manage all platform users and their permissions</p>
+    <AdminLayout>
+      <div className="flex-1 overflow-y-auto">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="py-6">
+              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+              <p className="mt-2 text-gray-600">Manage all platform users and their permissions</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Content Area */}
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -351,8 +351,9 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

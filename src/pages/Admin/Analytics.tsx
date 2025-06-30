@@ -13,7 +13,7 @@ import BarChart from '../../components/Admin/charts/BarChart';
 import PieChart from '../../components/Admin/charts/PieChart';
 import LineChart from '../../components/Admin/charts/LineChart';
 import MetricCard from '../../components/Admin/MetricCard';
-import AdminNavigation from '../../components/Admin/AdminNavigation';
+import AdminLayout from '../../components/Admin/AdminLayout';
 import DateRangePicker from '../../components/Admin/DateRangePicker';
 import ExportButton from '../../components/Admin/ExportButton';
 import adminService from '../../services/adminService';
@@ -177,27 +177,26 @@ const Analytics: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavigation />
-      
-      {/* Enhanced Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4 sm:py-6">
-            <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-                <p className="mt-2 text-sm sm:text-base text-gray-600">Comprehensive platform analytics and insights</p>
-              </div>
-              
-              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-                <div className="w-full sm:w-auto">
-                  <DateRangePicker 
-                    onDateRangeChange={handleDateRangeChange}
-                    initialRange={dateRange}
-                  />
+    <AdminLayout>
+      <div className="flex-1 overflow-y-auto">
+        {/* Enhanced Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="py-6">
+              <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                  <p className="mt-2 text-base text-gray-600">Comprehensive platform analytics and insights</p>
                 </div>
-                <div className="flex space-x-2 sm:space-x-4">
+                
+                <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+                  <div className="w-full sm:w-auto">
+                    <DateRangePicker 
+                      onDateRangeChange={handleDateRangeChange}
+                      initialRange={dateRange}
+                    />
+                  </div>
+                  <div className="flex space-x-2 sm:space-x-4">
                   <button
                     onClick={handleRefresh}
                     disabled={refreshing}
@@ -218,9 +217,9 @@ const Analytics: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Content Area */}
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Key Performance Indicators */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
@@ -342,8 +341,10 @@ const Analytics: React.FC = () => {
             )}
           </div>
         </div>
+        </div>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

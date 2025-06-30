@@ -37,26 +37,26 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-200">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wide truncate">
+    <div className="bg-white rounded-lg shadow-md p-4 lg:p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0 pr-4">
+          <p className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-2">
             {title}
           </p>
-          <p className="mt-1 sm:mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+          <p className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
             {typeof value === 'number' ? value.toLocaleString() : value}
           </p>
           {change && (
-            <div className="mt-1 sm:mt-2">
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${changeClasses[changeType]}`}>
+            <div className="mt-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${changeClasses[changeType]}`}>
                 {changeType === 'positive' && '+'}
                 {change}
               </span>
             </div>
           )}
         </div>
-        <div className={`p-2 sm:p-2.5 lg:p-3 rounded-full ${getIconBgClass()} flex-shrink-0 ml-2 sm:ml-3`}>
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+        <div className={`p-3 rounded-full ${getIconBgClass()} flex-shrink-0`}>
+          <Icon className="h-6 w-6 text-white" />
         </div>
       </div>
     </div>

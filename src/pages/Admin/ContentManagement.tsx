@@ -16,7 +16,7 @@ import {
 
 import adminService from '../../services/adminService';
 import type { ContentItem } from '../../services/adminService';
-import AdminNavigation from '../../components/Admin/AdminNavigation';
+import AdminLayout from '../../components/Admin/AdminLayout';
 import BulkActionsBar from '../../components/Admin/BulkActionsBar';
 import ExportButton from '../../components/Admin/ExportButton';
 import { commonBulkActions } from '../../constants/bulkActions';
@@ -157,31 +157,35 @@ const ContentManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <AdminLayout>
+      <div className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Content Management</h1>
-              <p className="mt-2 text-sm sm:text-base text-gray-600">
-                Manage all platform content ({totalCount.toLocaleString()} total items)
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <ExportButton 
-                data={exportData}
-                filename="livelens-content"
-                headers={['content_id', 'content_type', 'title', 'author', 'status', 'views', 'likes', 'comments', 'created_at']}
-              />
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="py-6">
+              <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
+                  <p className="mt-2 text-base text-gray-600">
+                    Manage all platform content ({totalCount.toLocaleString()} total items)
+                  </p>
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <ExportButton 
+                    data={exportData}
+                    filename="livelens-content"
+                    headers={['content_id', 'content_type', 'title', 'author', 'status', 'views', 'likes', 'comments', 'created_at']}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {error && (
+        {/* Content Area */}
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
               <AlertTriangle className="h-5 w-5 text-red-400" />
@@ -463,8 +467,9 @@ const ContentManagement: React.FC = () => {
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 
