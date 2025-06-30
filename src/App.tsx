@@ -18,7 +18,6 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import { useAuthInit } from './hooks/useAuthInit';
-import AddStoryPage from './pages/Admin/AddStoryPage';
 
 // Import the actual implemented user pages instead of placeholders
 import ProfilePage from './pages/User/ProfilePage';
@@ -132,11 +131,6 @@ function App() {
         <Route path="/admin" element={
           <AdminRoute>
             <AdminDashboard />
-          </AdminRoute>
-        } />
-        <Route path="/admin/add-story" element={
-          <AdminRoute>
-            <AddStoryPage />
           </AdminRoute>
         } />
         <Route path="/admin/add-film" element={
