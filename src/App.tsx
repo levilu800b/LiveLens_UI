@@ -181,6 +181,7 @@ function App() {
             <AddSneakPeekPage />
           </AdminRoute>
         } />
+        {/* Additional Admin Routes */}
       </Routes>
     </div>
   );

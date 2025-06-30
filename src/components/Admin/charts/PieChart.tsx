@@ -22,21 +22,30 @@ const PieChart: React.FC<PieChartProps> = ({
   title = "Chart" 
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!data || data.length === 0) return;
 
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Get responsive dimensions
+    const containerWidth = container.offsetWidth;
+    const responsiveWidth = Math.min(width, containerWidth);
+    const responsiveHeight = Math.min(height, responsiveWidth * 0.8); // Maintain aspect ratio
+
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove(); // Clear previous chart
 
-    const margin = 40;
-    const radius = Math.min(width, height) / 2 - margin;
+    const margin = Math.min(40, responsiveWidth * 0.1);
+    const radius = Math.min(responsiveWidth, responsiveHeight) / 2 - margin;
 
     const g = svg
-      .attr("width", width)
-      .attr("height", height)
+      .attr("width", responsiveWidth)
+      .attr("height", responsiveHeight)
       .append("g")
-      .attr("transform", `translate(${width / 2}, ${height / 2})`);
+      .attr("transform", `translate(${responsiveWidth / 2}, ${responsiveHeight / 2})`);
 
     // Color scale
     const colorScale = d3.scaleOrdinal()
@@ -120,9 +129,11 @@ const PieChart: React.FC<PieChartProps> = ({
   }, [data, width, height]);
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-md">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
-      <svg ref={svgRef} className="mx-auto"></svg>
+    <div ref={containerRef} className="bg-white rounded-lg p-3 sm:p-4 shadow-md w-full">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 text-center">{title}</h3>
+      <div className="flex justify-center">
+        <svg ref={svgRef} className="max-w-full h-auto"></svg>
+      </div>
     </div>
   );
 };

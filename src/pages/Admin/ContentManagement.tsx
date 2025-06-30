@@ -11,18 +11,21 @@ import {
   Trash2,
   Edit,
   Star,
-  TrendingUp,
   AlertTriangle
 } from 'lucide-react';
 
 import adminService from '../../services/adminService';
 import type { ContentItem } from '../../services/adminService';
 import AdminNavigation from '../../components/Admin/AdminNavigation';
+import BulkActionsBar from '../../components/Admin/BulkActionsBar';
+import ExportButton from '../../components/Admin/ExportButton';
+import { commonBulkActions } from '../../constants/bulkActions';
 
 const ContentManagement: React.FC = () => {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     content_type: '',
     status: '',
@@ -53,6 +56,39 @@ const ContentManagement: React.FC = () => {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleSelectItem = (contentId: string) => {
+    setSelectedItems(prev => 
+      prev.includes(contentId) 
+        ? prev.filter(id => id !== contentId)
+        : [...prev, contentId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedItems(content.map(item => item.content_id));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedItems([]);
+  };
+
+  const handleBulkAction = async (actionId: string, selectedIds: string[]) => {
+    try {
+      if (actionId === 'delete') {
+        const contentToDelete = content
+          .filter(item => selectedIds.includes(item.content_id))
+          .map(item => ({ content_type: item.content_type, content_id: item.content_id }));
+        
+        await adminService.bulkDeleteContent(contentToDelete);
+        await fetchContent(); // Refresh the list
+      }
+      // Add more bulk actions as needed
+    } catch (err) {
+      console.error('Bulk action error:', err);
+      alert('Failed to complete bulk action. Please try again.');
+    }
   };
 
   const handleDeleteContent = async (contentType: string, contentId: string) => {
@@ -91,6 +127,24 @@ const ContentManagement: React.FC = () => {
     }
   };
 
+  const bulkActions = [
+    commonBulkActions.delete,
+    commonBulkActions.feature
+  ];
+
+  // Prepare export data
+  const exportData = content.map(item => ({
+    content_id: item.content_id,
+    content_type: item.content_type,
+    title: item.title,
+    author: item.author,
+    status: item.status,
+    views: item.views,
+    likes: item.likes,
+    comments: item.comments,
+    created_at: item.created_at
+  }));
+
   if (loading && content.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -106,56 +160,92 @@ const ContentManagement: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <AdminNavigation />
       
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
-            <p className="mt-2 text-gray-600">Manage all platform content from one place</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search content..."
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Content Management</h1>
+              <p className="mt-2 text-sm sm:text-base text-gray-600">
+                Manage all platform content ({totalCount.toLocaleString()} total items)
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <ExportButton 
+                data={exportData}
+                filename="livelens-content"
+                headers={['content_id', 'content_type', 'title', 'author', 'status', 'views', 'likes', 'comments', 'created_at']}
               />
             </div>
+          </div>
+        </div>
 
-            {/* Content Type Filter */}
-            <div className="relative">
-              <Filter className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-              <select
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.content_type}
-                onChange={(e) => handleFilterChange('content_type', e.target.value)}
-              >
-                <option value="">All Content Types</option>
-                <option value="stories">Stories</option>
-                <option value="films">Films</option>
-                <option value="content">Content</option>
-                <option value="podcasts">Podcasts</option>
-                <option value="animations">Animations</option>
-                <option value="sneak_peeks">Sneak Peeks</option>
-              </select>
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <div className="mt-2 text-sm text-red-700">{error}</div>
+              </div>
             </div>
+          </div>
+        )}
 
-            {/* Status Filter */}
+        {/* Bulk Actions */}
+        <BulkActionsBar
+          selectedItems={selectedItems}
+          totalItems={content.length}
+          onSelectAll={handleSelectAll}
+          onClearSelection={handleClearSelection}
+          onBulkAction={handleBulkAction}
+          actions={bulkActions}
+        />
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  placeholder="Search content..."
+                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <select
+                  value={filters.content_type}
+                  onChange={(e) => handleFilterChange('content_type', e.target.value)}
+                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">All Types</option>
+                  <option value="stories">Stories</option>
+                  <option value="films">Films</option>
+                  <option value="podcasts">Podcasts</option>
+                  <option value="animations">Animations</option>
+                  <option value="sneak_peeks">Sneak Peeks</option>
+                  <option value="live_videos">Live Videos</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
-                className="px-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">All Statuses</option>
                 <option value="published">Published</option>
@@ -164,32 +254,102 @@ const ContentManagement: React.FC = () => {
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-
-            {/* Results Count */}
-            <div className="flex items-center justify-center md:justify-start">
-              <span className="text-sm text-gray-600">
-                {totalCount} content items found
-              </span>
+            
+            <div className="flex items-end">
+              <button
+                onClick={() => setFilters({ content_type: '', status: '', search: '' })}
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-            <div className="flex">
-              <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
-              <span className="text-red-700">{error}</span>
-            </div>
-          </div>
-        )}
-
         {/* Content Table */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Mobile View */}
+          <div className="block lg:hidden">
+            {content.map((item) => (
+              <div key={item.content_id} className="border-b border-gray-200 p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(item.content_id)}
+                      onChange={() => handleSelectItem(item.content_id)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                    />
+                    <div className="flex items-center space-x-2">
+                      {getContentTypeIcon(item.content_type)}
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {item.content_type}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50">
+                      <Star className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteContent(item.content_type, item.content_id)}
+                      className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="mb-2">
+                  <h3 className="font-medium text-gray-900 line-clamp-2">{item.title}</h3>
+                  <p className="text-sm text-gray-500">ID: {item.content_id}</p>
+                </div>
+                
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <User className="h-4 w-4 mr-1" />
+                    <span className="truncate">{item.author}</span>
+                  </div>
+                  {getStatusBadge(item.status)}
+                </div>
+                
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center">
+                      <Eye className="h-4 w-4 mr-1" />
+                      {item.views.toLocaleString()}
+                    </div>
+                    <div className="flex items-center">
+                      <Heart className="h-4 w-4 mr-1" />
+                      {item.likes.toLocaleString()}
+                    </div>
+                    <div className="flex items-center">
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      {item.comments.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.length === content.length && content.length > 0}
+                      onChange={selectedItems.length === content.length ? handleClearSelection : handleSelectAll}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Content
                   </th>
@@ -206,7 +366,7 @@ const ContentManagement: React.FC = () => {
                     Engagement
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
+                    Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -215,100 +375,94 @@ const ContentManagement: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {content.map((item) => (
-                  <tr key={`${item.content_type}-${item.content_id}`} className="hover:bg-gray-50">
+                  <tr key={item.content_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(item.content_id)}
+                        onChange={() => handleSelectItem(item.content_id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-lg">
-                          {getContentTypeIcon(item.content_type)}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                        {getContentTypeIcon(item.content_type)}
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900 line-clamp-1">
                             {item.title}
                           </div>
-                          <div className="flex items-center mt-1">
-                            {item.is_featured && (
-                              <Star className="h-3 w-3 text-yellow-500 mr-1" />
-                            )}
-                            {item.is_trending && (
-                              <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                            )}
+                          <div className="text-sm text-gray-500">
+                            ID: {item.content_id}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 capitalize">
-                        {item.content_type.replace('_', ' ')}
+                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {item.content_type}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <User className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">
-                          {typeof item.author === 'string' ? item.author : 'Unknown'}
-                        </span>
+                        <span className="text-sm text-gray-900">{item.author}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(item.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center space-x-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <div className="flex items-center">
-                          <Eye className="h-4 w-4 text-gray-400 mr-1" />
+                          <Eye className="h-4 w-4 mr-1" />
                           {item.views.toLocaleString()}
                         </div>
                         <div className="flex items-center">
-                          <Heart className="h-4 w-4 text-gray-400 mr-1" />
+                          <Heart className="h-4 w-4 mr-1" />
                           {item.likes.toLocaleString()}
                         </div>
                         <div className="flex items-center">
-                          <MessageCircle className="h-4 w-4 text-gray-400 mr-1" />
+                          <MessageCircle className="h-4 w-4 mr-1" />
                           {item.comments.toLocaleString()}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </span>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {new Date(item.created_at).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleDeleteContent(item.content_type, item.content_id)}
-                        className="text-red-600 hover:text-red-900 flex items-center"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50">
+                          <Star className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteContent(item.content_type, item.content_id)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
+          
           {content.length === 0 && !loading && (
             <div className="text-center py-12">
-              <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No content found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search terms.</p>
+              <div className="text-gray-500">
+                {filters.search || filters.content_type || filters.status 
+                  ? 'No content matches your filters' 
+                  : 'No content found'
+                }
+              </div>
             </div>
           )}
         </div>
-
-        {/* Loading overlay */}
-        {loading && content.length > 0 && (
-          <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-700">Updating content...</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

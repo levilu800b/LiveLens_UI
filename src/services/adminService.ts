@@ -1,6 +1,24 @@
 // src/services/adminService.ts
 import unifiedAuth from '../utils/unifiedAuth';
 
+interface BulkActionResult<T = unknown> {
+  success: boolean;
+  item?: T;
+  userId?: string;
+  result?: unknown;
+  error?: unknown;
+}
+
+export interface AdminActivity {
+  id: string;
+  admin: {
+    username: string;
+  };
+  activity_type: string;
+  description: string;
+  timestamp: string;
+}
+
 const API_BASE_URL = 'http://localhost:8000/api';
 
 export interface DashboardStats {
@@ -408,6 +426,55 @@ class AdminService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Bulk Actions
+  async bulkDeleteContent(contentItems: { content_type: string; content_id: string }[]): Promise<{ message: string; results: BulkActionResult[] }> {
+    const results: BulkActionResult[] = [];
+    for (const item of contentItems) {
+      try {
+        const result = await this.deleteContent(item.content_type, item.content_id);
+        results.push({ success: true, item, result });
+      } catch (error) {
+        results.push({ success: false, item, error });
+      }
+    }
+    return { 
+      message: `Bulk delete completed. ${results.filter(r => r.success).length} successful, ${results.filter(r => !r.success).length} failed.`,
+      results 
+    };
+  }
+
+  async bulkMakeUsersAdmin(userIds: string[]): Promise<{ message: string; results: BulkActionResult[] }> {
+    const results: BulkActionResult[] = [];
+    for (const userId of userIds) {
+      try {
+        const result = await this.makeUserAdmin(userId);
+        results.push({ success: true, userId, result });
+      } catch (error) {
+        results.push({ success: false, userId, error });
+      }
+    }
+    return { 
+      message: `Bulk admin assignment completed. ${results.filter(r => r.success).length} successful, ${results.filter(r => !r.success).length} failed.`,
+      results 
+    };
+  }
+
+  async bulkDeleteUsers(userIds: string[]): Promise<{ message: string; results: BulkActionResult[] }> {
+    const results: BulkActionResult[] = [];
+    for (const userId of userIds) {
+      try {
+        const result = await this.deleteUser(userId);
+        results.push({ success: true, userId, result });
+      } catch (error) {
+        results.push({ success: false, userId, error });
+      }
+    }
+    return { 
+      message: `Bulk user deletion completed. ${results.filter(r => r.success).length} successful, ${results.filter(r => !r.success).length} failed.`,
+      results 
+    };
   }
 }
 

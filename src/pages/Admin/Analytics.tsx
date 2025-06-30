@@ -1,12 +1,11 @@
 // src/pages/Admin/Analytics.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, 
   Users, 
   Eye, 
   RefreshCw,
   BarChart3,
-  PieChart as PieChartIcon,
   Activity
 } from 'lucide-react';
 
@@ -15,6 +14,8 @@ import PieChart from '../../components/Admin/charts/PieChart';
 import LineChart from '../../components/Admin/charts/LineChart';
 import MetricCard from '../../components/Admin/MetricCard';
 import AdminNavigation from '../../components/Admin/AdminNavigation';
+import DateRangePicker from '../../components/Admin/DateRangePicker';
+import ExportButton from '../../components/Admin/ExportButton';
 import adminService from '../../services/adminService';
 import type { DashboardStats } from '../../services/adminService';
 
@@ -22,14 +23,16 @@ const Analytics: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
-
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await adminService.getDashboardStats();
       setStats(data);
     } catch (err) {
@@ -38,7 +41,23 @@ const Analytics: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAnalyticsData();
+    setRefreshing(false);
   };
+
+  const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
+    setDateRange(range);
+    // In production, this would trigger a new API call with the date range
+    console.log('Date range changed:', range);
+  };
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
 
   if (loading) {
     return (
@@ -70,37 +89,34 @@ const Analytics: React.FC = () => {
 
   // Prepare data for charts
   const contentTypeData = [
-    { label: 'Stories', value: stats.total_stories, color: '#3b82f6' },
-    { label: 'Films', value: stats.total_films, color: '#ef4444' },
-    { label: 'Content', value: stats.total_content, color: '#10b981' },
-    { label: 'Podcasts', value: stats.total_podcasts, color: '#f59e0b' },
-    { label: 'Animations', value: stats.total_animations, color: '#8b5cf6' },
-    { label: 'Sneak Peeks', value: stats.total_sneak_peeks, color: '#06b6d4' },
-    { label: 'Live Videos', value: stats.total_live_videos, color: '#84cc16' },
+    { label: 'Stories', value: stats.total_stories },
+    { label: 'Films', value: stats.total_films },
+    { label: 'Content', value: stats.total_content },
+    { label: 'Podcasts', value: stats.total_podcasts },
+    { label: 'Animations', value: stats.total_animations },
+    { label: 'Sneak Peeks', value: stats.total_sneak_peeks },
+    { label: 'Live Videos', value: stats.total_live_videos }
   ].filter(item => item.value > 0);
 
   const userEngagementData = [
-    { label: 'Views', value: stats.total_views, color: '#3b82f6' },
-    { label: 'Likes', value: stats.total_likes, color: '#ef4444' },
-    { label: 'Comments', value: stats.total_comments, color: '#10b981' },
+    { label: 'Views', value: stats.total_views },
+    { label: 'Likes', value: stats.total_likes },
+    { label: 'Comments', value: stats.total_comments }
   ].filter(item => item.value > 0);
 
   // Top trending content for bar chart
   const trendingContentData = [
     ...stats.trending_stories.slice(0, 5).map(story => ({
       label: story.title.length > 15 ? story.title.substring(0, 15) + '...' : story.title,
-      value: story.read_count || story.like_count,
-      color: '#3b82f6'
+      value: story.read_count || story.like_count
     })),
     ...stats.trending_films.slice(0, 5).map(film => ({
       label: film.title.length > 15 ? film.title.substring(0, 15) + '...' : film.title,
-      value: film.view_count || film.like_count,
-      color: '#ef4444'
+      value: film.view_count || film.like_count
     })),
     ...stats.trending_podcasts.slice(0, 5).map(podcast => ({
       label: podcast.title.length > 15 ? podcast.title.substring(0, 15) + '...' : podcast.title,
-      value: podcast.play_count || podcast.like_count,
-      color: '#f59e0b'
+      value: podcast.play_count || podcast.like_count
     }))
   ].slice(0, 10);
 
@@ -125,32 +141,81 @@ const Analytics: React.FC = () => {
 
   // User status breakdown
   const userStatusData = [
-    { label: 'Active Users', value: stats.active_users_today, color: '#10b981' },
-    { label: 'Verified Users', value: stats.verified_users, color: '#3b82f6' },
-    { label: 'New Users Today', value: stats.new_users_today, color: '#f59e0b' },
-    { label: 'Total Users', value: stats.total_users - stats.active_users_today - stats.verified_users - stats.new_users_today, color: '#6b7280' }
+    { label: 'Active Users', value: stats.active_users_today },
+    { label: 'Verified Users', value: stats.verified_users },
+    { label: 'New Users Today', value: stats.new_users_today },
+    { label: 'Other Users', value: Math.max(0, stats.total_users - stats.active_users_today - stats.verified_users - stats.new_users_today) }
   ].filter(item => item.value > 0);
+
+  // Export data for analytics
+  const analyticsExportData = [
+    {
+      metric: 'Total Users',
+      value: stats.total_users,
+      period: `${dateRange.startDate} to ${dateRange.endDate}`
+    },
+    {
+      metric: 'Total Content',
+      value: stats.total_all_content,
+      period: `${dateRange.startDate} to ${dateRange.endDate}`
+    },
+    {
+      metric: 'Total Views',
+      value: stats.total_views,
+      period: `${dateRange.startDate} to ${dateRange.endDate}`
+    },
+    {
+      metric: 'Total Likes',
+      value: stats.total_likes,
+      period: `${dateRange.startDate} to ${dateRange.endDate}`
+    },
+    {
+      metric: 'Total Comments',
+      value: stats.total_comments,
+      period: `${dateRange.startDate} to ${dateRange.endDate}`
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminNavigation />
       
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-              <p className="mt-2 text-gray-600">Comprehensive platform analytics and insights</p>
+          <div className="py-4 sm:py-6">
+            <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                <p className="mt-2 text-sm sm:text-base text-gray-600">Comprehensive platform analytics and insights</p>
+              </div>
+              
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+                <div className="w-full sm:w-auto">
+                  <DateRangePicker 
+                    onDateRangeChange={handleDateRangeChange}
+                    initialRange={dateRange}
+                  />
+                </div>
+                <div className="flex space-x-2 sm:space-x-4">
+                  <button
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                  </button>
+                  <div className="flex-1 sm:flex-none">
+                    <ExportButton 
+                      data={analyticsExportData}
+                      filename="livelens-analytics"
+                      headers={['metric', 'value', 'period']}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={fetchAnalyticsData}
-              className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </button>
           </div>
         </div>
       </div>
@@ -179,138 +244,102 @@ const Analytics: React.FC = () => {
             color="purple"
           />
           <MetricCard
-            title="Engagement Rate"
-            value={`${((stats.total_likes + stats.total_comments) / Math.max(stats.total_views, 1) * 100).toFixed(1)}%`}
+            title="Active Today"
+            value={stats.active_users_today}
+            change={`${((stats.active_users_today / stats.total_users) * 100).toFixed(1)}% of total`}
+            changeType="positive"
             icon={TrendingUp}
-            color="indigo"
+            color="yellow"
           />
         </div>
 
-        {/* Main Charts Grid */}
+        {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Content Type Distribution */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <PieChartIcon className="h-5 w-5 text-blue-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-800">Content Type Distribution</h3>
+          {/* Content Distribution */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Distribution</h3>
+            <div className="h-80">
+              {contentTypeData.length > 0 ? (
+                <PieChart 
+                  data={contentTypeData}
+                  width={400}
+                  height={300}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No content data available
+                </div>
+              )}
             </div>
-            {contentTypeData.length > 0 ? (
-              <PieChart
-                data={contentTypeData}
-                width={350}
-                height={350}
-                title=""
-              />
-            ) : (
-              <div className="flex items-center justify-center h-80 text-gray-500">
-                No content data available
-              </div>
-            )}
           </div>
 
-          {/* User Engagement Breakdown */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <Activity className="h-5 w-5 text-green-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-800">Engagement Breakdown</h3>
+          {/* User Engagement */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">User Engagement</h3>
+            <div className="h-80">
+              {userEngagementData.length > 0 ? (
+                <PieChart 
+                  data={userEngagementData}
+                  width={400}
+                  height={300}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No engagement data available
+                </div>
+              )}
             </div>
-            {userEngagementData.length > 0 ? (
-              <PieChart
-                data={userEngagementData}
-                width={350}
-                height={350}
-                title=""
-              />
-            ) : (
-              <div className="flex items-center justify-center h-80 text-gray-500">
-                No engagement data available
-              </div>
-            )}
           </div>
         </div>
 
-        {/* User Growth Trend */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center mb-4">
-            <TrendingUp className="h-5 w-5 text-blue-500 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-800">User Growth Trend (Last 30 Days)</h3>
-          </div>
-          <LineChart
-            data={userGrowthData}
-            width={800}
-            height={400}
-            title=""
-            xAxisLabel="Date"
-            yAxisLabel="Number of Users"
-            color="#3b82f6"
-          />
-        </div>
-
-        {/* Grid for smaller charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Top Trending Content */}
-          {trendingContentData.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center mb-4">
-                <BarChart3 className="h-5 w-5 text-purple-500 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-800">Top Trending Content</h3>
-              </div>
-              <BarChart
-                data={trendingContentData}
+        {/* Time Series and Top Content */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+          {/* User Growth Trend */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">User Growth Trend (Last 30 Days)</h3>
+            <div className="h-80">
+              <LineChart 
+                data={userGrowthData}
                 width={500}
-                height={400}
-                title=""
-                xAxisLabel="Content"
-                yAxisLabel="Engagement"
+                height={300}
               />
             </div>
-          )}
+          </div>
 
-          {/* User Status Distribution */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <Users className="h-5 w-5 text-indigo-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-800">User Status Distribution</h3>
+          {/* Top Content */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Content</h3>
+            <div className="h-80">
+              {trendingContentData.length > 0 ? (
+                <BarChart 
+                  data={trendingContentData}
+                  width={500}
+                  height={300}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No trending content data available
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* User Status Breakdown */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Status Distribution</h3>
+          <div className="h-80">
             {userStatusData.length > 0 ? (
-              <PieChart
+              <PieChart 
                 data={userStatusData}
-                width={400}
-                height={400}
-                title=""
+                width={800}
+                height={300}
               />
             ) : (
-              <div className="flex items-center justify-center h-80 text-gray-500">
+              <div className="flex items-center justify-center h-full text-gray-500">
                 No user status data available
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Analytics Summary */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-6">Analytics Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{stats.total_users}</div>
-              <div className="text-sm text-gray-600">Total Users</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{stats.total_all_content}</div>
-              <div className="text-sm text-gray-600">Total Content</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">
-                {(stats.total_views + stats.total_likes + stats.total_comments).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Total Engagement</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-indigo-600">
-                {stats.avg_session_duration.toFixed(1)}m
-              </div>
-              <div className="text-sm text-gray-600">Avg Session Duration</div>
-            </div>
           </div>
         </div>
       </div>

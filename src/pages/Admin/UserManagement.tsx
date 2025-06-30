@@ -22,6 +22,7 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingActions, setLoadingActions] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState({
     status: '',
     search: ''
@@ -56,36 +57,60 @@ const UserManagement: React.FC = () => {
   const handleMakeAdmin = async (userId: string) => {
     if (!confirm('Are you sure you want to grant admin privileges to this user?')) return;
 
+    setLoadingActions(prev => ({ ...prev, [userId]: 'making-admin' }));
     try {
-      await adminService.makeUserAdmin(userId);
+      const response = await adminService.makeUserAdmin(userId);
       await fetchUsers(); // Refresh the list
-    } catch (err) {
-      alert('Failed to make user admin. Please try again.');
+      alert(response.message || 'User has been made an admin successfully!');
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to make user admin. Please try again.';
+      alert(errorMessage);
       console.error('Error making user admin:', err);
+    } finally {
+      setLoadingActions(prev => {
+        const { [userId]: _, ...rest } = prev;
+        return rest;
+      });
     }
   };
 
   const handleRemoveAdmin = async (userId: string) => {
     if (!confirm('Are you sure you want to remove admin privileges from this user?')) return;
 
+    setLoadingActions(prev => ({ ...prev, [userId]: 'removing-admin' }));
     try {
-      await adminService.removeUserAdmin(userId);
+      const response = await adminService.removeUserAdmin(userId);
       await fetchUsers(); // Refresh the list
-    } catch (err) {
-      alert('Failed to remove admin privileges. Please try again.');
+      alert(response.message || 'Admin privileges have been removed successfully!');
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to remove admin privileges. Please try again.';
+      alert(errorMessage);
       console.error('Error removing admin:', err);
+    } finally {
+      setLoadingActions(prev => {
+        const { [userId]: _, ...rest } = prev;
+        return rest;
+      });
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) return;
 
+    setLoadingActions(prev => ({ ...prev, [userId]: 'deleting' }));
     try {
-      await adminService.deleteUser(userId);
+      const response = await adminService.deleteUser(userId);
       await fetchUsers(); // Refresh the list
-    } catch (err) {
-      alert('Failed to delete user. Please try again.');
+      alert(response.message || 'User has been deleted successfully!');
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to delete user. Please try again.';
+      alert(errorMessage);
       console.error('Error deleting user:', err);
+    } finally {
+      setLoadingActions(prev => {
+        const { [userId]: _, ...rest } = prev;
+        return rest;
+      });
     }
   };
 

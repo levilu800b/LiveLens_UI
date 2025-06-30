@@ -26,20 +26,34 @@ const BarChart: React.FC<BarChartProps> = ({
   yAxisLabel = ""
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!data || data.length === 0) return;
 
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Get responsive dimensions
+    const containerWidth = container.offsetWidth;
+    const responsiveWidth = Math.min(width, containerWidth);
+    const responsiveHeight = Math.min(height, responsiveWidth * 0.6); // Maintain aspect ratio
+
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove(); // Clear previous chart
 
-    const margin = { top: 20, right: 30, bottom: 60, left: 60 };
-    const chartWidth = width - margin.left - margin.right;
-    const chartHeight = height - margin.top - margin.bottom;
+    const margin = { 
+      top: 20, 
+      right: Math.min(30, responsiveWidth * 0.05), 
+      bottom: Math.min(60, responsiveWidth * 0.12), 
+      left: Math.min(60, responsiveWidth * 0.12) 
+    };
+    const chartWidth = responsiveWidth - margin.left - margin.right;
+    const chartHeight = responsiveHeight - margin.top - margin.bottom;
 
     const g = svg
-      .attr("width", width)
-      .attr("height", height)
+      .attr("width", responsiveWidth)
+      .attr("height", responsiveHeight)
       .append("g")
       .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
@@ -171,9 +185,11 @@ const BarChart: React.FC<BarChartProps> = ({
   }, [data, width, height, xAxisLabel, yAxisLabel]);
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-md">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
-      <svg ref={svgRef} className="mx-auto"></svg>
+    <div ref={containerRef} className="bg-white rounded-lg p-3 sm:p-4 shadow-md w-full">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 text-center">{title}</h3>
+      <div className="flex justify-center">
+        <svg ref={svgRef} className="max-w-full h-auto"></svg>
+      </div>
     </div>
   );
 };

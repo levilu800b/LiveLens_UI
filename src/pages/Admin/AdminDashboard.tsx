@@ -141,16 +141,16 @@ const AdminDashboard: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="mt-2 text-gray-600">Real-time platform analytics and management</p>
+          <div className="py-4 sm:py-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="mt-2 text-sm sm:text-base text-gray-600">Real-time platform analytics and management</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <MetricCard
             title="Total Users"
             value={stats.total_users}
@@ -180,7 +180,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
           <MetricCard
             title="Total Views"
             value={stats.total_views}
@@ -214,7 +214,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Content Type Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 lg:gap-6">
           <MetricCard
             title="Stories"
             value={stats.total_stories}
@@ -260,32 +260,36 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
           {/* Content Distribution Pie Chart */}
-          <PieChart
-            data={contentTypeData}
-            title="Content Distribution"
-            width={400}
-            height={400}
-          />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <PieChart
+              data={contentTypeData}
+              title="Content Distribution"
+              width={Math.min(400, typeof window !== 'undefined' ? window.innerWidth - 80 : 400)}
+              height={300}
+            />
+          </div>
 
           {/* Engagement Breakdown */}
-          <PieChart
-            data={engagementData}
-            title="Engagement Breakdown"
-            width={400}
-            height={400}
-          />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <PieChart
+              data={engagementData}
+              title="Engagement Breakdown"
+              width={Math.min(400, typeof window !== 'undefined' ? window.innerWidth - 80 : 400)}
+              height={300}
+            />
+          </div>
         </div>
 
         {/* Top Content Performance */}
         {topContentData.length > 0 && (
-          <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <BarChart
               data={topContentData}
               title="Top Performing Content"
-              width={800}
-              height={400}
+              width={Math.min(800, typeof window !== 'undefined' ? window.innerWidth - 40 : 800)}
+              height={300}
               xAxisLabel="Content"
               yAxisLabel="Engagement"
             />
@@ -293,19 +297,19 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {/* Platform Statistics */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {/* Session Metrics */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-blue-500" />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-500" />
               Session Metrics
             </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-600">Avg Session Duration</span>
                 <span className="font-semibold">{stats.avg_session_duration} min</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-600">Bounce Rate</span>
                 <span className="font-semibold">{stats.bounce_rate}%</span>
               </div>
@@ -313,25 +317,25 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Email Statistics */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Mail className="h-5 w-5 mr-2 text-green-500" />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <Mail className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-500" />
               Email Notifications
             </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-600">Total Subscribers</span>
                 <span className="font-semibold">{stats.email_stats?.total_subscribers || 0}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-600">Verified Subscribers</span>
                 <span className="font-semibold">{stats.email_stats?.verified_subscribers || 0}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-600">Emails Sent Today</span>
                 <span className="font-semibold">{stats.email_stats?.emails_sent_today || 0}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-600">Failed Today</span>
                 <span className="font-semibold text-red-600">{stats.email_stats?.failed_emails_today || 0}</span>
               </div>
@@ -339,18 +343,18 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Recent Activities */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Activity className="h-5 w-5 mr-2 text-purple-500" />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 md:col-span-2 xl:col-span-1">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-purple-500" />
               Recent Admin Activities
             </h3>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
+            <div className="space-y-3 max-h-48 sm:max-h-60 overflow-y-auto">
               {stats.recent_activities?.slice(0, 5).map((activity) => (
                 <div key={activity.id} className="border-l-2 border-blue-500 pl-3 py-2">
-                  <p className="text-sm font-medium text-gray-800">
+                  <p className="text-xs sm:text-sm font-medium text-gray-800">
                     {activity.admin?.username}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
                     {activity.description}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
@@ -358,7 +362,7 @@ const AdminDashboard: React.FC = () => {
                   </p>
                 </div>
               )) || (
-                <p className="text-gray-500 text-sm">No recent activities</p>
+                <p className="text-gray-500 text-xs sm:text-sm">No recent activities</p>
               )}
             </div>
           </div>
@@ -366,19 +370,19 @@ const AdminDashboard: React.FC = () => {
 
         {/* Most Active Users */}
         {stats.most_active_users && stats.most_active_users.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Users className="h-5 w-5 mr-2 text-indigo-500" />
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-indigo-500" />
               Most Active Content Creators
             </h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Content Count
                     </th>
                   </tr>
@@ -386,11 +390,11 @@ const AdminDashboard: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {stats.most_active_users.map((user) => (
                     <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900">
                           {user.username}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {user.first_name} {user.last_name}
                         </div>
                       </td>
