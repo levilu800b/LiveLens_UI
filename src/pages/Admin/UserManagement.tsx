@@ -1,5 +1,5 @@
 // src/pages/Admin/UserManagement.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Search, 
   Filter, 
@@ -13,6 +13,7 @@ import {
   Mail,
   UserMinus
 } from 'lucide-react';
+import { debounce } from 'lodash';
 
 import adminService from '../../services/adminService';
 import type { User as UserType } from '../../services/adminService';
@@ -27,7 +28,26 @@ const UserManagement: React.FC = () => {
     status: '',
     search: ''
   });
+  const [searchInput, setSearchInput] = useState(''); // Separate state for search input
   const [totalCount, setTotalCount] = useState(0);
+
+  // Create debounced search function
+  const debouncedSearch = useMemo(
+    () => debounce((searchTerm: string) => {
+      setFilters(prev => ({
+        ...prev,
+        search: searchTerm
+      }));
+    }, 300),
+    []
+  );
+
+  // Clean up debounced function on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -48,10 +68,15 @@ const UserManagement: React.FC = () => {
   }, [fetchUsers]);
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    if (key === 'search') {
+      setSearchInput(value);
+      debouncedSearch(value);
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    }
   };
 
   const handleMakeAdmin = async (userId: string) => {
@@ -180,9 +205,14 @@ const UserManagement: React.FC = () => {
                 type="text"
                 placeholder="Search users..."
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.search}
+                value={searchInput}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
+              {loading && users.length > 0 && (
+                <div className="absolute right-3 top-3">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                </div>
+              )}
             </div>
 
             {/* Status Filter */}
@@ -343,11 +373,11 @@ const UserManagement: React.FC = () => {
         </div>
 
         {/* Loading overlay */}
-        {loading && users.length > 0 && (
+        {loading && users.length === 0 && (
           <div className="fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-700">Updating users...</p>
+              <p className="text-gray-700">Loading users...</p>
             </div>
           </div>
         )}

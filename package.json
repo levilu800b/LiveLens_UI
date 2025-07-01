@@ -26,6 +26,7 @@
     "framer-motion": "12.12.1",
     "google-auth-library": "^9.15.1",
     "google-oauth-api": "^0.0.3",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.511.0",
     "moment": "^2.30.1",
     "react": "^19.1.0",
