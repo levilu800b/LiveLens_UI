@@ -162,16 +162,16 @@ const ContentManagement: React.FC = () => {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className="py-6">
+            <div className="py-4 sm:py-6">
               <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
-                  <p className="mt-2 text-base text-gray-600">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Content Management</h1>
+                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
                     Manage all platform content ({totalCount.toLocaleString()} total items)
                   </p>
                 </div>
                 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
                   <ExportButton 
                     data={exportData}
                     filename="livelens-content"
@@ -179,12 +179,14 @@ const ContentManagement: React.FC = () => {
                   />
                 </div>
               </div>
+              {/* Mobile menu padding */}
+              <div className="lg:hidden h-4"></div>
             </div>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
@@ -208,8 +210,8 @@ const ContentManagement: React.FC = () => {
         />
 
         {/* Filters */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="sm:col-span-2 lg:col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <div className="relative">
@@ -219,7 +221,7 @@ const ContentManagement: React.FC = () => {
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
                   placeholder="Search content..."
-                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
@@ -272,8 +274,8 @@ const ContentManagement: React.FC = () => {
 
         {/* Content Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Mobile View */}
-          <div className="block lg:hidden">
+          {/* Mobile/Tablet View */}
+          <div className="block 2xl:hidden">
             {content.map((item) => (
               <div key={item.content_id} className="border-b border-gray-200 p-4">
                 <div className="flex items-start justify-between mb-3">
@@ -342,7 +344,7 @@ const ContentManagement: React.FC = () => {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden lg:block overflow-x-auto">
+          <div className="hidden 2xl:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

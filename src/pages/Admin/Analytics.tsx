@@ -182,11 +182,11 @@ const Analytics: React.FC = () => {
         {/* Enhanced Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className="py-6">
+            <div className="py-4 sm:py-6">
               <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-                  <p className="mt-2 text-base text-gray-600">Comprehensive platform analytics and insights</p>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                  <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">Comprehensive platform analytics and insights</p>
                 </div>
                 
                 <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
@@ -214,14 +214,16 @@ const Analytics: React.FC = () => {
                   </div>
                 </div>
               </div>
+              {/* Mobile menu padding */}
+              <div className="lg:hidden h-4"></div>
             </div>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Key Performance Indicators */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <MetricCard
             title="Total Users"
             value={stats.total_users}
@@ -253,7 +255,7 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Content Distribution */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Distribution</h3>

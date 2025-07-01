@@ -141,17 +141,23 @@ const AdminDashboard: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="mt-2 text-base text-gray-600">Real-time platform analytics and management</p>
+          <div className="py-4 sm:py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-4 sm:mb-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">Real-time platform analytics and management</p>
+              </div>
+              {/* Mobile menu padding to avoid overlay with mobile menu button */}
+              <div className="lg:hidden h-4"></div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8">
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
           <MetricCard
             title="Total Users"
             value={stats.total_users}
@@ -181,7 +187,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4 sm:gap-6">
           <MetricCard
             title="Total Views"
             value={stats.total_views}
@@ -215,7 +221,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Content Type Breakdown */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3 sm:gap-4 lg:gap-6">
           <MetricCard
             title="Stories"
             value={stats.total_stories}
@@ -261,7 +267,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8">
           {/* Content Distribution Pie Chart */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <PieChart
@@ -298,7 +304,7 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {/* Platform Statistics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Session Metrics */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">

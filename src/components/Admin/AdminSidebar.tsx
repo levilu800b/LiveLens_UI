@@ -133,9 +133,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
         fixed inset-y-0 left-0 z-40 bg-white shadow-xl border-r border-gray-200
         transform transition-transform duration-300 ease-in-out
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:inset-0
+        lg:translate-x-0
         ${isCollapsed ? 'lg:w-16' : 'lg:w-64'}
-        w-64
+        w-64 h-full
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -145,7 +145,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <LayoutDashboard className="h-5 w-5 text-white" />
                 </div>
-                <span className="ml-3 text-lg font-bold text-gray-900">LiveLens Admin</span>
+                <span className="ml-3 text-lg font-bold text-gray-900">_livelens Admin</span>
               </div>
             )}
             

@@ -186,25 +186,27 @@ const UserManagement: React.FC = () => {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className="py-6">
-              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-              <p className="mt-2 text-gray-600">Manage all platform users and their permissions</p>
+            <div className="py-4 sm:py-6">
+              <div className="pt-12 lg:pt-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
+                <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">Manage all platform users and their permissions</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
             {/* Search */}
-            <div className="relative">
+            <div className="relative sm:col-span-2 xl:col-span-1">
               <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search users..."
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 value={searchInput}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
@@ -219,7 +221,7 @@ const UserManagement: React.FC = () => {
             <div className="relative">
               <Filter className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
               <select
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none"
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
@@ -231,7 +233,7 @@ const UserManagement: React.FC = () => {
             </div>
 
             {/* Results Count */}
-            <div className="col-span-2 flex items-center justify-center md:justify-start">
+            <div className="sm:col-span-2 xl:col-span-2 flex items-center justify-center sm:justify-start">
               <span className="text-sm text-gray-600">
                 {totalCount} users found
               </span>
@@ -251,8 +253,84 @@ const UserManagement: React.FC = () => {
 
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          {/* Mobile/Tablet Card View */}
+          <div className="block 2xl:hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+            {users.map((user) => (
+              <div key={user.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center flex-1 min-w-0">
+                    <div className="flex-shrink-0 h-12 w-12 flex items-center justify-center bg-gray-100 rounded-full">
+                      <User className="h-6 w-6 text-gray-600" />
+                    </div>
+                    <div className="ml-3 flex-1 min-w-0">
+                      <div className="text-base font-medium text-gray-900 truncate">
+                        {user.username}
+                      </div>
+                      <div className="text-sm text-gray-500 truncate">
+                        {user.email}
+                      </div>
+                      {(user.first_name || user.last_name) && (
+                        <div className="text-sm text-gray-400 truncate">
+                          {user.first_name} {user.last_name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 ml-4">
+                    {getStatusBadge(user)}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 text-sm text-gray-500">
+                  <span className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Joined {new Date(user.date_joined).toLocaleDateString()}
+                  </span>
+                  {user.last_login && (
+                    <span className="flex items-center">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Last: {new Date(user.last_login).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {!user.is_staff && (
+                    <button
+                      onClick={() => handleMakeAdmin(user.id)}
+                      disabled={!!loadingActions[user.id]}
+                      className="text-sm px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex-1 sm:flex-none"
+                    >
+                      {loadingActions[user.id] === 'making-admin' ? 'Making Admin...' : 'Make Admin'}
+                    </button>
+                  )}
+                  {user.is_staff && (
+                    <button
+                      onClick={() => handleRemoveAdmin(user.id)}
+                      disabled={!!loadingActions[user.id]}
+                      className="text-sm px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50 flex-1 sm:flex-none"
+                    >
+                      {loadingActions[user.id] === 'removing-admin' ? 'Removing...' : 'Remove Admin'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    disabled={!!loadingActions[user.id]}
+                    className="text-sm px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex-1 sm:flex-none"
+                  >
+                    {loadingActions[user.id] === 'deleting' ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            ))}
+            </div>
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden 2xl:block">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -361,6 +439,7 @@ const UserManagement: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
 
           {users.length === 0 && !loading && (
