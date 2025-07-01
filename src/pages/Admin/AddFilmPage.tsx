@@ -248,18 +248,19 @@ const AddFilmPage: React.FC = () => {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className="py-6">
+            <div className="py-4 sm:py-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Film className="h-8 w-8 text-red-600 mr-3" />
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Add New Film</h1>
-                    <p className="mt-2 text-base text-gray-600">Create a new film entry</p>
+                <div className="flex items-center min-w-0 flex-1 pt-16 lg:pt-0">
+                  <Film className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 mr-2 sm:mr-3 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Add New Film</h1>
+                    <p className="mt-1 sm:mt-2 text-xs sm:text-base text-gray-600">Create a new film entry</p>
                   </div>
                 </div>
                 <button
                   onClick={() => navigate('/admin/content')}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 ml-2"
+                  aria-label="Close"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -269,11 +270,11 @@ const AddFilmPage: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-5xl mx-auto">
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-md p-4">
               <div className="flex">
-                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0" />
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">Error</h3>
                   <div className="mt-2 text-sm text-red-700">{error}</div>
@@ -282,13 +283,13 @@ const AddFilmPage: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-8">
+          <form className="space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Basic Information */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Basic Information</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Basic Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Film Title *
                   </label>
@@ -296,12 +297,12 @@ const AddFilmPage: React.FC = () => {
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="Enter film title"
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description *
                   </label>
@@ -309,12 +310,12 @@ const AddFilmPage: React.FC = () => {
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base resize-y"
                     placeholder="Enter film description"
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Short Description
                   </label>
@@ -322,7 +323,7 @@ const AddFilmPage: React.FC = () => {
                     value={formData.short_description}
                     onChange={(e) => handleInputChange('short_description', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base resize-y"
                     placeholder="Brief description for cards (optional)"
                   />
                 </div>
@@ -334,7 +335,7 @@ const AddFilmPage: React.FC = () => {
                   <select
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -351,7 +352,7 @@ const AddFilmPage: React.FC = () => {
                   <select
                     value={formData.video_quality}
                     onChange={(e) => handleInputChange('video_quality', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {qualityOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -370,7 +371,7 @@ const AddFilmPage: React.FC = () => {
                     min="1"
                     value={formData.duration}
                     onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 90)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
 
@@ -383,7 +384,7 @@ const AddFilmPage: React.FC = () => {
                     min="1"
                     value={formData.trailer_duration}
                     onChange={(e) => handleInputChange('trailer_duration', parseInt(e.target.value) || 2)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
 
@@ -395,7 +396,7 @@ const AddFilmPage: React.FC = () => {
                     type="text"
                     value={formData.language}
                     onChange={(e) => handleInputChange('language', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="e.g., English, Spanish"
                   />
                 </div>
@@ -685,16 +686,16 @@ const AddFilmPage: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+            <div className="sticky bottom-0 bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center space-y-3 sm:space-y-0 gap-3">
+                <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left order-2 sm:order-1">
                   * Required fields
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 order-1 sm:order-2">
                   <button
                     type="button"
                     onClick={() => navigate('/admin/content')}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                     disabled={loading}
                   >
                     Cancel
@@ -703,7 +704,7 @@ const AddFilmPage: React.FC = () => {
                     type="button"
                     onClick={() => handleSubmit('save')}
                     disabled={loading}
-                    className="flex items-center px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {loading ? 'Saving...' : 'Save as Draft'}
@@ -712,7 +713,7 @@ const AddFilmPage: React.FC = () => {
                     type="button"
                     onClick={() => handleSubmit('publish')}
                     disabled={loading}
-                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     {loading ? 'Publishing...' : 'Publish Film'}

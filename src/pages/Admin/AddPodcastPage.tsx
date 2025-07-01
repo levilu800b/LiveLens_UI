@@ -279,34 +279,43 @@ const AddPodcastPage: React.FC = () => {
     <AdminLayout>
       <div className="flex flex-col h-full">
         {/* Fixed Header */}
-        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Mic className="w-8 h-8 text-purple-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Add New Podcast Episode</h1>
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between pt-16 lg:pt-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <Mic className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 flex-shrink-0" />
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Add New Podcast Episode</h1>
+            </div>
+            <button
+              onClick={() => navigate('/admin/content')}
+              className="p-2 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 ml-2"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                <div className="mb-4 sm:mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  <p className="text-red-700">{error}</p>
+                  <p className="text-red-700 text-sm sm:text-base">{error}</p>
                 </div>
               )}
 
-              <form className="space-y-6">
+              <form className="space-y-4 sm:space-y-6">
                 {/* Required fields indicator */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-blue-700">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 sm:mb-6">
+                  <p className="text-xs sm:text-sm text-blue-700">
                     <span className="font-medium">Fields marked with * are required.</span> 
                     Please fill out all required fields before submitting.
                   </p>
                 </div>
             {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Episode Title *
@@ -316,7 +325,7 @@ const AddPodcastPage: React.FC = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Enter episode title"
                 />
               </div>
@@ -791,55 +800,54 @@ const AddPodcastPage: React.FC = () => {
               </div>
             </div>
 
-          </form>
+            {/* Action Buttons */}
+            <div className="sticky bottom-0 bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center space-y-3 sm:space-y-0 gap-3">
+                <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left order-2 sm:order-1">
+                  * Required fields
+                </div>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 order-1 sm:order-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/content')}
+                    className="px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit('save')}
+                    disabled={loading}
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {loading ? 'Saving...' : 'Save as Draft'}
+                  </button>
+                  {formData.scheduled_at && (
+                    <button
+                      type="button"
+                      onClick={() => handleSubmit('schedule')}
+                      disabled={loading}
+                      className="flex items-center justify-center px-4 sm:px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {loading ? 'Scheduling...' : 'Schedule'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit('publish')}
+                    disabled={loading}
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {loading ? 'Publishing...' : 'Publish Podcast'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Fixed Footer with Action Buttons */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
-          <div className="max-w-4xl mx-auto flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => handleSubmit('save')}
-                disabled={loading}
-                className="px-6 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 flex items-center gap-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {loading ? 'Saving...' : 'Save Draft'}
-              </button>
-
-              {formData.scheduled_at && (
-                <button
-                  type="button"
-                  onClick={() => handleSubmit('schedule')}
-                  disabled={loading}
-                  className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  {loading ? 'Scheduling...' : 'Schedule'}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => handleSubmit('publish')}
-                disabled={loading}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 disabled:opacity-50"
-              >
-                <Upload className="w-4 h-4" />
-                {loading ? 'Publishing...' : 'Publish'}
-              </button>
+          </form>
             </div>
           </div>
         </div>

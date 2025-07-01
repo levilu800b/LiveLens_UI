@@ -229,18 +229,19 @@ const AddContentPage: React.FC = () => {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className="py-6">
+            <div className="py-4 sm:py-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Play className="h-8 w-8 text-green-600 mr-3" />
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Add New Content</h1>
-                    <p className="mt-2 text-base text-gray-600">Create new video content</p>
+                <div className="flex items-center min-w-0 flex-1 pt-16 lg:pt-0">
+                  <Play className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mr-2 sm:mr-3 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Add New Content</h1>
+                    <p className="mt-1 sm:mt-2 text-xs sm:text-base text-gray-600">Create new video content</p>
                   </div>
                 </div>
                 <button
                   onClick={() => navigate('/admin/content')}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 ml-2"
+                  aria-label="Close"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -250,11 +251,11 @@ const AddContentPage: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-5xl mx-auto">
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-md p-4">
               <div className="flex">
-                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0" />
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">Error</h3>
                   <div className="mt-2 text-sm text-red-700">{error}</div>
@@ -263,13 +264,13 @@ const AddContentPage: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-8">
+          <form className="space-y-4 sm:space-y-6 lg:space-y-8">
             {/* Basic Information */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Basic Information</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Basic Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Content Title *
                   </label>
@@ -277,12 +278,12 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="Enter content title"
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description *
                   </label>
@@ -290,12 +291,12 @@ const AddContentPage: React.FC = () => {
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base resize-y"
                     placeholder="Enter content description"
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Short Description
                   </label>
@@ -303,7 +304,7 @@ const AddContentPage: React.FC = () => {
                     value={formData.short_description}
                     onChange={(e) => handleInputChange('short_description', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base resize-y"
                     placeholder="Brief description for cards (optional)"
                   />
                 </div>
@@ -318,7 +319,7 @@ const AddContentPage: React.FC = () => {
                       handleInputChange('category', e.target.value);
                       handleInputChange('content_type', e.target.value);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -335,7 +336,7 @@ const AddContentPage: React.FC = () => {
                   <select
                     value={formData.difficulty_level}
                     onChange={(e) => handleInputChange('difficulty_level', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {difficultyOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -352,7 +353,7 @@ const AddContentPage: React.FC = () => {
                   <select
                     value={formData.video_quality}
                     onChange={(e) => handleInputChange('video_quality', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {qualityOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -371,7 +372,7 @@ const AddContentPage: React.FC = () => {
                     min="1"
                     value={formData.duration}
                     onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 15)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
 
@@ -383,7 +384,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.language}
                     onChange={(e) => handleInputChange('language', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="e.g., English, Spanish"
                   />
                 </div>
@@ -396,7 +397,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.creator}
                     onChange={(e) => handleInputChange('creator', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="Content creator name"
                   />
                 </div>
@@ -411,7 +412,7 @@ const AddContentPage: React.FC = () => {
                     max={new Date().getFullYear() + 5}
                     value={formData.release_year || ''}
                     onChange={(e) => handleInputChange('release_year', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
 
@@ -423,7 +424,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.series_name}
                     onChange={(e) => handleInputChange('series_name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="Series or channel name"
                   />
                 </div>
@@ -437,15 +438,15 @@ const AddContentPage: React.FC = () => {
                     min="1"
                     value={formData.episode_number || ''}
                     onChange={(e) => handleInputChange('episode_number', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
               </div>
             </div>
 
             {/* Live Streaming Options */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Live Streaming Options</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Live Streaming Options</h3>
               
               <div className="space-y-4">
                 <div className="flex items-center">
@@ -462,7 +463,7 @@ const AddContentPage: React.FC = () => {
                 </div>
 
                 {formData.is_live && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Live Stream URL
@@ -471,7 +472,7 @@ const AddContentPage: React.FC = () => {
                         type="url"
                         value={formData.live_stream_url || ''}
                         onChange={(e) => handleInputChange('live_stream_url', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                         placeholder="https://example.com/stream"
                       />
                     </div>
@@ -484,7 +485,7 @@ const AddContentPage: React.FC = () => {
                         type="datetime-local"
                         value={formData.scheduled_live_time || ''}
                         onChange={(e) => handleInputChange('scheduled_live_time', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                       />
                     </div>
                   </div>
@@ -493,22 +494,22 @@ const AddContentPage: React.FC = () => {
             </div>
 
             {/* Tags */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Tags</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Tags</h3>
               
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Add a tag and press Enter"
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
                 >
                   Add Tag
                 </button>
@@ -518,13 +519,13 @@ const AddContentPage: React.FC = () => {
                 {formData.tags.map((tag, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs sm:text-sm bg-blue-100 text-blue-800"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      className="ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:bg-blue-200 focus:text-blue-500"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -534,10 +535,10 @@ const AddContentPage: React.FC = () => {
             </div>
 
             {/* Media Files */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Media Files</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Media Files</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {formData.is_live ? 'Video File (Optional for Live)' : 'Video File *'} (MP4, AVI, MOV)
@@ -546,7 +547,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="video/*"
                     onChange={(e) => handleFileChange('video_file', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </div>
 
@@ -558,7 +559,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="video/*"
                     onChange={(e) => handleFileChange('trailer_file', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                   <div className="mt-1">
                     <label className="block text-xs text-gray-500 mb-1">
@@ -582,7 +583,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileChange('thumbnail', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
 
@@ -594,7 +595,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileChange('poster', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
 
@@ -606,23 +607,23 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileChange('banner', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+            <div className="sticky bottom-0 bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center space-y-3 sm:space-y-0 gap-3">
+                <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left order-2 sm:order-1">
                   * Required fields
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 order-1 sm:order-2">
                   <button
                     type="button"
                     onClick={() => navigate('/admin/content')}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                     disabled={loading}
                   >
                     Cancel
@@ -631,7 +632,7 @@ const AddContentPage: React.FC = () => {
                     type="button"
                     onClick={() => handleSubmit('save')}
                     disabled={loading}
-                    className="flex items-center px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {loading ? 'Saving...' : 'Save as Draft'}
@@ -640,7 +641,7 @@ const AddContentPage: React.FC = () => {
                     type="button"
                     onClick={() => handleSubmit('publish')}
                     disabled={loading}
-                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     {loading ? 'Publishing...' : 'Publish Content'}

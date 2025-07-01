@@ -114,9 +114,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
       <div className="lg:hidden fixed top-4 left-4 z-50 bg-white rounded-lg shadow-lg">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+          className="p-2.5 sm:p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors touch-manipulation"
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
         >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {mobileMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
         </button>
       </div>
 
@@ -139,13 +140,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className={`flex items-center justify-between p-4 border-b border-gray-200 ${isCollapsed ? 'lg:justify-center' : ''}`}>
+          <div className={`flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 ${isCollapsed ? 'lg:justify-center' : ''}`}>
             {!isCollapsed && (
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <LayoutDashboard className="h-5 w-5 text-white" />
+              <div className="flex items-center min-w-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <LayoutDashboard className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span className="ml-3 text-lg font-bold text-gray-900">_livelens Admin</span>
+                <span className="ml-2 sm:ml-3 text-base sm:text-lg font-bold text-gray-900 truncate">_livelens Admin</span>
               </div>
             )}
             
@@ -153,13 +154,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className={`hidden lg:block p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors ${isCollapsed ? 'mx-auto' : ''}`}
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <ChevronLeft className={`h-5 w-5 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} />
             </button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-2 sm:px-3 py-3 sm:py-4 space-y-1 sm:space-y-2 overflow-y-auto">
             {/* Main Navigation */}
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -171,21 +173,21 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
                   to={item.path}
                   onClick={closeMobileMenu}
                   className={`
-                    group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200
+                    group flex items-center px-2 sm:px-3 py-2.5 sm:py-3 text-sm font-medium rounded-lg transition-all duration-200
                     ${isActive
                       ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
                       : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                     }
                     ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}
-                    active:bg-gray-100 touch-manipulation
+                    active:bg-gray-100 touch-manipulation min-h-[44px]
                   `}
                   title={isCollapsed ? item.label : ''}
                 >
-                  <Icon className={`flex-shrink-0 h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-500'} ${isCollapsed ? '' : 'mr-3'}`} />
+                  <Icon className={`flex-shrink-0 h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-500'} ${isCollapsed ? '' : 'mr-2 sm:mr-3'}`} />
                   {!isCollapsed && (
                     <div className="flex flex-col min-w-0 flex-1">
-                      <span className="truncate">{item.label}</span>
-                      <span className="text-xs text-gray-500 mt-0.5 truncate">{item.description}</span>
+                      <span className="truncate text-sm sm:text-base">{item.label}</span>
+                      <span className="text-xs text-gray-500 mt-0.5 truncate hidden sm:block">{item.description}</span>
                     </div>
                   )}
                 </Link>
@@ -193,9 +195,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
             })}
 
             {/* Content Creation Section */}
-            <div className="pt-4">
+            <div className="pt-3 sm:pt-4">
               {!isCollapsed && (
-                <div className="px-3 py-2">
+                <div className="px-2 sm:px-3 py-2">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Content Creation
                   </h3>
@@ -212,21 +214,21 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
                     to={item.path}
                     onClick={closeMobileMenu}
                     className={`
-                      group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
+                      group flex items-center px-2 sm:px-3 py-2 sm:py-2.5 text-sm font-medium rounded-lg transition-all duration-200
                       ${isActive
                         ? 'bg-green-50 text-green-700 border-l-4 border-green-600'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                       }
                       ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}
-                      active:bg-gray-100 touch-manipulation
+                      active:bg-gray-100 touch-manipulation min-h-[44px]
                     `}
                     title={isCollapsed ? item.label : ''}
                   >
-                    <Icon className={`flex-shrink-0 h-4 w-4 ${isActive ? 'text-green-600' : 'text-gray-400'} ${isCollapsed ? '' : 'mr-3'}`} />
+                    <Icon className={`flex-shrink-0 h-4 w-4 ${isActive ? 'text-green-600' : 'text-gray-400'} ${isCollapsed ? '' : 'mr-2 sm:mr-3'}`} />
                     {!isCollapsed && (
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="truncate text-sm">{item.label}</span>
-                        <span className="text-xs text-gray-500 mt-0.5 truncate">{item.description}</span>
+                        <span className="truncate text-xs sm:text-sm">{item.label}</span>
+                        <span className="text-xs text-gray-500 mt-0.5 truncate hidden sm:block">{item.description}</span>
                       </div>
                     )}
                   </Link>
@@ -236,24 +238,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 p-3">
+          <div className="border-t border-gray-200 p-2 sm:p-3">
             {/* Back to Site */}
             <Link
               to="/"
               className={`
-                group flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:text-gray-900 hover:bg-gray-50 transition-colors duration-200 mb-2
+                group flex items-center px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:text-gray-900 hover:bg-gray-50 transition-colors duration-200 mb-2
                 ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}
-                active:bg-gray-100 touch-manipulation
+                active:bg-gray-100 touch-manipulation min-h-[44px]
               `}
               title={isCollapsed ? 'Back to Site' : ''}
             >
-              <Home className={`flex-shrink-0 h-5 w-5 text-gray-500 ${isCollapsed ? '' : 'mr-3'}`} />
-              {!isCollapsed && <span>Back to Site</span>}
+              <Home className={`flex-shrink-0 h-5 w-5 text-gray-500 ${isCollapsed ? '' : 'mr-2 sm:mr-3'}`} />
+              {!isCollapsed && <span className="text-sm sm:text-base">Back to Site</span>}
             </Link>
 
             {/* Admin Badge */}
             {!isCollapsed && (
-              <div className="px-3 py-2">
+              <div className="px-2 sm:px-3 py-2">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                   Admin Panel
                 </span>

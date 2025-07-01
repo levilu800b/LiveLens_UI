@@ -9,8 +9,7 @@ import {
   AlertTriangle,
   Play,
   Image as ImageIcon,
-  Eye,
-  Calendar
+  Eye
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
 
@@ -260,40 +259,60 @@ const AddSneakPeekPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col h-full">
-        {/* Fixed Header */}
-        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Eye className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Add New Sneak Peek</h1>
+      <div className="flex-1 overflow-y-auto">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="py-4 sm:py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center min-w-0 flex-1 pt-16 lg:pt-0">
+                  <Eye className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 mr-2 sm:mr-3 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Add New Sneak Peek</h1>
+                    <p className="mt-1 sm:mt-2 text-xs sm:text-base text-gray-600">Create a new sneak peek preview</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/admin/content')}
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 ml-2"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  <p className="text-red-700">{error}</p>
+        {/* Content */}
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-5xl mx-auto">
+          {error && (
+            <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Error</h3>
+                  <div className="mt-2 text-sm text-red-700">{error}</div>
                 </div>
-              )}
+              </div>
+            </div>
+          )}
 
-              <form className="space-y-6">
-                {/* Required fields indicator */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-blue-700">
-                    <span className="font-medium">Fields marked with * are required.</span> 
-                    Please fill out all required fields before submitting.
-                  </p>
-                </div>
+          <form className="space-y-4 sm:space-y-6 lg:space-y-8">
+            {/* Required fields indicator */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-700">
+                <span className="font-medium">Fields marked with * are required.</span> 
+                Please fill out all required fields before submitting.
+              </p>
+            </div>
+
             {/* Basic Information */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Basic Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Sneak Peek Title *
                   </label>
@@ -302,7 +321,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="Enter sneak peek title"
                   />
                 </div>
@@ -315,7 +334,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -335,7 +354,7 @@ const AddSneakPeekPage: React.FC = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Enter detailed sneak peek description"
                 />
               </div>
@@ -349,20 +368,17 @@ const AddSneakPeekPage: React.FC = () => {
                   value={formData.short_description}
                   onChange={handleInputChange}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Brief description for previews and social media (optional - will use main description if empty)"
                 />
               </div>
             </div>
 
             {/* Media Files */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
-                <Play className="w-5 h-5" />
-                Media Files
-              </h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Media Files</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Video File */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -487,10 +503,10 @@ const AddSneakPeekPage: React.FC = () => {
             </div>
 
             {/* Technical Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Technical Information</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Technical Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Duration (seconds)
@@ -503,7 +519,7 @@ const AddSneakPeekPage: React.FC = () => {
                       onChange={handleInputChange}
                       min="0"
                       max="600"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                       placeholder="Duration in seconds"
                     />
                     <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 min-w-fit">
@@ -521,7 +537,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="video_quality"
                     value={formData.video_quality}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {videoQualityOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -539,7 +555,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="content_rating"
                     value={formData.content_rating}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {contentRatingOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -552,13 +568,10 @@ const AddSneakPeekPage: React.FC = () => {
             </div>
 
             {/* Related Content */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Related Content & Release Information
-              </h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Related Content & Release Information</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Related Content Type
@@ -567,7 +580,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="related_content_type"
                     value={formData.related_content_type}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {relatedContentTypeOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -586,7 +599,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="related_content_id"
                     value={formData.related_content_id || ''}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="UUID of related content (optional)"
                   />
                 </div>
@@ -600,24 +613,23 @@ const AddSneakPeekPage: React.FC = () => {
                     name="release_date"
                     value={formData.release_date || ''}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
               </div>
             </div>
 
             {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags (Maximum 10)
-              </label>
-              <div className="flex gap-2 mb-2">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Tags</h3>
+              
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   placeholder="Add a tag and press Enter"
                   disabled={formData.tags.length >= 10}
                 />
@@ -625,12 +637,13 @@ const AddSneakPeekPage: React.FC = () => {
                   type="button"
                   onClick={addTag}
                   disabled={formData.tags.length >= 10}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2 disabled:opacity-50"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px] text-sm sm:text-base"
                 >
                   <Plus className="w-4 h-4" />
-                  Add
+                  Add Tag
                 </button>
               </div>
+              
               <div className="flex flex-wrap gap-2">
                 {formData.tags.map((tag, index) => (
                   <span
@@ -641,21 +654,23 @@ const AddSneakPeekPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="text-blue-600 hover:text-orange-800"
+                      className="text-orange-600 hover:text-orange-800 p-1"
                     >
                       <X className="w-3 h-3" />
                     </button>
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.tags.length}/10 tags used
-              </p>
+              {formData.tags.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  {formData.tags.length}/10 tags used
+                </p>
+              )}
             </div>
 
             {/* SEO Metadata */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">SEO Metadata</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">SEO Metadata</h3>
               
               <div className="grid grid-cols-1 gap-6">
                 <div>
@@ -668,7 +683,7 @@ const AddSneakPeekPage: React.FC = () => {
                     value={formData.meta_title}
                     onChange={handleInputChange}
                     maxLength={60}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="SEO title (max 60 characters)"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -686,7 +701,7 @@ const AddSneakPeekPage: React.FC = () => {
                     onChange={handleInputChange}
                     rows={2}
                     maxLength={160}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="SEO description (max 160 characters)"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -703,7 +718,7 @@ const AddSneakPeekPage: React.FC = () => {
                     name="meta_keywords"
                     value={formData.meta_keywords}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                     placeholder="Comma-separated keywords for SEO"
                   />
                 </div>
@@ -711,84 +726,82 @@ const AddSneakPeekPage: React.FC = () => {
             </div>
 
             {/* Settings */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Settings</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2 sm:pb-3">Settings</h3>
               
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4">
+                <label className="flex items-center gap-2 sm:gap-3 p-2 rounded hover:bg-gray-50 transition-colors min-h-[44px]">
                   <input
                     type="checkbox"
                     name="is_featured"
                     checked={formData.is_featured}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 sm:w-5 sm:h-5"
                   />
-                  <span className="text-sm text-gray-700">Featured Sneak Peek</span>
+                  <span className="text-sm sm:text-base text-gray-700 font-medium">Featured Sneak Peek</span>
                 </label>
 
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 sm:gap-3 p-2 rounded hover:bg-gray-50 transition-colors min-h-[44px]">
                   <input
                     type="checkbox"
                     name="is_trending"
                     checked={formData.is_trending}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 sm:w-5 sm:h-5"
                   />
-                  <span className="text-sm text-gray-700">Trending</span>
+                  <span className="text-sm sm:text-base text-gray-700 font-medium">Trending</span>
                 </label>
 
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 sm:gap-3 p-2 rounded hover:bg-gray-50 transition-colors min-h-[44px]">
                   <input
                     type="checkbox"
                     name="is_premium"
                     checked={formData.is_premium}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 sm:w-5 sm:h-5"
                   />
-                  <span className="text-sm text-gray-700">Premium Content</span>
+                  <span className="text-sm sm:text-base text-gray-700 font-medium">Premium Content</span>
                 </label>
               </div>
             </div>
 
+            {/* Action Buttons */}
+            <div className="sticky bottom-0 bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center space-y-3 sm:space-y-0 gap-3">
+                <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left order-2 sm:order-1">
+                  * Required fields
+                </div>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 order-1 sm:order-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/content')}
+                    className="px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit('save')}
+                    disabled={loading}
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {loading ? 'Saving...' : 'Save as Draft'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmit('publish')}
+                    disabled={loading}
+                    className="flex items-center justify-center px-4 sm:px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {loading ? 'Publishing...' : 'Publish Sneak Peek'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </form>
-            </div>
-          </div>
-        </div>
-
-        {/* Fixed Footer with Action Buttons */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
-          <div className="max-w-4xl mx-auto flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => handleSubmit('save')}
-                disabled={loading}
-                className="px-6 py-2 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 flex items-center gap-2 disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {loading ? 'Saving...' : 'Save Draft'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSubmit('publish')}
-                disabled={loading}
-                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2 disabled:opacity-50"
-              >
-                <Upload className="w-4 h-4" />
-                {loading ? 'Publishing...' : 'Publish'}
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </AdminLayout>
