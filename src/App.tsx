@@ -31,11 +31,16 @@ import SettingsPage from './pages/User/SettingsPage';
 // Placeholder components for pages not yet implemented
 const StoryReaderPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Story Reader - Coming Soon</h1></div>;
 const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Video Player - Coming Soon</h1></div>;
-const AddFilmPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Film - Coming Soon</h1></div>;
-const AddContentPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Content - Coming Soon</h1></div>;
-const AddPodcastPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Podcast - Coming Soon</h1></div>;
-const AddAnimationPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Animation - Coming Soon</h1></div>;
-const AddSneakPeekPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Add Sneak Peek - Coming Soon</h1></div>;
+
+// Import the implemented admin content creation pages
+import AddStoryPage from './pages/Admin/AddStoryPage';
+import AddFilmPage from './pages/Admin/AddFilmPage';
+import AddContentPage from './pages/Admin/AddContentPage';
+import AddPodcastPage from './pages/Admin/AddPodcastPage';
+import AddAnimationPage from './pages/Admin/AddAnimationPage';
+import AddSneakPeekPage from './pages/Admin/AddSneakPeekPage';
+
+// Placeholder components for admin pages not yet implemented
 
 function App() {
   useAuthInit();
@@ -154,6 +159,11 @@ function App() {
         <Route path="/admin/analytics" element={
           <AdminRoute>
             <Analytics />
+          </AdminRoute>
+        } />
+        <Route path="/admin/add-story" element={
+          <AdminRoute>
+            <AddStoryPage />
           </AdminRoute>
         } />
         <Route path="/admin/add-film" element={

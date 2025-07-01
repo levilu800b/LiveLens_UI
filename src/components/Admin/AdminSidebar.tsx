@@ -9,7 +9,14 @@ import {
   Home,
   Menu,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Plus,
+  Film,
+  BookOpen,
+  Palette,
+  Eye,
+  Radio,
+  Video
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -45,6 +52,51 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
       icon: BarChart3,
       label: 'Analytics',
       description: 'Advanced analytics with export'
+    }
+  ];
+
+  const contentCreationItems = [
+    {
+      path: '/admin/add-story',
+      icon: BookOpen,
+      label: 'Add Story',
+      description: 'Create new story content'
+    },
+    {
+      path: '/admin/add-film',
+      icon: Film,
+      label: 'Add Film',
+      description: 'Create new film content'
+    },
+    {
+      path: '/admin/add-content',
+      icon: Plus,
+      label: 'Add Content',
+      description: 'Create new general content'
+    },
+    {
+      path: '/admin/add-podcast',
+      icon: Radio,
+      label: 'Add Podcast',
+      description: 'Create new podcast content'
+    },
+    {
+      path: '/admin/add-animation',
+      icon: Palette,
+      label: 'Add Animation',
+      description: 'Create new animation content'
+    },
+    {
+      path: '/admin/add-sneak-peek',
+      icon: Eye,
+      label: 'Add Sneak Peek',
+      description: 'Create new sneak peek content'
+    },
+    {
+      path: '/admin/add-live-video',
+      icon: Video,
+      label: 'Add Live Video',
+      description: 'Create new live video content'
     }
   ];
 
@@ -108,6 +160,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto">
+            {/* Main Navigation */}
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = isActivePath(item.path);
@@ -138,6 +191,48 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
                 </Link>
               );
             })}
+
+            {/* Content Creation Section */}
+            <div className="pt-4">
+              {!isCollapsed && (
+                <div className="px-3 py-2">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Content Creation
+                  </h3>
+                </div>
+              )}
+              
+              {contentCreationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = isActivePath(item.path);
+                
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={closeMobileMenu}
+                    className={`
+                      group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
+                      ${isActive
+                        ? 'bg-green-50 text-green-700 border-l-4 border-green-600'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      }
+                      ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}
+                      active:bg-gray-100 touch-manipulation
+                    `}
+                    title={isCollapsed ? item.label : ''}
+                  >
+                    <Icon className={`flex-shrink-0 h-4 w-4 ${isActive ? 'text-green-600' : 'text-gray-400'} ${isCollapsed ? '' : 'mr-3'}`} />
+                    {!isCollapsed && (
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="truncate text-sm">{item.label}</span>
+                        <span className="text-xs text-gray-500 mt-0.5 truncate">{item.description}</span>
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
           {/* Footer */}
