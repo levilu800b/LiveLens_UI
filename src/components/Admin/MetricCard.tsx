@@ -37,23 +37,25 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-200">
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0 pr-2 sm:pr-4">
-          <p className="text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wide mb-1 sm:mb-2 truncate">
+    <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-200 min-h-[120px] sm:min-h-[140px]">
+      <div className="flex items-start justify-between h-full">
+        <div className="flex-1 min-w-0 pr-2 sm:pr-4 flex flex-col justify-between">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wide mb-1 sm:mb-2 leading-tight">
             {title}
           </p>
-          <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-            {typeof value === 'number' ? value.toLocaleString() : value}
-          </p>
-          {change && (
-            <div className="mt-1 sm:mt-2">
+          <div className="flex-1 flex flex-col justify-center">
+            <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+              {typeof value === 'number' ? value.toLocaleString() : value}
+            </p>
+            {change && (
+              <div className="mt-1 sm:mt-2">
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${changeClasses[changeType]}`}>
                 {changeType === 'positive' && '+'}
                 {change}
               </span>
             </div>
           )}
+          </div>
         </div>
         <div className={`p-2 sm:p-3 rounded-full ${getIconBgClass()} flex-shrink-0`}>
           <Icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />

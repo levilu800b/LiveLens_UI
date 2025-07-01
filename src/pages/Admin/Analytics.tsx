@@ -89,19 +89,19 @@ const Analytics: React.FC = () => {
 
   // Prepare data for charts
   const contentTypeData = [
-    { label: 'Stories', value: stats.total_stories },
-    { label: 'Films', value: stats.total_films },
-    { label: 'Content', value: stats.total_content },
-    { label: 'Podcasts', value: stats.total_podcasts },
-    { label: 'Animations', value: stats.total_animations },
-    { label: 'Sneak Peeks', value: stats.total_sneak_peeks },
-    { label: 'Live Videos', value: stats.total_live_videos }
+    { label: 'Stories', value: stats.total_stories, color: '#3B82F6' }, // Blue
+    { label: 'Films', value: stats.total_films, color: '#EF4444' }, // Red
+    { label: 'Content', value: stats.total_content, color: '#10B981' }, // Green
+    { label: 'Podcasts', value: stats.total_podcasts, color: '#F59E0B' }, // Yellow
+    { label: 'Animations', value: stats.total_animations, color: '#8B5CF6' }, // Purple
+    { label: 'Sneak Peeks', value: stats.total_sneak_peeks, color: '#6366F1' }, // Indigo
+    { label: 'Live Videos', value: stats.total_live_videos, color: '#06B6D4' } // Cyan
   ].filter(item => item.value > 0);
 
   const userEngagementData = [
-    { label: 'Views', value: stats.total_views },
-    { label: 'Likes', value: stats.total_likes },
-    { label: 'Comments', value: stats.total_comments }
+    { label: 'Views', value: stats.total_views, color: '#3B82F6' }, // Blue
+    { label: 'Likes', value: stats.total_likes, color: '#EF4444' }, // Red
+    { label: 'Comments', value: stats.total_comments, color: '#10B981' } // Green
   ].filter(item => item.value > 0);
 
   // Top trending content for bar chart
@@ -141,10 +141,10 @@ const Analytics: React.FC = () => {
 
   // User status breakdown
   const userStatusData = [
-    { label: 'Active Users', value: stats.active_users_today },
-    { label: 'Verified Users', value: stats.verified_users },
-    { label: 'New Users Today', value: stats.new_users_today },
-    { label: 'Other Users', value: Math.max(0, stats.total_users - stats.active_users_today - stats.verified_users - stats.new_users_today) }
+    { label: 'Active Users', value: stats.active_users_today, color: '#10B981' }, // Green
+    { label: 'Verified Users', value: stats.verified_users, color: '#3B82F6' }, // Blue
+    { label: 'New Users Today', value: stats.new_users_today, color: '#F59E0B' }, // Yellow
+    { label: 'Other Users', value: Math.max(0, stats.total_users - stats.active_users_today - stats.verified_users - stats.new_users_today), color: '#6B7280' } // Gray
   ].filter(item => item.value > 0);
 
   // Export data for analytics
@@ -255,42 +255,39 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
-          {/* Content Distribution */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Distribution</h3>
-            <div className="h-80">
-              {contentTypeData.length > 0 ? (
-                <PieChart 
-                  data={contentTypeData}
-                  width={400}
-                  height={300}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  No content data available
-                </div>
-              )}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">        {/* Content Distribution */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="h-80">
+            {contentTypeData.length > 0 ? (
+              <PieChart 
+                data={contentTypeData}
+                width={400}
+                height={300}
+                title="Content Distribution"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No content data available
+              </div>
+            )}
           </div>
-
-          {/* User Engagement */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">User Engagement</h3>
-            <div className="h-80">
-              {userEngagementData.length > 0 ? (
-                <PieChart 
-                  data={userEngagementData}
-                  width={400}
-                  height={300}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  No engagement data available
-                </div>
-              )}
-            </div>
+        </div>        {/* User Engagement */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="h-80">
+            {userEngagementData.length > 0 ? (
+              <PieChart 
+                data={userEngagementData}
+                width={400}
+                height={300}
+                title="User Engagement"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No engagement data available
+              </div>
+            )}
           </div>
+        </div>
         </div>
 
         {/* Time Series and Top Content */}
@@ -328,13 +325,13 @@ const Analytics: React.FC = () => {
 
         {/* User Status Breakdown */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Status Distribution</h3>
           <div className="h-80">
             {userStatusData.length > 0 ? (
               <PieChart 
                 data={userStatusData}
                 width={800}
                 height={300}
+                title="User Status Distribution"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">

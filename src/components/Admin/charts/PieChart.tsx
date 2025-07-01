@@ -47,10 +47,12 @@ const PieChart: React.FC<PieChartProps> = ({
       .append("g")
       .attr("transform", `translate(${responsiveWidth / 2}, ${responsiveHeight / 2})`);
 
-    // Color scale
-    const colorScale = d3.scaleOrdinal()
-      .domain(data.map(d => d.label))
-      .range(data.map(d => d.color) || d3.schemeCategory10);
+    // Color scale - use provided colors or fallback to d3 color scheme
+    const getColor = (d: PieChartData, index: number) => {
+      if (d.color) return d.color;
+      const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#6366F1', '#06B6D4', '#EC4899', '#84CC16', '#F97316'];
+      return colors[index % colors.length];
+    };
 
     // Pie generator
     const pie = d3.pie<PieChartData>()
@@ -76,7 +78,7 @@ const PieChart: React.FC<PieChartProps> = ({
     // Add paths
     const paths = arcs.append("path")
       .attr("d", arc)
-      .attr("fill", d => colorScale(d.data.label) as string)
+      .attr("fill", (d, i) => getColor(d.data, i))
       .attr("stroke", "white")
       .attr("stroke-width", 2)
       .style("cursor", "pointer");
@@ -131,8 +133,23 @@ const PieChart: React.FC<PieChartProps> = ({
   return (
     <div ref={containerRef} className="bg-white rounded-lg p-3 sm:p-4 shadow-md w-full">
       <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 text-center">{title}</h3>
-      <div className="flex justify-center">
-        <svg ref={svgRef} className="max-w-full h-auto"></svg>
+      <div className="flex flex-col lg:flex-row items-center gap-4">
+        <div className="flex justify-center flex-1">
+          <svg ref={svgRef} className="max-w-full h-auto"></svg>
+        </div>
+        {/* Legend */}
+        <div className="flex flex-wrap lg:flex-col gap-2 justify-center lg:justify-start">
+          {data.map((item, index) => (
+            <div key={item.label} className="flex items-center gap-2 text-sm">
+              <div 
+                className="w-3 h-3 rounded-sm flex-shrink-0"
+                style={{ backgroundColor: item.color || ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#6366F1', '#06B6D4', '#EC4899', '#84CC16', '#F97316'][index % 10] }}
+              ></div>
+              <span className="text-gray-700 whitespace-nowrap">{item.label}</span>
+              <span className="text-gray-500 font-medium">({item.value})</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
