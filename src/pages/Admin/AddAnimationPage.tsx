@@ -421,7 +421,7 @@ const AddAnimationPage: React.FC = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Enter animation title"
                   />
                 </div>
@@ -434,7 +434,7 @@ const AddAnimationPage: React.FC = () => {
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -454,7 +454,7 @@ const AddAnimationPage: React.FC = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Enter detailed animation description"
                 />
               </div>
@@ -468,7 +468,7 @@ const AddAnimationPage: React.FC = () => {
                   value={formData.short_description}
                   onChange={handleInputChange}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Brief description for cards (optional - will use main description if empty)"
                 />
               </div>
@@ -482,7 +482,7 @@ const AddAnimationPage: React.FC = () => {
                     name="animation_type"
                     value={formData.animation_type}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {animationTypeOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -501,7 +501,7 @@ const AddAnimationPage: React.FC = () => {
                     name="language"
                     value={formData.language}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Animation language"
                   />
                 </div>
@@ -536,7 +536,7 @@ const AddAnimationPage: React.FC = () => {
                       name="series_name"
                       value={formData.series_name}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       placeholder="Enter series name"
                     />
                   </div>
@@ -551,7 +551,7 @@ const AddAnimationPage: React.FC = () => {
                       value={formData.episode_number || ''}
                       onChange={handleInputChange}
                       min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     />
                   </div>
 
@@ -565,7 +565,7 @@ const AddAnimationPage: React.FC = () => {
                       value={formData.season_number || ''}
                       onChange={handleInputChange}
                       min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     />
                   </div>
                 </div>
@@ -591,7 +591,7 @@ const AddAnimationPage: React.FC = () => {
                       value={formData.duration}
                       onChange={handleInputChange}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       placeholder="Duration in seconds"
                     />
                     <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 min-w-fit">
@@ -611,7 +611,7 @@ const AddAnimationPage: React.FC = () => {
                       value={formData.trailer_duration}
                       onChange={handleInputChange}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       placeholder="Trailer duration in seconds"
                     />
                     <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 min-w-fit">
@@ -628,7 +628,7 @@ const AddAnimationPage: React.FC = () => {
                     name="video_quality"
                     value={formData.video_quality}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {videoQualityOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -646,7 +646,7 @@ const AddAnimationPage: React.FC = () => {
                     name="frame_rate"
                     value={formData.frame_rate}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {frameRateOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -666,7 +666,7 @@ const AddAnimationPage: React.FC = () => {
                     value={formData.resolution_width}
                     onChange={handleInputChange}
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Width in pixels"
                   />
                 </div>
@@ -681,7 +681,7 @@ const AddAnimationPage: React.FC = () => {
                     value={formData.resolution_height}
                     onChange={handleInputChange}
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Height in pixels"
                   />
                 </div>
@@ -695,7 +695,7 @@ const AddAnimationPage: React.FC = () => {
                     name="animation_software"
                     value={formData.animation_software}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="e.g., Blender, Maya, After Effects"
                   />
                 </div>
@@ -709,7 +709,7 @@ const AddAnimationPage: React.FC = () => {
                     name="render_engine"
                     value={formData.render_engine}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="e.g., Cycles, Eevee, Arnold"
                   />
                 </div>
@@ -724,7 +724,7 @@ const AddAnimationPage: React.FC = () => {
                     value={formData.production_time}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Total production hours"
                   />
                 </div>
@@ -740,7 +740,7 @@ const AddAnimationPage: React.FC = () => {
                     onChange={handleInputChange}
                     min="1900"
                     max="2030"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Release year"
                   />
                 </div>
@@ -1093,7 +1093,7 @@ const AddAnimationPage: React.FC = () => {
                     name="director"
                     value={formData.director}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Animation director"
                   />
                 </div>
@@ -1107,7 +1107,7 @@ const AddAnimationPage: React.FC = () => {
                     name="animator"
                     value={formData.animator}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Lead animator(s)"
                   />
                 </div>
@@ -1121,7 +1121,7 @@ const AddAnimationPage: React.FC = () => {
                     name="music_composer"
                     value={formData.music_composer}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Music composer"
                   />
                 </div>
@@ -1135,7 +1135,7 @@ const AddAnimationPage: React.FC = () => {
                     name="sound_designer"
                     value={formData.sound_designer}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Sound designer"
                   />
                 </div>
@@ -1149,7 +1149,7 @@ const AddAnimationPage: React.FC = () => {
                     name="studio"
                     value={formData.studio}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Animation studio"
                   />
                 </div>
@@ -1165,7 +1165,7 @@ const AddAnimationPage: React.FC = () => {
                     onChange={handleInputChange}
                     min="0"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Production budget"
                   />
                 </div>
@@ -1182,7 +1182,7 @@ const AddAnimationPage: React.FC = () => {
                     value={voiceActorInput}
                     onChange={(e) => setVoiceActorInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVoiceActor())}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Add a voice actor and press Enter"
                   />
                   <button
@@ -1225,7 +1225,7 @@ const AddAnimationPage: React.FC = () => {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Add a tag and press Enter"
                 />
                 <button
@@ -1267,7 +1267,7 @@ const AddAnimationPage: React.FC = () => {
                   value={subtitleInput}
                   onChange={(e) => setSubtitleInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSubtitle())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Add a subtitle language and press Enter"
                 />
                 <button

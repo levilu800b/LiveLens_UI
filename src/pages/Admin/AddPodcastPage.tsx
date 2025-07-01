@@ -316,7 +316,7 @@ const AddPodcastPage: React.FC = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Enter episode title"
                 />
               </div>
@@ -329,7 +329,7 @@ const AddPodcastPage: React.FC = () => {
                   name="series"
                   value={formData.series}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 >
                   <option value="">Select a series</option>
                   {podcastSeries.map(series => (
@@ -350,7 +350,7 @@ const AddPodcastPage: React.FC = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 placeholder="Enter detailed episode description"
               />
             </div>
@@ -364,7 +364,7 @@ const AddPodcastPage: React.FC = () => {
                 value={formData.summary}
                 onChange={handleInputChange}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 placeholder="Brief episode summary (optional - will use description if empty)"
               />
             </div>
@@ -381,7 +381,7 @@ const AddPodcastPage: React.FC = () => {
                   value={formData.episode_number}
                   onChange={handleInputChange}
                   min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
               </div>
 
@@ -395,7 +395,7 @@ const AddPodcastPage: React.FC = () => {
                   value={formData.season_number}
                   onChange={handleInputChange}
                   min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
               </div>
 
@@ -407,7 +407,7 @@ const AddPodcastPage: React.FC = () => {
                   name="episode_type"
                   value={formData.episode_type}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 >
                   {episodeTypeOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -428,7 +428,7 @@ const AddPodcastPage: React.FC = () => {
                   name="guest"
                   value={formData.guest}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Episode guest names"
                 />
               </div>
@@ -444,7 +444,7 @@ const AddPodcastPage: React.FC = () => {
                     value={formData.duration}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Duration in seconds"
                   />
                   <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 min-w-fit">
@@ -670,7 +670,7 @@ const AddPodcastPage: React.FC = () => {
                   name="external_url"
                   value={formData.external_url}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="https://example.com/podcast-episode.mp3"
                 />
               </div>
@@ -687,7 +687,7 @@ const AddPodcastPage: React.FC = () => {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Add a tag and press Enter"
                 />
                 <button
@@ -731,7 +731,7 @@ const AddPodcastPage: React.FC = () => {
                     name="audio_quality"
                     value={formData.audio_quality}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {audioQualityOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -750,7 +750,7 @@ const AddPodcastPage: React.FC = () => {
                     name="scheduled_at"
                     value={formData.scheduled_at || ''}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
               </div>
@@ -762,7 +762,7 @@ const AddPodcastPage: React.FC = () => {
                     name="is_featured"
                     checked={formData.is_featured}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">Featured Episode</span>
                 </label>
@@ -773,7 +773,7 @@ const AddPodcastPage: React.FC = () => {
                     name="is_premium"
                     checked={formData.is_premium}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">Premium Content</span>
                 </label>
@@ -784,7 +784,7 @@ const AddPodcastPage: React.FC = () => {
                     name="is_explicit"
                     checked={formData.is_explicit}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">Explicit Content</span>
                 </label>

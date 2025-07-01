@@ -39,6 +39,7 @@ import AddContentPage from './pages/Admin/AddContentPage';
 import AddPodcastPage from './pages/Admin/AddPodcastPage';
 import AddAnimationPage from './pages/Admin/AddAnimationPage';
 import AddSneakPeekPage from './pages/Admin/AddSneakPeekPage';
+import AddLiveVideoPage from './pages/Admin/AddLiveVideoPage';
 
 // Placeholder components for admin pages not yet implemented
 
@@ -189,6 +190,11 @@ function App() {
         <Route path="/admin/add-sneak-peek" element={
           <AdminRoute>
             <AddSneakPeekPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/add-live-video" element={
+          <AdminRoute>
+            <AddLiveVideoPage />
           </AdminRoute>
         } />
         {/* Additional Admin Routes */}

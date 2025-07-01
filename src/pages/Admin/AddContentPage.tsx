@@ -277,7 +277,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Enter content title"
                   />
                 </div>
@@ -290,7 +290,7 @@ const AddContentPage: React.FC = () => {
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Enter content description"
                   />
                 </div>
@@ -303,7 +303,7 @@ const AddContentPage: React.FC = () => {
                     value={formData.short_description}
                     onChange={(e) => handleInputChange('short_description', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Brief description for cards (optional)"
                   />
                 </div>
@@ -318,7 +318,7 @@ const AddContentPage: React.FC = () => {
                       handleInputChange('category', e.target.value);
                       handleInputChange('content_type', e.target.value);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -335,7 +335,7 @@ const AddContentPage: React.FC = () => {
                   <select
                     value={formData.difficulty_level}
                     onChange={(e) => handleInputChange('difficulty_level', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {difficultyOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -352,7 +352,7 @@ const AddContentPage: React.FC = () => {
                   <select
                     value={formData.video_quality}
                     onChange={(e) => handleInputChange('video_quality', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   >
                     {qualityOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -371,7 +371,7 @@ const AddContentPage: React.FC = () => {
                     min="1"
                     value={formData.duration}
                     onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 15)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -383,7 +383,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.language}
                     onChange={(e) => handleInputChange('language', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="e.g., English, Spanish"
                   />
                 </div>
@@ -396,7 +396,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.creator}
                     onChange={(e) => handleInputChange('creator', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Content creator name"
                   />
                 </div>
@@ -411,7 +411,7 @@ const AddContentPage: React.FC = () => {
                     max={new Date().getFullYear() + 5}
                     value={formData.release_year || ''}
                     onChange={(e) => handleInputChange('release_year', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -423,7 +423,7 @@ const AddContentPage: React.FC = () => {
                     type="text"
                     value={formData.series_name}
                     onChange={(e) => handleInputChange('series_name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     placeholder="Series or channel name"
                   />
                 </div>
@@ -437,7 +437,7 @@ const AddContentPage: React.FC = () => {
                     min="1"
                     value={formData.episode_number || ''}
                     onChange={(e) => handleInputChange('episode_number', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
               </div>
@@ -471,7 +471,7 @@ const AddContentPage: React.FC = () => {
                         type="url"
                         value={formData.live_stream_url || ''}
                         onChange={(e) => handleInputChange('live_stream_url', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         placeholder="https://example.com/stream"
                       />
                     </div>
@@ -484,7 +484,7 @@ const AddContentPage: React.FC = () => {
                         type="datetime-local"
                         value={formData.scheduled_live_time || ''}
                         onChange={(e) => handleInputChange('scheduled_live_time', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                       />
                     </div>
                   </div>
@@ -502,13 +502,13 @@ const AddContentPage: React.FC = () => {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Add a tag and press Enter"
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Add Tag
                 </button>
@@ -546,7 +546,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="video/*"
                     onChange={(e) => handleFileChange('video_file', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -558,7 +558,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="video/*"
                     onChange={(e) => handleFileChange('trailer_file', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                   <div className="mt-1">
                     <label className="block text-xs text-gray-500 mb-1">
@@ -582,7 +582,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileChange('thumbnail', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -594,7 +594,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileChange('poster', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
@@ -606,7 +606,7 @@ const AddContentPage: React.FC = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileChange('banner', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
               </div>
@@ -622,7 +622,7 @@ const AddContentPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/admin/content')}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     disabled={loading}
                   >
                     Cancel
@@ -631,7 +631,7 @@ const AddContentPage: React.FC = () => {
                     type="button"
                     onClick={() => handleSubmit('save')}
                     disabled={loading}
-                    className="flex items-center px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="flex items-center px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {loading ? 'Saving...' : 'Save as Draft'}
@@ -640,7 +640,7 @@ const AddContentPage: React.FC = () => {
                     type="button"
                     onClick={() => handleSubmit('publish')}
                     disabled={loading}
-                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     {loading ? 'Publishing...' : 'Publish Content'}
