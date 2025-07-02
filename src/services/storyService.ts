@@ -139,7 +139,7 @@ export interface StoryFilters {
 class StoryService {
   private getAuthHeaders() {
     const token = unifiedAuth.getAccessToken();
-    console.log('Auth token status:', {
+    console.log('StoryService auth token status:', {
       hasToken: !!token,
       tokenPreview: token ? `${token.substring(0, 30)}...` : 'No token'
     });
@@ -147,9 +147,12 @@ class StoryService {
     if (token) {
       return {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       };
     }
-    return {};
+    return {
+      'Content-Type': 'application/json',
+    };
   }
 
   private async makeRequest<T>(
@@ -377,58 +380,50 @@ class StoryService {
 
   // Update story
   async updateStory(id: string, data: Partial<CreateStoryData>): Promise<Story> {
-    const formData = new FormData();
+    console.log('updateStory called with data:', data);
+    
+    // Use JSON instead of FormData for updates to avoid Content-Type issues
+    const updatePayload: any = {};
     
     // Add basic fields
-    if (data.title) formData.append('title', data.title);
-    if (data.description) formData.append('description', data.description);
-    if (data.content) formData.append('content', data.content);
-    if (data.category) formData.append('category', data.category);
-    if (data.tags) formData.append('tags', JSON.stringify(data.tags));
-    if (data.status) formData.append('status', data.status);
+    if (data.title) updatePayload.title = data.title;
+    if (data.description) updatePayload.description = data.description;
+    if (data.content) updatePayload.content = data.content;
+    if (data.category) updatePayload.category = data.category;
+    if (data.tags) updatePayload.tags = data.tags; // Send as array, not JSON string
+    if (data.status) updatePayload.status = data.status;
     
     if (data.is_featured !== undefined) {
-      formData.append('is_featured', data.is_featured.toString());
+      updatePayload.is_featured = data.is_featured;
     }
     if (data.is_trending !== undefined) {
-      formData.append('is_trending', data.is_trending.toString());
+      updatePayload.is_trending = data.is_trending;
     }
 
-    // Add files
-    if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
-    if (data.cover_image) formData.append('cover_image', data.cover_image);
-
-    // Add pages data
+    // Add pages data as JSON
     if (data.pages_data) {
-      formData.append('pages_data', JSON.stringify(
-        data.pages_data.map(page => ({
-          title: page.title,
-          content: page.content
-        }))
-      ));
-
-      // Add page images separately
-      data.pages_data.forEach((page, index) => {
-        if (page.page_image) {
-          formData.append(`page_${index}_image`, page.page_image);
-        }
-      });
+      console.log('Adding pages_data to payload:', data.pages_data);
+      updatePayload.pages_data = data.pages_data.map(page => ({
+        title: page.title,
+        content: page.content
+      }));
     }
 
-    // Debug logging
-    console.log('Updating story with data:', {
-      id,
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      tags: data.tags,
-      status: data.status,
-      pages_count: data.pages_data?.length || 0
-    });
+    console.log('Update payload:', updatePayload);
+    console.log('Making PATCH request to:', `/stories/stories/${id}/`);
+
+    // For now, don't handle file uploads in updates (thumbnail, cover_image, page_images)
+    // These can be handled separately if needed
+    if (data.thumbnail || data.cover_image || (data.pages_data && data.pages_data.some(p => p.page_image))) {
+      console.warn('File uploads not supported in story updates yet. Files will be ignored.');
+    }
 
     return this.makeRequest(`/stories/stories/${id}/`, {
       method: 'PATCH',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatePayload),
     });
   }
 
@@ -445,15 +440,23 @@ class StoryService {
     interactionType: 'like' | 'bookmark' | 'read',
     data?: { reading_progress?: number; last_page_read?: number }
   ): Promise<{ message: string; interaction?: unknown }> {
+    const requestBody = {
+      interaction_type: interactionType,
+      ...data,
+    };
+    
+    console.log('Sending interaction request:', {
+      url: `/stories/stories/${id}/interact/`,
+      method: 'POST',
+      body: requestBody
+    });
+    
     return this.makeRequest(`/stories/stories/${id}/interact/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        interaction_type: interactionType,
-        ...data,
-      }),
+      body: JSON.stringify(requestBody),
     });
   }
 

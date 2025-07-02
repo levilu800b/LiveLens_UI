@@ -22,6 +22,7 @@ import commentService from '../../services/commentService';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import type { Story, StoryPage } from '../../services/storyService';
 import type { Comment } from '../../services/commentService';
+import { config } from '../../config';
 
 interface RootState {
   user: {
@@ -35,13 +36,21 @@ interface RootState {
   };
 }
 
+// Helper function to get full avatar URL
+const getFullAvatarUrl = (avatarUrl: string | null | undefined): string | undefined => {
+  if (!avatarUrl) return undefined;
+  // If it's already a full URL, return as is
+  if (avatarUrl.startsWith('http')) return avatarUrl;
+  // If it's a relative path, prepend the backend URL
+  return `${config.backendUrl}${avatarUrl}`;
+};
+
 const StoryReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
   
   const [story, setStory] = useState<Story | null>(null);
-  const [pages, setPages] = useState<StoryPage[]>([]);
   const [paginatedContent, setPaginatedContent] = useState<Array<{
     content: string;
     wordCount: number;
@@ -158,20 +167,16 @@ const StoryReaderPage: React.FC = () => {
         throw new Error('Story ID is required');
       }
 
+      console.log('Loading story with ID:', id);
       const storyData = await storyService.getStory(id);
+      console.log('Story loaded successfully:', storyData);
       setStory(storyData);
 
       // Load pages
       const pagesData = await storyService.getStoryPages(id);
-      setPages(pagesData.pages);
 
       // Process content into 1000-word pages
       processStoryContent(pagesData.pages);
-
-      // Set initial page based on reading progress (adjust for new pagination)
-      if (storyData.reading_progress?.last_page_read) {
-        setCurrentPage(Math.min(storyData.reading_progress.last_page_read, totalPages));
-      }
 
     } catch (err) {
       console.error('Error loading story:', err);
@@ -181,15 +186,33 @@ const StoryReaderPage: React.FC = () => {
     }
   };
 
+  // Set initial page based on reading progress after totalPages is set
+  useEffect(() => {
+    if (story?.reading_progress?.last_page_read && totalPages > 0) {
+      setCurrentPage(Math.min(story.reading_progress.last_page_read, totalPages));
+    }
+  }, [story, totalPages]);
+
   const loadComments = async () => {
     if (!id) return;
     
     try {
       setCommentsLoading(true);
+      console.log('Loading comments for story:', id);
       const commentsData = await commentService.getStoryComments(id);
-      setComments(commentsData.results);
+      console.log('Comments loaded successfully:', commentsData);
+      
+      // Ensure we have the results array
+      const commentsArray = commentsData.results || [];
+      setComments(commentsArray);
+      
+      // Update story comment count if it differs
+      if (story && commentsData.count !== story.comment_count) {
+        setStory(prev => prev ? { ...prev, comment_count: commentsData.count } : null);
+      }
     } catch (err) {
       console.error('Error loading comments:', err);
+      // Don't show error to user for comments loading failure
     } finally {
       setCommentsLoading(false);
     }
@@ -201,7 +224,7 @@ const StoryReaderPage: React.FC = () => {
     try {
       await storyService.interactWithStory(story.id, 'read', {
         last_page_read: currentPage,
-        reading_progress: Math.round((currentPage / pages.length) * 100)
+        reading_progress: Math.round((currentPage / totalPages) * 100)
       });
 
       // Track view time
@@ -220,8 +243,11 @@ const StoryReaderPage: React.FC = () => {
       loadStory();
       loadComments();
     }
+    
+    // Debug user info
+    console.log('StoryReaderPage userInfo:', userInfo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, userInfo]);
 
   useEffect(() => {
     // Track page view and reading progress when page changes
@@ -238,14 +264,26 @@ const StoryReaderPage: React.FC = () => {
     }
 
     try {
-      await storyService.interactWithStory(story.id, 'like');
-      setStory(prev => prev ? {
-        ...prev,
-        is_liked: !prev.is_liked,
-        like_count: prev.is_liked ? prev.like_count - 1 : prev.like_count + 1
-      } : null);
+      console.log('Attempting to like story:', story.id);
+      console.log('Current story like state:', { is_liked: story.is_liked, like_count: story.like_count });
+      
+      const response = await storyService.interactWithStory(story.id, 'like');
+      console.log('Like response:', response);
+      
+      // Optimistically update the UI
+      setStory(prev => {
+        if (!prev) return null;
+        const newStory = {
+          ...prev,
+          is_liked: !prev.is_liked,
+          like_count: prev.is_liked ? prev.like_count - 1 : prev.like_count + 1
+        };
+        console.log('Updated story state:', { is_liked: newStory.is_liked, like_count: newStory.like_count });
+        return newStory;
+      });
     } catch (err) {
       console.error('Error liking story:', err);
+      alert(`Failed to ${story.is_liked ? 'unlike' : 'like'} story. Please try again.`);
     }
   };
 
@@ -256,13 +294,17 @@ const StoryReaderPage: React.FC = () => {
     }
 
     try {
-      await storyService.interactWithStory(story.id, 'bookmark');
+      console.log('Attempting to bookmark story:', story.id);
+      const response = await storyService.interactWithStory(story.id, 'bookmark');
+      console.log('Bookmark response:', response);
+      
       setStory(prev => prev ? {
         ...prev,
         is_bookmarked: !prev.is_bookmarked
       } : null);
     } catch (err) {
       console.error('Error bookmarking story:', err);
+      alert(`Failed to ${story.is_bookmarked ? 'remove bookmark' : 'bookmark'} story. Please try again.`);
     }
   };
 
@@ -288,7 +330,16 @@ const StoryReaderPage: React.FC = () => {
     if (!newComment.trim() || !story || !userInfo) return;
 
     try {
+      console.log('Attempting to submit comment for story:', story.id);
       const comment = await commentService.createStoryComment(story.id, newComment.trim());
+      console.log('Comment submitted successfully:', comment);
+      
+      // Validate the comment response
+      if (!comment || !comment.id || !comment.user) {
+        throw new Error('Invalid comment response from server');
+      }
+      
+      // Add comment to list and clear form
       setComments(prev => [comment, ...prev]);
       setNewComment('');
       
@@ -297,6 +348,12 @@ const StoryReaderPage: React.FC = () => {
         ...prev,
         comment_count: prev.comment_count + 1
       } : null);
+      
+      // Refresh comments to ensure consistency
+      setTimeout(() => {
+        loadComments();
+      }, 1000);
+      
     } catch (err) {
       console.error('Error submitting comment:', err);
       alert('Failed to submit comment. Please try again.');
@@ -307,17 +364,34 @@ const StoryReaderPage: React.FC = () => {
     if (!replyText.trim() || !story || !userInfo) return;
 
     try {
+      console.log('Attempting to submit reply for comment:', parentId);
       const reply = await commentService.createStoryComment(story.id, replyText.trim(), parentId);
+      console.log('Reply submitted successfully:', reply);
+      
+      // Validate the reply response
+      if (!reply || !reply.id || !reply.user) {
+        throw new Error('Invalid reply response from server');
+      }
       
       // Update comments to include the reply
       setComments(prev => prev.map(comment => 
         comment.id === parentId 
-          ? { ...comment, replies: [...(comment.replies || []), reply], reply_count: comment.reply_count + 1 }
+          ? { 
+              ...comment, 
+              replies: [...(comment.replies || []), reply], 
+              reply_count: (comment.reply_count || 0) + 1 
+            }
           : comment
       ));
       
       setReplyText('');
       setReplyTo(null);
+      
+      // Refresh comments to ensure consistency
+      setTimeout(() => {
+        loadComments();
+      }, 1000);
+      
     } catch (err) {
       console.error('Error submitting reply:', err);
       alert('Failed to submit reply. Please try again.');
@@ -331,26 +405,45 @@ const StoryReaderPage: React.FC = () => {
     }
 
     try {
-      await commentService.interactWithComment(commentId, 'like');
+      console.log('Attempting to like comment:', commentId);
+      const response = await commentService.interactWithComment(commentId, 'like');
+      console.log('Comment like response:', response);
       
       // Update comment like count (optimistic update)
-      setComments(prev => prev.map(comment => 
-        comment.id === commentId 
-          ? { 
-              ...comment, 
-              like_count: comment.user_interaction?.liked 
-                ? comment.like_count - 1 
-                : comment.like_count + 1,
+      setComments(prev => prev.map(comment => {
+        const updateComment = (c: typeof comment): typeof comment => {
+          if (c.id === commentId) {
+            const wasLiked = c.user_interaction?.liked || false;
+            return {
+              ...c,
+              like_count: wasLiked ? c.like_count - 1 : c.like_count + 1,
               user_interaction: {
-                ...comment.user_interaction,
-                liked: !comment.user_interaction?.liked,
+                ...c.user_interaction,
+                liked: !wasLiked,
                 disliked: false
               }
-            }
-          : comment
-      ));
+            };
+          }
+          // Also check replies
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(updateComment)
+            };
+          }
+          return c;
+        };
+        return updateComment(comment);
+      }));
+      
+      // Refresh comments after a short delay to ensure consistency
+      setTimeout(() => {
+        loadComments();
+      }, 500);
+      
     } catch (err) {
       console.error('Error liking comment:', err);
+      alert('Failed to like comment. Please try again.');
     }
   };
 
@@ -419,7 +512,7 @@ const StoryReaderPage: React.FC = () => {
               
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
-                  Page {currentPage} of {pages.length}
+                  Page {currentPage} of {totalPages}
                 </span>
                 
                 {/* Action buttons */}
@@ -492,9 +585,9 @@ const StoryReaderPage: React.FC = () => {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
-                    {story.author.avatar ? (
+                    {story.author.avatar && getFullAvatarUrl(story.author.avatar) ? (
                       <img
-                        src={story.author.avatar}
+                        src={getFullAvatarUrl(story.author.avatar)!}
                         alt={story.author.username}
                         className="w-8 h-8 rounded-full"
                       />
@@ -702,9 +795,9 @@ const StoryReaderPage: React.FC = () => {
             {userInfo ? (
               <div className="mb-8">
                 <div className="flex space-x-4">
-                  {userInfo.avatar ? (
+                  {userInfo.avatar && getFullAvatarUrl(userInfo.avatar) ? (
                     <img
-                      src={userInfo.avatar}
+                      src={getFullAvatarUrl(userInfo.avatar)!}
                       alt={userInfo.username}
                       className="w-10 h-10 rounded-full"
                     />
@@ -761,12 +854,20 @@ const StoryReaderPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-6">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="border-b border-gray-100 pb-6 last:border-b-0">
+                {comments.map((comment) => {
+                  // Add safety checks to prevent rendering errors
+                  if (!comment || !comment.id || !comment.user) {
+                    console.warn('Invalid comment data:', comment);
+                    return null;
+                  }
+                  
+                  return (
+                    <div key={comment.id} className="border-b border-gray-100 pb-6 last:border-b-0"
+                    >
                     <div className="flex space-x-4">
-                      {comment.user.avatar ? (
+                      {comment.user.avatar_url && getFullAvatarUrl(comment.user.avatar_url) ? (
                         <img
-                          src={comment.user.avatar}
+                          src={getFullAvatarUrl(comment.user.avatar_url)!}
                           alt={comment.user.username}
                           className="w-10 h-10 rounded-full"
                         />
@@ -782,7 +883,7 @@ const StoryReaderPage: React.FC = () => {
                             {comment.user.first_name} {comment.user.last_name}
                           </span>
                           <span className="text-gray-500 text-sm">
-                            {formatDate(comment.created_at)}
+                            {comment.time_since || formatDate(comment.created_at)}
                           </span>
                           {comment.is_edited && (
                             <span className="text-gray-400 text-xs">(edited)</span>
@@ -818,9 +919,9 @@ const StoryReaderPage: React.FC = () => {
                         {replyTo === comment.id && (
                           <div className="mt-4">
                             <div className="flex space-x-3">
-                              {userInfo?.avatar ? (
+                              {userInfo?.avatar && getFullAvatarUrl(userInfo.avatar) ? (
                                 <img
-                                  src={userInfo.avatar}
+                                  src={getFullAvatarUrl(userInfo.avatar)!}
                                   alt={userInfo.username}
                                   className="w-8 h-8 rounded-full"
                                 />
@@ -834,7 +935,7 @@ const StoryReaderPage: React.FC = () => {
                                 <textarea
                                   value={replyText}
                                   onChange={(e) => setReplyText(e.target.value)}
-                                  placeholder="Write a reply..."
+                                  placeholder={`Reply to ${comment.user.first_name}...`}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"
                                   rows={2}
                                 />
@@ -862,14 +963,14 @@ const StoryReaderPage: React.FC = () => {
                           </div>
                         )}
                         
-                        {/* Replies */}
+                        {/* Replies - Display as threaded conversation */}
                         {comment.replies && comment.replies.length > 0 && (
-                          <div className="mt-4 space-y-4 ml-8">
+                          <div className="mt-4 space-y-4 ml-8 border-l-2 border-gray-100 pl-4">
                             {comment.replies.map((reply) => (
                               <div key={reply.id} className="flex space-x-3">
-                                {reply.user.avatar ? (
+                                {reply.user.avatar_url && getFullAvatarUrl(reply.user.avatar_url) ? (
                                   <img
-                                    src={reply.user.avatar}
+                                    src={getFullAvatarUrl(reply.user.avatar_url)!}
                                     alt={reply.user.username}
                                     className="w-8 h-8 rounded-full"
                                   />
@@ -885,13 +986,16 @@ const StoryReaderPage: React.FC = () => {
                                       {reply.user.first_name} {reply.user.last_name}
                                     </span>
                                     <span className="text-gray-500 text-xs">
-                                      {formatDate(reply.created_at)}
+                                      {reply.time_since || formatDate(reply.created_at)}
                                     </span>
+                                    {reply.is_edited && (
+                                      <span className="text-gray-400 text-xs">(edited)</span>
+                                    )}
                                   </div>
                                   
-                                  <p className="text-gray-800 text-sm">{reply.text}</p>
+                                  <p className="text-gray-800 text-sm mb-2">{reply.text}</p>
                                   
-                                  <div className="flex items-center space-x-3 mt-2">
+                                  <div className="flex items-center space-x-3">
                                     <button
                                       onClick={() => likeComment(reply.id)}
                                       className={`flex items-center space-x-1 text-xs transition-colors ${
@@ -903,7 +1007,64 @@ const StoryReaderPage: React.FC = () => {
                                       <ThumbsUp className="h-3 w-3" />
                                       <span>{reply.like_count}</span>
                                     </button>
+                                    
+                                    {userInfo && (
+                                      <button
+                                        onClick={() => setReplyTo(reply.id)}
+                                        className="text-xs text-gray-500 hover:text-purple-600 transition-colors"
+                                      >
+                                        Reply
+                                      </button>
+                                    )}
                                   </div>
+                                  
+                                  {/* Nested reply form */}
+                                  {replyTo === reply.id && (
+                                    <div className="mt-3">
+                                      <div className="flex space-x-2">
+                                        {userInfo?.avatar && getFullAvatarUrl(userInfo.avatar) ? (
+                                          <img
+                                            src={getFullAvatarUrl(userInfo.avatar)!}
+                                            alt={userInfo.username}
+                                            className="w-6 h-6 rounded-full"
+                                          />
+                                        ) : (
+                                          <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                                            <User className="h-3 w-3 text-purple-600" />
+                                          </div>
+                                        )}
+                                        
+                                        <div className="flex-1">
+                                          <textarea
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            placeholder={`Reply to ${reply.user.first_name}...`}
+                                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs resize-none"
+                                            rows={2}
+                                          />
+                                          
+                                          <div className="flex justify-end space-x-1 mt-1">
+                                            <button
+                                              onClick={() => {
+                                                setReplyTo(null);
+                                                setReplyText('');
+                                              }}
+                                              className="px-2 py-1 text-gray-600 hover:text-gray-800 transition-colors text-xs"
+                                            >
+                                              Cancel
+                                            </button>
+                                            <button
+                                              onClick={() => submitReply(comment.id)} // Reply to main comment, not the nested reply
+                                              disabled={!replyText.trim()}
+                                              className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+                                            >
+                                              Reply
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -912,7 +1073,8 @@ const StoryReaderPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

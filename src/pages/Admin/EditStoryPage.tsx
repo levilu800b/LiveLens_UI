@@ -212,17 +212,15 @@ const EditStoryPage: React.FC = () => {
         status: action === 'publish' ? 'published' : 'draft',
         pages_data: formData.pages_data.map(page => ({
           title: page.title,
-          content: page.content,
-          ...(page.page_image && { page_image: page.page_image })
+          content: page.content
+          // Note: page_image files are not supported in updates yet
         }))
       };
 
-      if (formData.cover_image) {
-        updateData.cover_image = formData.cover_image;
-      }
-      
-      if (formData.thumbnail) {
-        updateData.thumbnail = formData.thumbnail;
+      // Note: File uploads (cover_image, thumbnail) are not supported in updates yet
+      // These would need to be handled separately with a different endpoint
+      if (formData.cover_image || formData.thumbnail) {
+        console.warn('File uploads are not supported in story updates. Files will be ignored.');
       }
 
       await storyService.updateStory(id, updateData);

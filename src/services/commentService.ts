@@ -10,7 +10,7 @@ export interface Comment {
     username: string;
     first_name: string;
     last_name: string;
-    avatar?: string;
+    avatar_url?: string;
   };
   content_type: string;
   object_id: string;
@@ -30,10 +30,14 @@ export interface Comment {
     liked: boolean;
     disliked: boolean;
   };
+  time_since?: string;
+  thread_level?: number;
+  can_edit?: boolean;
+  can_delete?: boolean;
 }
 
 export interface CreateCommentData {
-  content_type: string; // e.g., 'stories.story'
+  content_type_name: string; // e.g., 'story'
   object_id: string;
   text: string;
   parent?: string;
@@ -51,6 +55,11 @@ export interface CommentFilters {
 class CommentService {
   private getAuthHeaders() {
     const token = unifiedAuth.getAccessToken();
+    console.log('CommentService auth token status:', {
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 30)}...` : 'No token'
+    });
+    
     return {
       'Authorization': token ? `Bearer ${token}` : '',
       'Content-Type': 'application/json',
@@ -63,6 +72,12 @@ class CommentService {
   ): Promise<T> {
     const url = `${API_BASE_URL}/comments${endpoint}`;
     
+    console.log('CommentService API Request:', {
+      url,
+      method: options.method || 'GET',
+      hasAuth: !!this.getAuthHeaders().Authorization
+    });
+    
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -71,8 +86,19 @@ class CommentService {
       },
     });
 
+    console.log('CommentService API Response:', {
+      url,
+      status: response.status,
+      statusText: response.statusText
+    });
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('CommentService API Error:', {
+        endpoint: url,
+        status: response.status,
+        error: errorData
+      });
       throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
     }
 
@@ -106,7 +132,7 @@ class CommentService {
     results: Comment[];
   }> {
     return this.getComments({
-      content_type: 'stories.story',
+      content_type: 'story',
       object_id: storyId,
       page,
       page_size: pageSize,
@@ -130,7 +156,7 @@ class CommentService {
   // Create story comment
   async createStoryComment(storyId: string, text: string, parentId?: string): Promise<Comment> {
     return this.createComment({
-      content_type: 'stories.story',
+      content_type_name: 'story',
       object_id: storyId,
       text,
       parent: parentId,
@@ -155,11 +181,11 @@ class CommentService {
   // Like/unlike comment
   async interactWithComment(
     commentId: string, 
-    action: 'like' | 'dislike' | 'flag'
-  ): Promise<{ message: string; count?: number }> {
+    action: 'like' | 'dislike' | 'report'
+  ): Promise<{ message: string; action: string }> {
     return this.makeRequest(`/${commentId}/interact/`, {
       method: 'POST',
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ interaction_type: action }),
     });
   }
 
