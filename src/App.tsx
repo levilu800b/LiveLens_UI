@@ -44,6 +44,7 @@ import AddLiveVideoPage from './pages/Admin/AddLiveVideoPage';
 // Placeholder components for admin pages not yet implemented
 
 function App() {
+  console.log('🔍 App: Component rendering');
   useAuthInit();
 
   useEffect(() => {  

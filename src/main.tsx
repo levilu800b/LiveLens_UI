@@ -8,20 +8,20 @@ import store from './store/index.ts';
 import { ThemeProvider } from "@material-tailwind/react";
 
 // 🔒 SECURITY: Completely disable console output
-(() => {
-  const noop = () => {};
-  console.log = noop;
-  console.error = noop; 
-  console.warn = noop;
-  console.info = noop;
-  console.debug = noop;
-  console.trace = noop;
-  console.table = noop;
-  console.group = noop;
-  console.groupEnd = noop;
-  console.time = noop;
-  console.timeEnd = noop;
-})();
+// (() => {
+//   const noop = () => {};
+//   console.log = noop;
+//   console.error = noop; 
+//   console.warn = noop;
+//   console.info = noop;
+//   console.debug = noop;
+//   console.trace = noop;
+//   console.table = noop;
+//   console.group = noop;
+//   console.groupEnd = noop;
+//   console.time = noop;
+//   console.timeEnd = noop;
+// })();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

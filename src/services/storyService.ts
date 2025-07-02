@@ -139,9 +139,17 @@ export interface StoryFilters {
 class StoryService {
   private getAuthHeaders() {
     const token = unifiedAuth.getAccessToken();
-    return {
-      'Authorization': token ? `Bearer ${token}` : '',
-    };
+    console.log('Auth token status:', {
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 30)}...` : 'No token'
+    });
+    
+    if (token) {
+      return {
+        'Authorization': `Bearer ${token}`,
+      };
+    }
+    return {};
   }
 
   private async makeRequest<T>(
@@ -150,17 +158,55 @@ class StoryService {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    // Don't set Content-Type for FormData - let browser handle it
+    const headers: Record<string, string> = {};
+    
+    // Add auth headers if available
+    const authHeaders = this.getAuthHeaders();
+    Object.assign(headers, authHeaders);
+
+    // Only add Content-Type if it's not FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Merge with any headers from options (but don't override Content-Type for FormData)
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+    
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...this.getAuthHeaders(),
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
+      
+      // Handle authentication errors specifically
+      if (response.status === 401) {
+        const token = unifiedAuth.getAccessToken();
+        console.error('Authentication failed:', {
+          endpoint: url,
+          status: response.status,
+          error: errorData,
+          hasToken: !!token,
+          tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token'
+        });
+        
+        // Try to refresh token or redirect to login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/admin';
+        }
+      }
+      
+      console.error('API Error:', {
+        endpoint: url,
+        status: response.status,
+        error: errorData
+      });
+      
+      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return response.json();
@@ -186,12 +232,12 @@ class StoryService {
     });
 
     const queryString = params.toString();
-    return this.makeRequest(`/stories/${queryString ? `?${queryString}` : ''}`);
+    return this.makeRequest(`/stories/stories/${queryString ? `?${queryString}` : ''}`);
   }
 
   // Get story by ID
   async getStory(id: string): Promise<Story> {
-    return this.makeRequest(`/stories/${id}/`);
+    return this.makeRequest(`/stories/stories/${id}/`);
   }
 
   // Get story pages
@@ -200,7 +246,7 @@ class StoryService {
     pages: StoryPage[];
   }> {
     const params = pageNumber ? `?page_number=${pageNumber}` : '';
-    return this.makeRequest(`/stories/${id}/pages/${params}`);
+    return this.makeRequest(`/stories/stories/${id}/pages/${params}`);
   }
 
   // Get featured stories
@@ -215,7 +261,7 @@ class StoryService {
 
   // Get hero story
   async getHeroStory(): Promise<Story> {
-    return this.makeRequest('/hero/');
+    return this.makeRequest('/stories/hero/');
   }
 
   // Get my stories
@@ -270,7 +316,7 @@ class StoryService {
       }
     });
 
-    return this.makeRequest(`/search/?${params.toString()}`);
+    return this.makeRequest(`/stories/search/?${params.toString()}`);
   }
 
   // Create story
@@ -313,7 +359,17 @@ class StoryService {
       });
     }
 
-    return this.makeRequest('/stories/', {
+    // Debug logging
+    console.log('Creating story with data:', {
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      tags: data.tags,
+      status: data.status,
+      pages_count: data.pages_data?.length || 0
+    });
+
+    return this.makeRequest('/stories/stories/', {
       method: 'POST',
       body: formData,
     });
@@ -359,7 +415,18 @@ class StoryService {
       });
     }
 
-    return this.makeRequest(`/stories/${id}/`, {
+    // Debug logging
+    console.log('Updating story with data:', {
+      id,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      tags: data.tags,
+      status: data.status,
+      pages_count: data.pages_data?.length || 0
+    });
+
+    return this.makeRequest(`/stories/stories/${id}/`, {
       method: 'PATCH',
       body: formData,
     });
@@ -367,7 +434,7 @@ class StoryService {
 
   // Delete story
   async deleteStory(id: string): Promise<void> {
-    await this.makeRequest(`/stories/${id}/`, {
+    await this.makeRequest(`/stories/stories/${id}/`, {
       method: 'DELETE',
     });
   }
@@ -378,7 +445,7 @@ class StoryService {
     interactionType: 'like' | 'bookmark' | 'read',
     data?: { reading_progress?: number; last_page_read?: number }
   ): Promise<{ message: string; interaction?: unknown }> {
-    return this.makeRequest(`/stories/${id}/interact/`, {
+    return this.makeRequest(`/stories/stories/${id}/interact/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -395,7 +462,7 @@ class StoryService {
     id: string,
     data: { time_spent?: number; pages_viewed?: number[] }
   ): Promise<void> {
-    await this.makeRequest(`/track-view/${id}/`, {
+    await this.makeRequest(`/stories/track-view/${id}/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -416,12 +483,56 @@ class StoryService {
     draft_stories: number;
     total_reads: number;
     total_likes: number;
+    avg_read_time: number;
     trending_stories: StoryListItem[];
     featured_stories: StoryListItem[];
     recent_stories: StoryListItem[];
   }> {
-    return this.makeRequest('/stats/');
+    return this.makeRequest('/stories/stats/');
   }
+
+  // Debug method to check token validity
+  async validateToken(): Promise<{ valid: boolean; message: string }> {
+    const token = unifiedAuth.getAccessToken();
+    
+    if (!token) {
+      return { valid: false, message: 'No token found' };
+    }
+
+    try {
+      // Try a simple authenticated request
+      const response = await fetch(`${API_BASE_URL}/stories/my_stories/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        return { valid: true, message: 'Token is valid' };
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        return { 
+          valid: false, 
+          message: `Token invalid: ${response.status} - ${errorData.detail || response.statusText}` 
+        };
+      }
+    } catch (error) {
+      return { 
+        valid: false, 
+        message: `Token validation error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      };
+    }
+  }
+}
+
+// Debug utility - can be called from browser console
+if (typeof window !== 'undefined') {
+  (window as unknown as { debugStoryAuth: () => Promise<{ valid: boolean; message: string }> }).debugStoryAuth = async () => {
+    const service = new StoryService();
+    const result = await service.validateToken();
+    console.log('Token validation result:', result);
+    return result;
+  };
 }
 
 export const storyService = new StoryService();

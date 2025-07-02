@@ -7,11 +7,12 @@ import storyService from '../../services/storyService';
 import type { Story, StoryListItem } from '../../services/storyService';
 
 const StoriesPage: React.FC = () => {
+  console.log('🔍 StoriesPage: Component rendering - Version 2');
+  
   const [stories, setStories] = useState<StoryListItem[]>([]);
   const [filteredStories, setFilteredStories] = useState<StoryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [featuredStory, setFeaturedStory] = useState<Story | null>(null);
-  const [searchQuery, setSearchQuery] = useState(''); // Used in handleSearch function
   const [stats, setStats] = useState({
     total_stories: 0,
     total_reads: 0,
@@ -21,16 +22,18 @@ const StoriesPage: React.FC = () => {
 
   const loadStories = async () => {
     try {
+      console.log('🔍 StoriesPage: Loading stories...');
       setLoading(true);
       const response = await storyService.getStories({
         status: 'published',
-        ordering: '-created_at',
         page_size: 50
       });
+      console.log('🔍 StoriesPage: Stories loaded:', response);
+      console.log('🔍 StoriesPage: Number of stories:', response.results.length);
       setStories(response.results);
       setFilteredStories(response.results);
     } catch (error) {
-      console.error('Error loading stories:', error);
+      console.error('🔍 StoriesPage: Error loading stories:', error);
     } finally {
       setLoading(false);
     }
@@ -80,8 +83,7 @@ const StoriesPage: React.FC = () => {
         total_stories: statsData.total_stories,
         total_reads: statsData.total_reads,
         total_likes: statsData.total_likes,
-        avg_read_time: Math.round(statsData.total_stories > 0 ? 
-          stories.reduce((sum, story) => sum + story.estimated_read_time, 0) / stories.length : 0)
+        avg_read_time: Math.round(statsData.avg_read_time || 0)
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -108,8 +110,6 @@ const StoriesPage: React.FC = () => {
   }, [stories]);
 
   const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    
     if (!query.trim()) {
       setFilteredStories(stories);
       return;
