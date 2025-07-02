@@ -16,7 +16,8 @@ import {
   Palette,
   Eye,
   Radio,
-  Video
+  Video,
+  MessageCircle
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -46,6 +47,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isCollapsed, setIsCollapsed
       icon: Users,
       label: 'User Management',
       description: 'User management and permissions'
+    },
+    {
+      path: '/admin/comments',
+      icon: MessageCircle,
+      label: 'Comment Management',
+      description: 'Moderate and manage user comments'
     },
     {
       path: '/admin/analytics',

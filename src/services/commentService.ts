@@ -11,6 +11,7 @@ export interface Comment {
     first_name: string;
     last_name: string;
     avatar_url?: string;
+    is_admin?: boolean;
   };
   content_type: string;
   object_id: string;
@@ -50,6 +51,55 @@ export interface CommentFilters {
   ordering?: string;
   page?: number;
   page_size?: number;
+}
+
+// Enhanced Comment interface for moderation
+export interface ModerationComment extends Comment {
+  moderated_by?: {
+    username: string;
+  };
+  moderated_at?: string;
+  moderation_reason?: string;
+  content_title: string;
+  report_count: number;
+  flagged_by_users?: Array<{
+    id: string;
+    username: string;
+  }>;
+  moderation_history?: Array<{
+    action: string;
+    moderator?: string;
+    reason: string;
+    old_status: string;
+    new_status: string;
+    created_at: string;
+  }>;
+  risk_score: number;
+}
+
+export interface CommentModerationStats {
+  total_comments: number;
+  published_comments: number;
+  pending_comments: number;
+  hidden_comments: number;
+  deleted_comments: number;
+  flagged_comments: number;
+  recent_reports: number;
+  moderation_actions_today: number;
+  top_moderators: Array<{
+    moderator__username: string;
+    action_count: number;
+  }>;
+  actions_by_type: Array<{
+    action: string;
+    count: number;
+  }>;
+}
+
+export interface BulkModerationData {
+  comment_ids: string[];
+  action: 'approve' | 'hide' | 'delete' | 'flag' | 'unflag';
+  reason?: string;
 }
 
 class CommentService {
@@ -238,6 +288,102 @@ class CommentService {
     recent_comments: Comment[];
   }> {
     return this.makeRequest('/stats/');
+  }
+
+  // === MODERATION METHODS ===
+
+  // Get comments for moderation
+  async getModerationComments(filters: {
+    status?: string;
+    flagged?: boolean;
+    content_type?: string;
+    search?: string;
+    page?: number;
+    page_size?: number;
+  } = {}): Promise<{
+    results: ModerationComment[];
+    count: number;
+    next?: string;
+    previous?: string;
+  }> {
+    const params = new URLSearchParams();
+    
+    if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+    if (filters.flagged) params.append('flagged', 'true');
+    if (filters.content_type) params.append('content_type', filters.content_type);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.page_size) params.append('page_size', filters.page_size.toString());
+
+    return this.makeRequest(`/moderation/?${params.toString()}`);
+  }
+
+  // Get moderation statistics
+  async getModerationStats(days: number = 30): Promise<CommentModerationStats> {
+    return this.makeRequest(`/moderation/stats/?days=${days}`);
+  }
+
+  // Bulk moderate comments
+  async bulkModerateComments(data: BulkModerationData): Promise<{
+    message: string;
+    moderated_count: number;
+  }> {
+    return this.makeRequest('/moderation/bulk/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Auto-moderate comments
+  async autoModerateComments(): Promise<{
+    message: string;
+    flagged_count: number;
+  }> {
+    return this.makeRequest('/moderation/auto/', {
+      method: 'POST',
+    });
+  }
+
+  // Moderate individual comment
+  async moderateComment(
+    commentId: string, 
+    action: 'approve' | 'hide' | 'delete', 
+    reason?: string
+  ): Promise<{
+    message: string;
+    comment: ModerationComment;
+  }> {
+    return this.makeRequest(`/${commentId}/moderate/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, reason }),
+    });
+  }
+
+  // Hard delete comment (permanent)
+  async hardDeleteComment(
+    commentId: string, 
+    reason: string
+  ): Promise<{
+    message: string;
+    deleted_comment: {
+      id: string;
+      user: string;
+      text: string;
+    };
+  }> {
+    return this.makeRequest(`/${commentId}/hard-delete/`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    });
   }
 }
 

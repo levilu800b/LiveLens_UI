@@ -17,6 +17,7 @@ import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import ContentManagement from './pages/Admin/ContentManagement';
 import UserManagement from './pages/Admin/UserManagement';
+import CommentManagement from './pages/Admin/CommentManagement';
 import Analytics from './pages/Admin/Analytics';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
@@ -156,6 +157,11 @@ function App() {
         <Route path="/admin/users" element={
           <AdminRoute>
             <UserManagement />
+          </AdminRoute>
+        } />
+        <Route path="/admin/comments" element={
+          <AdminRoute>
+            <CommentManagement />
           </AdminRoute>
         } />
         <Route path="/admin/analytics" element={

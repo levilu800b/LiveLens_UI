@@ -1,0 +1,555 @@
+// src/pages/Admin/CommentManagement.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Search, 
+  Eye, 
+  MessageCircle, 
+  User,
+  Trash2,
+  AlertTriangle,
+  Flag,
+  Shield,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Heart
+} from 'lucide-react';
+
+import AdminLayout from '../../components/Admin/AdminLayout';
+import BulkActionsBar from '../../components/Admin/BulkActionsBar';
+import ExportButton from '../../components/Admin/ExportButton';
+import commentService, { type ModerationComment, type CommentModerationStats } from '../../services/commentService';
+
+const CommentManagement: React.FC = () => {
+  const [comments, setComments] = useState<ModerationComment[]>([]);
+  const [stats, setStats] = useState<CommentModerationStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedComments, setSelectedComments] = useState<string[]>([]);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    flagged: false,
+    content_type: '',
+    search: ''
+  });
+
+  const fetchComments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await commentService.getModerationComments({
+        status: filters.status !== 'all' ? filters.status : undefined,
+        flagged: filters.flagged || undefined,
+        content_type: filters.content_type || undefined,
+        search: filters.search || undefined,
+      });
+      
+      setComments(data.results || []);
+    } catch (err) {
+      setError('Failed to load comments. Please try again.');
+      console.error('Error fetching comments:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const data = await commentService.getModerationStats();
+      setStats(data);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchComments();
+    fetchStats();
+  }, [fetchComments, fetchStats]);
+
+  const handleBulkAction = async (action: string, commentIds?: string[]) => {
+    const idsToProcess = commentIds || selectedComments;
+    
+    if (idsToProcess.length === 0) {
+      alert('Please select comments to moderate');
+      return;
+    }
+
+    try {
+      const reason = action === 'delete' || action === 'hide' 
+        ? prompt(`Enter reason for ${action}ing these comments:`) 
+        : '';
+
+      if ((action === 'delete' || action === 'hide') && !reason) {
+        return; // User cancelled
+      }
+
+      const result = await commentService.bulkModerateComments({
+        comment_ids: idsToProcess,
+        action: action as 'approve' | 'hide' | 'delete' | 'flag' | 'unflag',
+        reason: reason || undefined
+      });
+
+      alert(result.message);
+      
+      setSelectedComments([]);
+      fetchComments();
+      fetchStats();
+    } catch (err) {
+      console.error(`Error ${action}ing comments:`, err);
+      alert(`Failed to ${action} comments. Please try again.`);
+    }
+  };
+
+  const handleAutoModerate = async () => {
+    if (!confirm('This will automatically flag potentially problematic comments. Continue?')) {
+      return;
+    }
+
+    try {
+      const result = await commentService.autoModerateComments();
+      alert(result.message);
+      fetchComments();
+      fetchStats();
+    } catch (err) {
+      console.error('Error auto-moderating:', err);
+      alert('Failed to auto-moderate comments. Please try again.');
+    }
+  };
+
+  const handleIndividualAction = async (commentId: string, action: string) => {
+    await handleBulkAction(action, [commentId]);
+  };
+
+  const handleHardDelete = async (commentId: string) => {
+    if (!confirm('This will PERMANENTLY delete the comment. This action cannot be undone. Continue?')) {
+      return;
+    }
+
+    const reason = prompt('Enter reason for permanent deletion:');
+    if (!reason) return;
+
+    try {
+      const result = await commentService.hardDeleteComment(commentId, reason);
+      alert(result.message);
+      fetchComments();
+      fetchStats();
+    } catch (err) {
+      console.error('Error permanently deleting comment:', err);
+      alert('Failed to permanently delete comment. Please try again.');
+    }
+  };
+
+  const getRiskScoreColor = (score: number) => {
+    if (score >= 80) return 'text-red-600';
+    if (score >= 60) return 'text-orange-600';
+    if (score >= 40) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  const getStatusBadge = (status: string, isFlagged: boolean) => {
+    if (isFlagged) {
+      return <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Flagged</span>;
+    }
+    
+    const statusColors = {
+      published: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      hidden: 'bg-gray-100 text-gray-800',
+      deleted: 'bg-red-100 text-red-800'
+    };
+
+    return (
+      <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status as keyof typeof statusColors]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  const bulkActions = [
+    { id: 'approve', label: 'Approve', icon: CheckCircle, color: 'green' },
+    { id: 'hide', label: 'Hide', icon: Eye, color: 'yellow' },
+    { id: 'delete', label: 'Delete', icon: Trash2, color: 'red', destructive: true },
+    { id: 'flag', label: 'Flag', icon: Flag, color: 'red' },
+    { id: 'unflag', label: 'Unflag', icon: Shield, color: 'blue' }
+  ];
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Comment Management</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Moderate and manage user comments across all content
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0 space-x-3">
+            <button
+              onClick={handleAutoModerate}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Auto Moderate
+            </button>
+            <div className="inline-block">
+              <ExportButton 
+                data={comments.map(comment => ({
+                  id: comment.id,
+                  username: comment.user.username,
+                  text: comment.text,
+                  status: comment.status,
+                  risk_score: comment.risk_score,
+                  report_count: comment.report_count,
+                  content_title: comment.content_title,
+                  created_at: comment.created_at,
+                  is_flagged: comment.is_flagged
+                }))}
+                filename="comments"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center">
+                <MessageCircle className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Total Comments</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total_comments.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center">
+                <Flag className="h-8 w-8 text-red-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Flagged</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.flagged_comments.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center">
+                <AlertTriangle className="h-8 w-8 text-orange-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Pending Review</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.pending_comments.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center">
+                <TrendingUp className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Actions Today</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.moderation_actions_today.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Search</label>
+              <div className="mt-1 relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="pl-10 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Search comments..."
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="all">All Statuses</option>
+                <option value="published">Published</option>
+                <option value="pending">Pending</option>
+                <option value="hidden">Hidden</option>
+                <option value="deleted">Deleted</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Content Type</label>
+              <select
+                value={filters.content_type}
+                onChange={(e) => setFilters({ ...filters, content_type: e.target.value })}
+                className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Types</option>
+                <option value="story">Stories</option>
+                <option value="content">Films</option>
+                <option value="podcast">Podcasts</option>
+                <option value="animation">Animations</option>
+                <option value="sneakpeek">Sneak Peeks</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={filters.flagged}
+                  onChange={(e) => setFilters({ ...filters, flagged: e.target.checked })}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Flagged only</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Bulk Actions */}
+        {selectedComments.length > 0 && (
+          <BulkActionsBar
+            selectedItems={selectedComments}
+            totalItems={comments.length}
+            actions={bulkActions}
+            onBulkAction={handleBulkAction}
+            onSelectAll={() => setSelectedComments(comments.map(c => c.id))}
+            onClearSelection={() => setSelectedComments([])}
+          />
+        )}
+
+        {/* Comments Table */}
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <p className="mt-2 text-gray-500">Loading comments...</p>
+            </div>
+          ) : error ? (
+            <div className="p-8 text-center">
+              <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+              <p className="mt-2 text-red-600">{error}</p>
+              <button
+                onClick={fetchComments}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Retry
+              </button>
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="p-8 text-center">
+              <MessageCircle className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-2 text-gray-500">No comments found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={selectedComments.length === comments.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedComments(comments.map(c => c.id));
+                          } else {
+                            setSelectedComments([]);
+                          }
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Comment
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Author
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Content
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Risk Score
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Reports
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {comments.map((comment) => (
+                    <tr key={comment.id} className={comment.is_flagged ? 'bg-red-50' : ''}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedComments.includes(comment.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedComments([...selectedComments, comment.id]);
+                            } else {
+                              setSelectedComments(selectedComments.filter(id => id !== comment.id));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="max-w-xs">
+                          <p className="text-sm text-gray-900 truncate" title={comment.text}>
+                            {comment.text.length > 100 ? `${comment.text.substring(0, 100)}...` : comment.text}
+                          </p>
+                          <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500">
+                            <span className="flex items-center">
+                              <Heart className="h-3 w-3 mr-1" />
+                              {comment.like_count}
+                            </span>
+                            <span className="flex items-center">
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              {comment.reply_count}
+                            </span>
+                            {comment.is_edited && (
+                              <span className="text-yellow-600">Edited</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {comment.user.avatar_url ? (
+                            <img 
+                              src={comment.user.avatar_url} 
+                              alt={comment.user.username}
+                              className="h-8 w-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                              <User className="h-4 w-4 text-gray-600" />
+                            </div>
+                          )}
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">
+                              {comment.user.username}
+                              {comment.user.is_admin && (
+                                <span className="ml-1 text-xs text-blue-600">Admin</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {comment.user.first_name} {comment.user.last_name}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="max-w-xs">
+                          <p className="text-sm text-gray-900 truncate" title={comment.content_title}>
+                            {comment.content_title}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(comment.status, comment.is_flagged)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-sm font-medium ${getRiskScoreColor(comment.risk_score)}`}>
+                          {comment.risk_score}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900">
+                          {comment.report_count}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                          <p>{comment.time_since} ago</p>
+                          {comment.moderated_by && (
+                            <p className="text-xs text-gray-400">
+                              Moderated by {comment.moderated_by.username}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          {comment.status === 'pending' && (
+                            <button
+                              onClick={() => handleIndividualAction(comment.id, 'approve')}
+                              className="text-green-600 hover:text-green-900"
+                              title="Approve"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          {comment.status === 'published' && (
+                            <button
+                              onClick={() => handleIndividualAction(comment.id, 'hide')}
+                              className="text-yellow-600 hover:text-yellow-900"
+                              title="Hide"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          )}
+                          {!comment.is_flagged ? (
+                            <button
+                              onClick={() => handleIndividualAction(comment.id, 'flag')}
+                              className="text-red-600 hover:text-red-900"
+                              title="Flag"
+                            >
+                              <Flag className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleIndividualAction(comment.id, 'unflag')}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Unflag"
+                            >
+                              <Shield className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleIndividualAction(comment.id, 'delete')}
+                            className="text-red-600 hover:text-red-900"
+                            title="Soft Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleHardDelete(comment.id)}
+                            className="text-red-800 hover:text-red-900"
+                            title="Permanently Delete"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default CommentManagement;
