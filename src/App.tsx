@@ -28,12 +28,12 @@ import LibraryPage from './pages/User/LibraryPage';
 import FavoritesPage from './pages/User/FavoritesPage';
 import SettingsPage from './pages/User/SettingsPage';
 
-// Placeholder components for pages not yet implemented
-const StoryReaderPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Story Reader - Coming Soon</h1></div>;
+import StoryReaderPage from './pages/Stories/StoryReaderPage';
 const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Video Player - Coming Soon</h1></div>;
 
 // Import the implemented admin content creation pages
 import AddStoryPage from './pages/Admin/AddStoryPage';
+import EditStoryPage from './pages/Admin/EditStoryPage';
 import AddFilmPage from './pages/Admin/AddFilmPage';
 import AddContentPage from './pages/Admin/AddContentPage';
 import AddPodcastPage from './pages/Admin/AddPodcastPage';
@@ -165,6 +165,11 @@ function App() {
         <Route path="/admin/add-story" element={
           <AdminRoute>
             <AddStoryPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/edit-story/:id" element={
+          <AdminRoute>
+            <EditStoryPage />
           </AdminRoute>
         } />
         <Route path="/admin/add-film" element={

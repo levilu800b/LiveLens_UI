@@ -1,0 +1,428 @@
+// src/services/storyService.ts
+import unifiedAuth from '../utils/unifiedAuth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+export interface Story {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  content: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  thumbnail: string;
+  cover_image: string;
+  author: {
+    id: string;
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar: string;
+  };
+  status: 'draft' | 'published' | 'archived';
+  is_featured: boolean;
+  is_trending: boolean;
+  read_count: number;
+  like_count: number;
+  comment_count: number;
+  estimated_read_time: number;
+  pages: StoryPage[];
+  total_pages: number;
+  is_liked: boolean;
+  is_bookmarked: boolean;
+  reading_progress?: {
+    last_page_read: number;
+    progress_percentage: number;
+  };
+  related_stories: Story[];
+  // Series support
+  series?: {
+    id: string;
+    title: string;
+    description: string;
+    total_stories: number;
+    current_position: number;
+  };
+  series_id?: string;
+  series_position?: number;
+  next_in_series?: {
+    id: string;
+    title: string;
+    slug: string;
+  };
+  previous_in_series?: {
+    id: string;
+    title: string;
+    slug: string;
+  };
+  created_at: string;
+  updated_at: string;
+  published_at: string;
+}
+
+export interface StoryPage {
+  id: string;
+  page_number: number;
+  title: string;
+  content: string;
+  page_image?: string;
+  word_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StoryListItem {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  thumbnail: string;
+  cover_image: string;
+  author: {
+    id: string;
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar: string;
+  };
+  status: string;
+  is_featured: boolean;
+  is_trending: boolean;
+  read_count: number;
+  like_count: number;
+  comment_count: number;
+  estimated_read_time: number;
+  total_pages: number;
+  is_liked: boolean;
+  is_bookmarked: boolean;
+  created_at: string;
+  updated_at: string;
+  published_at: string;
+}
+
+export interface CreateStoryData {
+  title: string;
+  description: string;
+  content?: string;
+  category: string;
+  tags: string[];
+  thumbnail?: File;
+  cover_image?: File;
+  status: 'draft' | 'published';
+  is_featured?: boolean;
+  is_trending?: boolean;
+  pages_data?: Array<{
+    title: string;
+    content: string;
+    page_image?: File;
+  }>;
+}
+
+export interface StoryFilters {
+  category?: string;
+  tags?: string[];
+  author?: string;
+  status?: string;
+  is_featured?: boolean;
+  is_trending?: boolean;
+  search?: string;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+}
+
+class StoryService {
+  private getAuthHeaders() {
+    const token = unifiedAuth.getAccessToken();
+    return {
+      'Authorization': token ? `Bearer ${token}` : '',
+    };
+  }
+
+  private async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...this.getAuthHeaders(),
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // Get all stories with filters
+  async getStories(filters: StoryFilters = {}): Promise<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: StoryListItem[];
+  }> {
+    const params = new URLSearchParams();
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v.toString()));
+        } else {
+          params.append(key, value.toString());
+        }
+      }
+    });
+
+    const queryString = params.toString();
+    return this.makeRequest(`/stories/${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Get story by ID
+  async getStory(id: string): Promise<Story> {
+    return this.makeRequest(`/stories/${id}/`);
+  }
+
+  // Get story pages
+  async getStoryPages(id: string, pageNumber?: number): Promise<{
+    total_pages: number;
+    pages: StoryPage[];
+  }> {
+    const params = pageNumber ? `?page_number=${pageNumber}` : '';
+    return this.makeRequest(`/stories/${id}/pages/${params}`);
+  }
+
+  // Get featured stories
+  async getFeaturedStories(): Promise<StoryListItem[]> {
+    return this.makeRequest('/stories/featured/');
+  }
+
+  // Get trending stories
+  async getTrendingStories(): Promise<StoryListItem[]> {
+    return this.makeRequest('/stories/trending/');
+  }
+
+  // Get hero story
+  async getHeroStory(): Promise<Story> {
+    return this.makeRequest('/hero/');
+  }
+
+  // Get my stories
+  async getMyStories(filters: StoryFilters = {}): Promise<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: StoryListItem[];
+  }> {
+    const params = new URLSearchParams();
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v.toString()));
+        } else {
+          params.append(key, value.toString());
+        }
+      }
+    });
+
+    const queryString = params.toString();
+    return this.makeRequest(`/stories/my_stories/${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Get user library (read stories, bookmarks)
+  async getMyLibrary(): Promise<{
+    read_stories: StoryListItem[];
+    bookmarked_stories: StoryListItem[];
+  }> {
+    return this.makeRequest('/stories/my_library/');
+  }
+
+  // Search stories
+  async searchStories(query: string, filters: Omit<StoryFilters, 'search'> = {}): Promise<{
+    count: number;
+    total_pages: number;
+    current_page: number;
+    has_next: boolean;
+    has_previous: boolean;
+    results: StoryListItem[];
+  }> {
+    const params = new URLSearchParams({ q: query });
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v.toString()));
+        } else {
+          params.append(key, value.toString());
+        }
+      }
+    });
+
+    return this.makeRequest(`/search/?${params.toString()}`);
+  }
+
+  // Create story
+  async createStory(data: CreateStoryData): Promise<Story> {
+    const formData = new FormData();
+    
+    // Add basic fields
+    formData.append('title', data.title);
+    formData.append('description', data.description);
+    if (data.content) formData.append('content', data.content);
+    formData.append('category', data.category);
+    formData.append('tags', JSON.stringify(data.tags));
+    formData.append('status', data.status);
+    
+    if (data.is_featured !== undefined) {
+      formData.append('is_featured', data.is_featured.toString());
+    }
+    if (data.is_trending !== undefined) {
+      formData.append('is_trending', data.is_trending.toString());
+    }
+
+    // Add files
+    if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
+    if (data.cover_image) formData.append('cover_image', data.cover_image);
+
+    // Add pages data
+    if (data.pages_data) {
+      formData.append('pages_data', JSON.stringify(
+        data.pages_data.map(page => ({
+          title: page.title,
+          content: page.content
+        }))
+      ));
+
+      // Add page images separately
+      data.pages_data.forEach((page, index) => {
+        if (page.page_image) {
+          formData.append(`page_${index}_image`, page.page_image);
+        }
+      });
+    }
+
+    return this.makeRequest('/stories/', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  // Update story
+  async updateStory(id: string, data: Partial<CreateStoryData>): Promise<Story> {
+    const formData = new FormData();
+    
+    // Add basic fields
+    if (data.title) formData.append('title', data.title);
+    if (data.description) formData.append('description', data.description);
+    if (data.content) formData.append('content', data.content);
+    if (data.category) formData.append('category', data.category);
+    if (data.tags) formData.append('tags', JSON.stringify(data.tags));
+    if (data.status) formData.append('status', data.status);
+    
+    if (data.is_featured !== undefined) {
+      formData.append('is_featured', data.is_featured.toString());
+    }
+    if (data.is_trending !== undefined) {
+      formData.append('is_trending', data.is_trending.toString());
+    }
+
+    // Add files
+    if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
+    if (data.cover_image) formData.append('cover_image', data.cover_image);
+
+    // Add pages data
+    if (data.pages_data) {
+      formData.append('pages_data', JSON.stringify(
+        data.pages_data.map(page => ({
+          title: page.title,
+          content: page.content
+        }))
+      ));
+
+      // Add page images separately
+      data.pages_data.forEach((page, index) => {
+        if (page.page_image) {
+          formData.append(`page_${index}_image`, page.page_image);
+        }
+      });
+    }
+
+    return this.makeRequest(`/stories/${id}/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+  }
+
+  // Delete story
+  async deleteStory(id: string): Promise<void> {
+    await this.makeRequest(`/stories/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Story interactions (like, bookmark, reading progress)
+  async interactWithStory(
+    id: string, 
+    interactionType: 'like' | 'bookmark' | 'read',
+    data?: { reading_progress?: number; last_page_read?: number }
+  ): Promise<{ message: string; interaction?: unknown }> {
+    return this.makeRequest(`/stories/${id}/interact/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        interaction_type: interactionType,
+        ...data,
+      }),
+    });
+  }
+
+  // Track story view
+  async trackStoryView(
+    id: string,
+    data: { time_spent?: number; pages_viewed?: number[] }
+  ): Promise<void> {
+    await this.makeRequest(`/track-view/${id}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Get story categories
+  async getCategories(): Promise<Array<{ value: string; label: string }>> {
+    return this.makeRequest('/stories/categories/');
+  }
+
+  // Get story statistics
+  async getStats(): Promise<{
+    total_stories: number;
+    published_stories: number;
+    draft_stories: number;
+    total_reads: number;
+    total_likes: number;
+    trending_stories: StoryListItem[];
+    featured_stories: StoryListItem[];
+    recent_stories: StoryListItem[];
+  }> {
+    return this.makeRequest('/stats/');
+  }
+}
+
+export const storyService = new StoryService();
+export default storyService;

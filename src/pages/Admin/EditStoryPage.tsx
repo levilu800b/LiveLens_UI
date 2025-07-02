@@ -1,6 +1,6 @@
-// src/pages/Admin/AddStoryPage.tsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/Admin/EditStoryPage.tsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Save, 
   Upload, 
@@ -8,12 +8,13 @@ import {
   FileText,
   Plus,
   Minus,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
 import RichTextEditor from '../../components/Common/RichTextEditor';
 import { storyService } from '../../services/storyService';
-import type { CreateStoryData } from '../../services/storyService';
+import type { CreateStoryData, Story } from '../../services/storyService';
 
 interface StoryPage {
   title: string;
@@ -30,7 +31,7 @@ interface StoryFormData {
   cover_image?: File | null;
   thumbnail?: File | null;
   estimated_read_time: number;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   pages_data: StoryPage[];
   // Series support
   series_id?: string;
@@ -40,10 +41,13 @@ interface StoryFormData {
   new_series_description?: string;
 }
 
-const AddStoryPage: React.FC = () => {
+const EditStoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [story, setStory] = useState<Story | null>(null);
   const [formData, setFormData] = useState<StoryFormData>({
     title: '',
     description: '',
@@ -53,13 +57,7 @@ const AddStoryPage: React.FC = () => {
     cover_image: null,
     estimated_read_time: 5,
     status: 'draft',
-    pages_data: [{ title: 'Page 1', content: '', page_image: null }],
-    // Series defaults
-    series_id: undefined,
-    series_position: undefined,
-    create_new_series: false,
-    new_series_title: '',
-    new_series_description: ''
+    pages_data: [{ title: 'Page 1', content: '', page_image: null }]
   });
   const [tagInput, setTagInput] = useState('');
 
@@ -78,7 +76,49 @@ const AddStoryPage: React.FC = () => {
     { value: 'other', label: 'Other' }
   ];
 
-  const handleInputChange = (field: keyof StoryFormData, value: string | number | File | null | string[] | boolean) => {
+  // Load story data
+  useEffect(() => {
+    const loadStory = async () => {
+      if (!id) {
+        setError('No story ID provided');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const storyData = await storyService.getStory(id);
+        setStory(storyData);
+        
+        // Populate form with existing data
+        setFormData({
+          title: storyData.title,
+          description: storyData.description,
+          short_description: storyData.excerpt || '',
+          category: storyData.category,
+          tags: storyData.tags,
+          cover_image: null, // Will be set as URL, not File
+          thumbnail: null, // Will be set as URL, not File  
+          estimated_read_time: storyData.estimated_read_time,
+          status: storyData.status,
+          pages_data: storyData.pages.map(page => ({
+            title: page.title,
+            content: page.content,
+            page_image: null // Will be set as URL, not File
+          }))
+        });
+      } catch (err) {
+        console.error('Error loading story:', err);
+        setError('Failed to load story');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStory();
+  }, [id]);
+
+  const handleInputChange = (field: keyof StoryFormData, value: string | number | File | null | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -139,8 +179,10 @@ const AddStoryPage: React.FC = () => {
   };
 
   const handleSubmit = async (action: 'save' | 'publish') => {
+    if (!id) return;
+
     try {
-      setLoading(true);
+      setSaving(true);
       setError(null);
 
       // Validation
@@ -162,7 +204,7 @@ const AddStoryPage: React.FC = () => {
         }
       }
 
-      const storyData: CreateStoryData = {
+      const updateData: Partial<CreateStoryData> = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category,
@@ -176,30 +218,63 @@ const AddStoryPage: React.FC = () => {
       };
 
       if (formData.cover_image) {
-        storyData.cover_image = formData.cover_image;
+        updateData.cover_image = formData.cover_image;
       }
       
       if (formData.thumbnail) {
-        storyData.thumbnail = formData.thumbnail;
+        updateData.thumbnail = formData.thumbnail;
       }
 
-      await storyService.createStory(storyData);
+      await storyService.updateStory(id, updateData);
       
       // Show success message
-      const actionText = action === 'publish' ? 'published' : 'saved as draft';
+      const actionText = action === 'publish' ? 'published' : 'updated';
       alert(`Story "${formData.title}" has been ${actionText} successfully!`);
 
       // Navigate back to content management
       navigate('/admin/content');
 
     } catch (err: unknown) {
-      console.error('Error creating story:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create story. Please try again.';
+      console.error('Error updating story:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update story. Please try again.';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading story...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error && !story) {
+    return (
+      <AdminLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Story</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => navigate('/admin/content')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Back to Content Management
+            </button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -210,10 +285,17 @@ const AddStoryPage: React.FC = () => {
             <div className="py-4 sm:py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center min-w-0 flex-1 pt-16 lg:pt-0">
+                  <button
+                    onClick={() => navigate('/admin/content')}
+                    className="p-2 text-gray-600 hover:text-gray-900 transition-colors mr-3"
+                    aria-label="Back to Content Management"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
                   <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mr-2 sm:mr-3 flex-shrink-0" />
                   <div className="min-w-0">
-                    <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Add New Story</h1>
-                    <p className="mt-1 sm:mt-2 text-xs sm:text-base text-gray-600">Create a new story with multiple pages</p>
+                    <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Edit Story</h1>
+                    <p className="mt-1 sm:mt-2 text-xs sm:text-base text-gray-600">Update story content and settings</p>
                   </div>
                 </div>
                 <button
@@ -317,74 +399,20 @@ const AddStoryPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Series Configuration */}
-                <div className="lg:col-span-2">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Series Configuration</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={formData.create_new_series}
-                            onChange={(e) => handleInputChange('create_new_series', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="ml-2 text-sm font-medium text-gray-700">
-                            Create New Series
-                          </span>
-                        </label>
-                      </div>
-
-                      {formData.create_new_series && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 ml-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Series Title
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.new_series_title || ''}
-                              onChange={(e) => handleInputChange('new_series_title', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Enter series title"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Series Position
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={formData.series_position || 1}
-                              onChange={(e) => handleInputChange('series_position', parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div className="lg:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Series Description
-                            </label>
-                            <textarea
-                              value={formData.new_series_description || ''}
-                              onChange={(e) => handleInputChange('new_series_description', e.target.value)}
-                              rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Describe the series"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Cover Image
                   </label>
+                  {story?.cover_image && (
+                    <div className="mb-2">
+                      <img 
+                        src={story.cover_image} 
+                        alt="Current cover" 
+                        className="h-32 w-48 object-cover rounded-lg border"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Current cover image (upload new to replace)</p>
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -400,6 +428,16 @@ const AddStoryPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Thumbnail Image
                   </label>
+                  {story?.thumbnail && (
+                    <div className="mb-2">
+                      <img 
+                        src={story.thumbnail} 
+                        alt="Current thumbnail" 
+                        className="h-24 w-32 object-cover rounded-lg border"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Current thumbnail (upload new to replace)</p>
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -548,27 +586,27 @@ const AddStoryPage: React.FC = () => {
                     type="button"
                     onClick={() => navigate('/admin/content')}
                     className="px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
-                    disabled={loading}
+                    disabled={saving}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSubmit('save')}
-                    disabled={loading}
+                    disabled={saving}
                     className="flex items-center justify-center px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {loading ? 'Saving...' : 'Save as Draft'}
+                    {saving ? 'Saving...' : 'Save Changes'}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSubmit('publish')}
-                    disabled={loading}
+                    disabled={saving}
                     className="flex items-center justify-center px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {loading ? 'Publishing...' : 'Publish Story'}
+                    {saving ? 'Publishing...' : 'Update & Publish'}
                   </button>
                 </div>
               </div>
@@ -580,4 +618,4 @@ const AddStoryPage: React.FC = () => {
   );
 };
 
-export default AddStoryPage;
+export default EditStoryPage;

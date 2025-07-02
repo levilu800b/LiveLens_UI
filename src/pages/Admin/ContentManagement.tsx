@@ -1,5 +1,6 @@
 // src/pages/Admin/ContentManagement.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Filter, 
@@ -22,6 +23,7 @@ import ExportButton from '../../components/Admin/ExportButton';
 import { commonBulkActions } from '../../constants/bulkActions';
 
 const ContentManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +102,29 @@ const ContentManagement: React.FC = () => {
     } catch (err) {
       alert('Failed to delete content. Please try again.');
       console.error('Error deleting content:', err);
+    }
+  };
+
+  const handleEditContent = (contentType: string, contentId: string) => {
+    // Navigate to appropriate edit page based on content type
+    switch (contentType) {
+      case 'stories':
+        navigate(`/admin/edit-story/${contentId}`);
+        break;
+      case 'films':
+        navigate(`/admin/edit-film/${contentId}`);
+        break;
+      case 'podcasts':
+        navigate(`/admin/edit-podcast/${contentId}`);
+        break;
+      case 'animations':
+        navigate(`/admin/edit-animation/${contentId}`);
+        break;
+      case 'sneak_peeks':
+        navigate(`/admin/edit-sneak-peek/${contentId}`);
+        break;
+      default:
+        alert('Edit functionality not available for this content type');
     }
   };
 
@@ -295,12 +320,20 @@ const ContentManagement: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => handleEditContent(item.content_type, item.content_id)}
+                      className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50"
+                      title="Edit content"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
                     <button className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50">
                       <Star className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteContent(item.content_type, item.content_id)}
                       className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50"
+                      title="Delete content"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -442,6 +475,13 @@ const ContentManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => handleEditContent(item.content_type, item.content_id)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50"
+                          title="Edit content"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
                         <button className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50">
                           <Star className="h-4 w-4" />
                         </button>

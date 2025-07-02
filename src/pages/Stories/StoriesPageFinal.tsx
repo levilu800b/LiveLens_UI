@@ -11,7 +11,6 @@ const StoriesPage: React.FC = () => {
   const [filteredStories, setFilteredStories] = useState<StoryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [featuredStory, setFeaturedStory] = useState<Story | null>(null);
-  const [searchQuery, setSearchQuery] = useState(''); // Used in handleSearch function
   const [stats, setStats] = useState({
     total_stories: 0,
     total_reads: 0,
@@ -42,32 +41,14 @@ const StoriesPage: React.FC = () => {
       setFeaturedStory(hero);
     } catch (error) {
       console.error('Error loading hero story:', error);
-      // Fallback logic: select hero story based on trending or recent stories
-      if (stories.length > 0) {
+      // Fallback to first featured story or most recent
+      const featured = stories.find(story => story.is_featured);
+      if (featured) {
         try {
-          // First, try to find a trending story
-          let heroStory = stories.find(story => story.is_trending);
-          
-          // If no trending story, find the most recent featured story
-          if (!heroStory) {
-            heroStory = stories.find(story => story.is_featured);
-          }
-          
-          // If no featured story, find the story with highest engagement (likes + reads)
-          if (!heroStory) {
-            heroStory = stories.reduce((prev, current) => {
-              const prevScore = prev.like_count + prev.read_count;
-              const currentScore = current.like_count + current.read_count;
-              return currentScore > prevScore ? current : prev;
-            });
-          }
-          
-          if (heroStory) {
-            const fullStory = await storyService.getStory(heroStory.id);
-            setFeaturedStory(fullStory);
-          }
+          const fullStory = await storyService.getStory(featured.id);
+          setFeaturedStory(fullStory);
         } catch (err) {
-          console.error('Error loading fallback hero story:', err);
+          console.error('Error loading featured story:', err);
         }
       }
     }
@@ -89,27 +70,13 @@ const StoriesPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const initializePage = async () => {
-      await loadStories();
-      await loadHeroStory();
-      await loadStats();
-    };
-    
-    initializePage();
+    loadStories();
+    loadHeroStory();
+    loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-load hero story when stories are loaded (for fallback logic)
-  useEffect(() => {
-    if (stories.length > 0 && !featuredStory) {
-      loadHeroStory();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stories]);
-
   const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    
     if (!query.trim()) {
       setFilteredStories(stories);
       return;
