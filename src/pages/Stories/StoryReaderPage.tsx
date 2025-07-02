@@ -120,12 +120,14 @@ const StoryReaderPage: React.FC = () => {
     let hasImages = false;
     let firstImage = '';
 
+    // Only use page images for content sections (cover image will be shown in header)
     // Combine all pages into one content string
     storyPages.forEach((page, index) => {
       if (index > 0) allContent += '<div class="page-break"></div>';
       if (page.title) {
         allContent += `<h2 class="page-title">${page.title}</h2>`;
       }
+      // Use page images for content sections
       if (page.page_image && !hasImages) {
         firstImage = page.page_image;
         hasImages = true;
@@ -136,7 +138,7 @@ const StoryReaderPage: React.FC = () => {
     // Split into 1000-word pages
     const wordBasedPages = splitContentIntoPages(allContent, 1000);
     
-    // Add image to first page if available
+    // Add page image to first page if available (not cover image)
     const processedPages = wordBasedPages.map((page, index) => ({
       ...page,
       title: index === 0 ? storyPages[0]?.title : undefined,
@@ -473,6 +475,17 @@ const StoryReaderPage: React.FC = () => {
                     <span className="mr-2">📚</span>
                     {story.series.title} - Part {story.series.current_position}
                   </div>
+                </div>
+              )}
+              
+              {/* Cover Image */}
+              {story.cover_image && (
+                <div className="mb-6">
+                  <img
+                    src={story.cover_image}
+                    alt={story.title}
+                    className="w-full h-auto rounded-lg shadow-lg"
+                  />
                 </div>
               )}
               
