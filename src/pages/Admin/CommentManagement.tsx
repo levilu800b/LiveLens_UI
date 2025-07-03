@@ -179,17 +179,17 @@ const CommentManagement: React.FC = () => {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Comment Management</h1>
-            <p className="mt-1 text-sm text-gray-500">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Comment Management</h1>
+            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-500">
               Moderate and manage user comments across all content
             </p>
           </div>
-          <div className="mt-4 sm:mt-0 space-x-3">
+          <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
             <button
               onClick={handleAutoModerate}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <Shield className="h-4 w-4 mr-2" />
               Auto Moderate
@@ -215,40 +215,40 @@ const CommentManagement: React.FC = () => {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
               <div className="flex items-center">
-                <MessageCircle className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Comments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total_comments.toLocaleString()}</p>
+                <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Total Comments</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.total_comments.toLocaleString()}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
               <div className="flex items-center">
-                <Flag className="h-8 w-8 text-red-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Flagged</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.flagged_comments.toLocaleString()}</p>
+                <Flag className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Flagged</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.flagged_comments.toLocaleString()}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
               <div className="flex items-center">
-                <AlertTriangle className="h-8 w-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Pending Review</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pending_comments.toLocaleString()}</p>
+                <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Pending Review</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.pending_comments.toLocaleString()}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
               <div className="flex items-center">
-                <TrendingUp className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Actions Today</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.moderation_actions_today.toLocaleString()}</p>
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Actions Today</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.moderation_actions_today.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -256,27 +256,27 @@ const CommentManagement: React.FC = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Search</label>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <div className="mt-1 relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-10 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  className="pl-10 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   placeholder="Search comments..."
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
               >
                 <option value="all">All Statuses</option>
                 <option value="published">Published</option>
@@ -286,11 +286,11 @@ const CommentManagement: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Content Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
               <select
                 value={filters.content_type}
                 onChange={(e) => setFilters({ ...filters, content_type: e.target.value })}
-                className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
               >
                 <option value="">All Types</option>
                 <option value="story">Stories</option>
@@ -301,15 +301,17 @@ const CommentManagement: React.FC = () => {
               </select>
             </div>
             <div className="flex items-end">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={filters.flagged}
-                  onChange={(e) => setFilters({ ...filters, flagged: e.target.checked })}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Flagged only</span>
-              </label>
+              <div className="w-full">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={filters.flagged}
+                    onChange={(e) => setFilters({ ...filters, flagged: e.target.checked })}
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Flagged only</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -350,73 +352,62 @@ const CommentManagement: React.FC = () => {
               <p className="mt-2 text-gray-500">No comments found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input
-                        type="checkbox"
-                        checked={selectedComments.length === comments.length}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedComments(comments.map(c => c.id));
-                          } else {
-                            setSelectedComments([]);
-                          }
-                        }}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Comment
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Author
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Content
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Risk Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reports
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+            <>
+              {/* Mobile/Tablet Card View */}
+              <div className="block 2xl:hidden">
+                <div className="divide-y divide-gray-200">
                   {comments.map((comment) => (
-                    <tr key={comment.id} className={comment.is_flagged ? 'bg-red-50' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedComments.includes(comment.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedComments([...selectedComments, comment.id]);
-                            } else {
-                              setSelectedComments(selectedComments.filter(id => id !== comment.id));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-900 truncate" title={comment.text}>
-                            {comment.text.length > 100 ? `${comment.text.substring(0, 100)}...` : comment.text}
-                          </p>
-                          <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500">
+                    <div key={comment.id} className={`p-4 ${comment.is_flagged ? 'bg-red-50' : ''}`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedComments.includes(comment.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedComments([...selectedComments, comment.id]);
+                              } else {
+                                setSelectedComments(selectedComments.filter(id => id !== comment.id));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div className="flex items-center">
+                            {comment.user.avatar_url ? (
+                              <img 
+                                src={comment.user.avatar_url} 
+                                alt={comment.user.username}
+                                className="h-8 w-8 rounded-full"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                <User className="h-4 w-4 text-gray-600" />
+                              </div>
+                            )}
+                            <div className="ml-2">
+                              <p className="text-sm font-medium text-gray-900">
+                                {comment.user.username}
+                                {comment.user.is_admin && (
+                                  <span className="ml-1 text-xs text-blue-600">Admin</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getStatusBadge(comment.status, comment.is_flagged)}
+                          <span className={`text-xs font-medium ${getRiskScoreColor(comment.risk_score)}`}>
+                            {comment.risk_score}%
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-900 mb-2">
+                          {comment.text.length > 150 ? `${comment.text.substring(0, 150)}...` : comment.text}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <div className="flex items-center space-x-4">
                             <span className="flex items-center">
                               <Heart className="h-3 w-3 mr-1" />
                               {comment.like_count}
@@ -425,126 +416,288 @@ const CommentManagement: React.FC = () => {
                               <MessageCircle className="h-3 w-3 mr-1" />
                               {comment.reply_count}
                             </span>
+                            <span className="flex items-center">
+                              <Flag className="h-3 w-3 mr-1" />
+                              {comment.report_count}
+                            </span>
                             {comment.is_edited && (
                               <span className="text-yellow-600">Edited</span>
                             )}
                           </div>
+                          <span>{comment.time_since} ago</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {comment.user.avatar_url ? (
-                            <img 
-                              src={comment.user.avatar_url} 
-                              alt={comment.user.username}
-                              className="h-8 w-8 rounded-full"
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                              <User className="h-4 w-4 text-gray-600" />
-                            </div>
-                          )}
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">
-                              {comment.user.username}
-                              {comment.user.is_admin && (
-                                <span className="ml-1 text-xs text-blue-600">Admin</span>
-                              )}
+                      </div>
+                      
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-500 truncate">
+                          Content: {comment.content_title}
+                        </p>
+                        {comment.moderated_by && (
+                          <p className="text-xs text-gray-400">
+                            Moderated by {comment.moderated_by.username}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {comment.status === 'pending' && (
+                          <button
+                            onClick={() => handleIndividualAction(comment.id, 'approve')}
+                            className="flex items-center px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200"
+                            title="Approve"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Approve
+                          </button>
+                        )}
+                        {comment.status === 'published' && (
+                          <button
+                            onClick={() => handleIndividualAction(comment.id, 'hide')}
+                            className="flex items-center px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200"
+                            title="Hide"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Hide
+                          </button>
+                        )}
+                        {!comment.is_flagged ? (
+                          <button
+                            onClick={() => handleIndividualAction(comment.id, 'flag')}
+                            className="flex items-center px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                            title="Flag"
+                          >
+                            <Flag className="h-3 w-3 mr-1" />
+                            Flag
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleIndividualAction(comment.id, 'unflag')}
+                            className="flex items-center px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
+                            title="Unflag"
+                          >
+                            <Shield className="h-3 w-3 mr-1" />
+                            Unflag
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleIndividualAction(comment.id, 'delete')}
+                          className="flex items-center px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                          title="Soft Delete"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => handleHardDelete(comment.id)}
+                          className="flex items-center px-3 py-1 text-xs bg-red-200 text-red-800 rounded-md hover:bg-red-300"
+                          title="Permanently Delete"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Permanent
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden 2xl:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          checked={selectedComments.length === comments.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedComments(comments.map(c => c.id));
+                            } else {
+                              setSelectedComments([]);
+                            }
+                          }}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Comment
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Author
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Content
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Risk Score
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Reports
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {comments.map((comment) => (
+                      <tr key={comment.id} className={comment.is_flagged ? 'bg-red-50' : ''}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedComments.includes(comment.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedComments([...selectedComments, comment.id]);
+                              } else {
+                                setSelectedComments(selectedComments.filter(id => id !== comment.id));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="max-w-xs">
+                            <p className="text-sm text-gray-900 truncate" title={comment.text}>
+                              {comment.text.length > 100 ? `${comment.text.substring(0, 100)}...` : comment.text}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              {comment.user.first_name} {comment.user.last_name}
+                            <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500">
+                              <span className="flex items-center">
+                                <Heart className="h-3 w-3 mr-1" />
+                                {comment.like_count}
+                              </span>
+                              <span className="flex items-center">
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                {comment.reply_count}
+                              </span>
+                              {comment.is_edited && (
+                                <span className="text-yellow-600">Edited</span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {comment.user.avatar_url ? (
+                              <img 
+                                src={comment.user.avatar_url} 
+                                alt={comment.user.username}
+                                className="h-8 w-8 rounded-full"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                <User className="h-4 w-4 text-gray-600" />
+                              </div>
+                            )}
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-900">
+                                {comment.user.username}
+                                {comment.user.is_admin && (
+                                  <span className="ml-1 text-xs text-blue-600">Admin</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {comment.user.first_name} {comment.user.last_name}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="max-w-xs">
+                            <p className="text-sm text-gray-900 truncate" title={comment.content_title}>
+                              {comment.content_title}
                             </p>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-900 truncate" title={comment.content_title}>
-                            {comment.content_title}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(comment.status, comment.is_flagged)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-sm font-medium ${getRiskScoreColor(comment.risk_score)}`}>
-                          {comment.risk_score}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">
-                          {comment.report_count}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div>
-                          <p>{comment.time_since} ago</p>
-                          {comment.moderated_by && (
-                            <p className="text-xs text-gray-400">
-                              Moderated by {comment.moderated_by.username}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          {comment.status === 'pending' && (
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(comment.status, comment.is_flagged)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`text-sm font-medium ${getRiskScoreColor(comment.risk_score)}`}>
+                            {comment.risk_score}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-900">
+                            {comment.report_count}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div>
+                            <p>{comment.time_since} ago</p>
+                            {comment.moderated_by && (
+                              <p className="text-xs text-gray-400">
+                                Moderated by {comment.moderated_by.username}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            {comment.status === 'pending' && (
+                              <button
+                                onClick={() => handleIndividualAction(comment.id, 'approve')}
+                                className="text-green-600 hover:text-green-900"
+                                title="Approve"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                            )}
+                            {comment.status === 'published' && (
+                              <button
+                                onClick={() => handleIndividualAction(comment.id, 'hide')}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Hide"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            )}
+                            {!comment.is_flagged ? (
+                              <button
+                                onClick={() => handleIndividualAction(comment.id, 'flag')}
+                                className="text-red-600 hover:text-red-900"
+                                title="Flag"
+                              >
+                                <Flag className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleIndividualAction(comment.id, 'unflag')}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Unflag"
+                              >
+                                <Shield className="h-4 w-4" />
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleIndividualAction(comment.id, 'approve')}
-                              className="text-green-600 hover:text-green-900"
-                              title="Approve"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                          )}
-                          {comment.status === 'published' && (
-                            <button
-                              onClick={() => handleIndividualAction(comment.id, 'hide')}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Hide"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          )}
-                          {!comment.is_flagged ? (
-                            <button
-                              onClick={() => handleIndividualAction(comment.id, 'flag')}
+                              onClick={() => handleIndividualAction(comment.id, 'delete')}
                               className="text-red-600 hover:text-red-900"
-                              title="Flag"
+                              title="Soft Delete"
                             >
-                              <Flag className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
-                          ) : (
                             <button
-                              onClick={() => handleIndividualAction(comment.id, 'unflag')}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Unflag"
+                              onClick={() => handleHardDelete(comment.id)}
+                              className="text-red-800 hover:text-red-900"
+                              title="Permanently Delete"
                             >
-                              <Shield className="h-4 w-4" />
+                              <XCircle className="h-4 w-4" />
                             </button>
-                          )}
-                          <button
-                            onClick={() => handleIndividualAction(comment.id, 'delete')}
-                            className="text-red-600 hover:text-red-900"
-                            title="Soft Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleHardDelete(comment.id)}
-                            className="text-red-800 hover:text-red-900"
-                            title="Permanently Delete"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
