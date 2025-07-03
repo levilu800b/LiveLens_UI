@@ -3,11 +3,22 @@ import MainLayout from '../../components/MainLayout/MainLayout';
 import SearchFilter from '../../components/Common/SearchFilter';
 import ContentCard from '../../components/Common/ContentCard';
 import { BookOpen, TrendingUp, Clock, Heart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import storyService from '../../services/storyService';
 import type { Story, StoryListItem } from '../../services/storyService';
 
+interface RootState {
+  user: {
+    userInfo: unknown;
+  };
+}
+
 const StoriesPage: React.FC = () => {
   console.log('🔍 StoriesPage: Component rendering - Version 2');
+  
+  const navigate = useNavigate();
+  const userInfo = useSelector((state: RootState) => state.user.userInfo);
   
   const [stories, setStories] = useState<StoryListItem[]>([]);
   const [filteredStories, setFilteredStories] = useState<StoryListItem[]>([]);
@@ -198,7 +209,13 @@ const StoriesPage: React.FC = () => {
                         </span>
                       </div>
                       <button 
-                        onClick={() => window.location.href = `/story/${featuredStory.id}`}
+                        onClick={() => {
+                          if (!userInfo) {
+                            navigate('/login');
+                            return;
+                          }
+                          navigate(`/story/${featuredStory.id}`);
+                        }}
                         className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105"
                       >
                         Start Reading
