@@ -166,12 +166,19 @@ const StoryReaderPage: React.FC = () => {
     }
   }, [story, totalPages]);
 
-  const loadComments = async () => {
+  const loadComments = async (signal?: AbortSignal) => {
     if (!id) return;
     
     try {
       setCommentsLoading(true);
-      const commentsData = await commentService.getStoryComments(id);
+      
+      // Check if request was cancelled
+      if (signal?.aborted) return;
+      
+      const commentsData = await commentService.getStoryComments(id, 1, 20, signal);
+      
+      // Check again if request was cancelled after the async operation
+      if (signal?.aborted) return;
       
       // Ensure we have the results array
       const commentsArray = commentsData.results || [];
@@ -182,10 +189,15 @@ const StoryReaderPage: React.FC = () => {
         setStory(prev => prev ? { ...prev, comment_count: commentsData.count } : null);
       }
     } catch (err) {
+      // Don't log errors if the request was aborted
+      if (err instanceof Error && err.name === 'AbortError') return;
+      if (signal?.aborted) return;
       console.error('Error loading comments:', err);
       // Don't show error to user for comments loading failure
     } finally {
-      setCommentsLoading(false);
+      if (!signal?.aborted) {
+        setCommentsLoading(false);
+      }
     }
   };
 
@@ -210,10 +222,17 @@ const StoryReaderPage: React.FC = () => {
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
+    
     if (id) {
       loadStory();
-      loadComments();
+      loadComments(abortController.signal);
     }
+    
+    // Cleanup function to cancel requests if component unmounts or dependencies change
+    return () => {
+      abortController.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, userInfo]);
 

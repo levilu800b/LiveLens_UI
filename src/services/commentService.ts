@@ -140,7 +140,7 @@ class CommentService {
   }
 
   // Get comments for content
-  async getComments(filters: CommentFilters = {}): Promise<{
+  async getComments(filters: CommentFilters = {}, signal?: AbortSignal): Promise<{
     count: number;
     next: string | null;
     previous: string | null;
@@ -155,11 +155,16 @@ class CommentService {
     });
 
     const queryString = params.toString();
-    return this.makeRequest(`/${queryString ? `?${queryString}` : ''}`);
+    return this.makeRequest(`/${queryString ? `?${queryString}` : ''}`, { signal });
   }
 
   // Get comments for a specific story
-  async getStoryComments(storyId: string, page = 1, pageSize = 20): Promise<{
+  async getStoryComments(
+    storyId: string, 
+    page = 1, 
+    pageSize = 20, 
+    signal?: AbortSignal
+  ): Promise<{
     count: number;
     next: string | null;
     previous: string | null;
@@ -171,7 +176,7 @@ class CommentService {
       page,
       page_size: pageSize,
       ordering: '-created_at',
-    });
+    }, signal);
   }
 
   // Get single comment
