@@ -44,6 +44,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [linkText, setLinkText] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
+  const [isImageMenuOpen, setIsImageMenuOpen] = useState(false);
+  const [contextMenuImage, setContextMenuImage] = useState<HTMLImageElement | null>(null);
+  const [isResizeModalOpen, setIsResizeModalOpen] = useState(false);
+  const [resizeWidth, setResizeWidth] = useState('');
 
   // Save and restore cursor position
   const saveCursorPosition = useCallback(() => {
@@ -229,73 +233,104 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (target.tagName === 'IMG') {
       e.preventDefault();
       const img = target as HTMLImageElement;
+      setContextMenuImage(img);
+      setIsImageMenuOpen(true);
+    }
+  }, []);
+
+  const handleImageMenuAction = useCallback((action: string) => {
+    if (!contextMenuImage) return;
+    
+    const img = contextMenuImage;
+    
+    switch (action) {
+      case 'resize': {
+        // Open custom resize modal instead of browser prompt
+        const currentWidth = parseInt(contextMenuImage.style.width.replace('px', '')) || 300;
+        setResizeWidth(currentWidth.toString());
+        setIsImageMenuOpen(false);
+        // Don't clear contextMenuImage here - we need it for the resize modal
+        setIsResizeModalOpen(true);
+        return; // Return early to avoid clearing contextMenuImage
+      }
+      case 'center':
+        img.style.display = 'block';
+        img.style.margin = '10px auto';
+        img.style.float = 'none';
+        break;
+      case 'alignLeft':
+        img.style.display = 'block';
+        img.style.margin = '10px 0';
+        img.style.float = 'left';
+        img.style.marginRight = '15px';
+        img.style.marginBottom = '10px';
+        break;
+      case 'alignRight':
+        img.style.display = 'block';
+        img.style.margin = '10px 0';
+        img.style.float = 'right';
+        img.style.marginLeft = '15px';
+        img.style.marginBottom = '10px';
+        break;
+      case 'floatLeft':
+        img.style.display = 'inline-block';
+        img.style.margin = '5px 10px 5px 0';
+        img.style.verticalAlign = 'top';
+        img.style.float = 'none';
+        break;
+      case 'floatRight':
+        img.style.display = 'inline-block';
+        img.style.margin = '5px 0 5px 10px';
+        img.style.verticalAlign = 'top';
+        img.style.float = 'none';
+        break;
+      case 'delete':
+        img.remove();
+        setSelectedImage(null);
+        break;
+      case 'copyUrl':
+        navigator.clipboard.writeText(img.src);
+        alert('Image URL copied to clipboard!');
+        break;
+    }
+    
+    setIsImageMenuOpen(false);
+    setContextMenuImage(null);
+    
+    if (editorRef.current && action !== 'copyUrl') {
+      onChange(editorRef.current.innerHTML);
+    }
+  }, [contextMenuImage, onChange]);
+
+  const closeImageMenu = useCallback(() => {
+    setIsImageMenuOpen(false);
+    setContextMenuImage(null);
+  }, []);
+
+  // Custom resize handler
+  const handleResizeImage = useCallback(() => {
+    if (!contextMenuImage || !resizeWidth) return;
+    
+    const width = parseInt(resizeWidth);
+    if (!isNaN(width) && width >= 50 && width <= 1000) {
+      contextMenuImage.style.width = `${width}px`;
+      contextMenuImage.style.height = 'auto';
       
-      const options = [
-        'Resize Image',
-        'Center Image',
-        'Align Left (text wraps)',
-        'Align Right (text wraps)', 
-        'Float Left (inline)',
-        'Float Right (inline)',
-        'Delete Image',
-        'Copy Image URL'
-      ];
-      
-      const choice = prompt(`Image Options:\n${options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nEnter option number (1-${options.length}):`);
-      
-      if (choice && !isNaN(Number(choice))) {
-        const optionIndex = Number(choice) - 1;
-        switch (optionIndex) {
-          case 0: // Resize
-            handleImageDoubleClick(e);
-            break;
-          case 1: // Center
-            img.style.display = 'block';
-            img.style.margin = '10px auto';
-            img.style.float = 'none';
-            break;
-          case 2: // Align Left (text wraps)
-            img.style.display = 'block';
-            img.style.margin = '10px 0';
-            img.style.float = 'left';
-            img.style.marginRight = '15px';
-            img.style.marginBottom = '10px';
-            break;
-          case 3: // Align Right (text wraps)
-            img.style.display = 'block';
-            img.style.margin = '10px 0';
-            img.style.float = 'right';
-            img.style.marginLeft = '15px';
-            img.style.marginBottom = '10px';
-            break;
-          case 4: // Float Left (inline)
-            img.style.display = 'inline-block';
-            img.style.margin = '5px 10px 5px 0';
-            img.style.verticalAlign = 'top';
-            img.style.float = 'none';
-            break;
-          case 5: // Float Right (inline)
-            img.style.display = 'inline-block';
-            img.style.margin = '5px 0 5px 10px';
-            img.style.verticalAlign = 'top';
-            img.style.float = 'none';
-            break;
-          case 6: // Delete
-            img.remove();
-            setSelectedImage(null);
-            break;
-          case 7: // Copy URL
-            navigator.clipboard.writeText(img.src);
-            alert('Image URL copied to clipboard!');
-            break;
-        }
-        
-        if (editorRef.current && optionIndex !== 7) {
-          onChange(editorRef.current.innerHTML);
-        }
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML);
       }
     }
-  }, [onChange, handleImageDoubleClick]);
+    
+    setIsResizeModalOpen(false);
+    setContextMenuImage(null);
+    setResizeWidth('');
+  }, [contextMenuImage, resizeWidth, onChange]);
+
+  const closeResizeModal = useCallback(() => {
+    setIsResizeModalOpen(false);
+    setContextMenuImage(null);
+    setResizeWidth('');
+  }, []);
 
   // Setup event listeners for image manipulation
   useEffect(() => {
@@ -314,6 +349,34 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       document.removeEventListener('keydown', handleImageKeyDown);
     };
   }, [handleImageClick, handleImageDoubleClick, handleImageKeyDown, handleImageContextMenu, readOnly]);
+
+  // Handle escape key for image menu modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isImageMenuOpen) {
+        closeImageMenu();
+      }
+    };
+
+    if (isImageMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isImageMenuOpen, closeImageMenu]);
+
+  // Handle escape key for resize modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isResizeModalOpen) {
+        closeResizeModal();
+      }
+    };
+
+    if (isResizeModalOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isResizeModalOpen, closeResizeModal]);
 
   // Default image upload handler
   const defaultImageUpload = async (file: File): Promise<string> => {
@@ -550,7 +613,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           title="Font Size"
         >
           <option value="1">Small</option>
-          <option value="3" selected>Normal</option>
+          <option value="3" defaultValue="3">Normal</option>
           <option value="5">Large</option>
           <option value="7">Extra Large</option>
         </select>
@@ -758,6 +821,130 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
                 Insert Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resize Modal */}
+      {isResizeModalOpen && contextMenuImage && (
+        <div 
+          className="fixed inset-0 bg-transparent flex items-center justify-center z-50"
+          onClick={closeResizeModal}
+        >
+          <div 
+            className="bg-white rounded-lg p-6 w-96 shadow-xl border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-4">Resize Image</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Width (pixels)
+                </label>
+                <input
+                  type="number"
+                  value={resizeWidth}
+                  onChange={(e) => setResizeWidth(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter width in pixels"
+                  min="50"
+                  max="1000"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Suggested sizes: Small (200px), Medium (400px), Large (600px), Full (800px)
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={closeResizeModal}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResizeImage}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                disabled={!resizeWidth || isNaN(Number(resizeWidth)) || Number(resizeWidth) < 50 || Number(resizeWidth) > 1000}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Menu (Context Menu) */}
+      {isImageMenuOpen && contextMenuImage && (
+        <div 
+          className="fixed inset-0 bg-transparent flex items-center justify-center z-50"
+          onClick={closeImageMenu}
+        >
+          <div 
+            className="bg-white rounded-lg p-4 w-64 shadow-xl border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-base font-semibold text-gray-800">Image Options</h4>
+              <button
+                onClick={closeImageMenu}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-1">
+              <button
+                onClick={() => handleImageMenuAction('resize')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                🔧 Resize
+              </button>
+              <button
+                onClick={() => handleImageMenuAction('center')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                ⬛ Center
+              </button>
+              <button
+                onClick={() => handleImageMenuAction('alignLeft')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                ⬅️ Align Left
+              </button>
+              <button
+                onClick={() => handleImageMenuAction('alignRight')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                ➡️ Align Right
+              </button>
+              <button
+                onClick={() => handleImageMenuAction('floatLeft')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                📄 Float Left
+              </button>
+              <button
+                onClick={() => handleImageMenuAction('floatRight')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                📄 Float Right
+              </button>
+              <hr className="my-1 border-gray-200" />
+              <button
+                onClick={() => handleImageMenuAction('delete')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-red-50 text-red-600 transition-colors"
+              >
+                🗑️ Delete
+              </button>
+              <button
+                onClick={() => handleImageMenuAction('copyUrl')}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors"
+              >
+                📋 Copy URL
               </button>
             </div>
           </div>
