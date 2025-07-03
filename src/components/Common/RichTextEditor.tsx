@@ -43,6 +43,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
 
   // Save and restore cursor position
   const saveCursorPosition = useCallback(() => {
@@ -165,6 +166,155 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     execCommand('insertText', text);
   }, [execCommand]);
 
+  // Image manipulation functions
+  const handleImageClick = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      
+      // Clear previous selections
+      const allImages = editorRef.current?.querySelectorAll('img');
+      allImages?.forEach(image => {
+        image.style.border = '2px solid transparent';
+      });
+      
+      // Select this image
+      img.style.border = '2px solid #3b82f6';
+      setSelectedImage(img);
+    } else {
+      // Clear selection if clicking elsewhere
+      const allImages = editorRef.current?.querySelectorAll('img');
+      allImages?.forEach(image => {
+        image.style.border = '2px solid transparent';
+      });
+      setSelectedImage(null);
+    }
+  }, []);
+
+  const handleImageDoubleClick = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      const currentWidth = parseInt(img.style.width.replace('px', '')) || 300;
+      
+      // Create a simple resize interface
+      const newWidth = prompt(
+        `Enter new width (in pixels):\n\nCurrent width: ${currentWidth}px\nSuggested sizes:\n- Small: 200px\n- Medium: 400px\n- Large: 600px\n- Full width: 800px`, 
+        currentWidth.toString()
+      );
+      
+      if (newWidth && !isNaN(Number(newWidth))) {
+        const width = Math.min(Math.max(Number(newWidth), 50), 1000); // Limit between 50px and 1000px
+        img.style.width = `${width}px`;
+        img.style.height = 'auto';
+        if (editorRef.current) {
+          onChange(editorRef.current.innerHTML);
+        }
+      }
+    }
+  }, [onChange]);
+
+  const handleImageKeyDown = useCallback((e: KeyboardEvent) => {
+    if (selectedImage && e.key === 'Delete') {
+      selectedImage.remove();
+      setSelectedImage(null);
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML);
+      }
+    }
+  }, [selectedImage, onChange]);
+
+  const handleImageContextMenu = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      e.preventDefault();
+      const img = target as HTMLImageElement;
+      
+      const options = [
+        'Resize Image',
+        'Center Image',
+        'Align Left (text wraps)',
+        'Align Right (text wraps)', 
+        'Float Left (inline)',
+        'Float Right (inline)',
+        'Delete Image',
+        'Copy Image URL'
+      ];
+      
+      const choice = prompt(`Image Options:\n${options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nEnter option number (1-${options.length}):`);
+      
+      if (choice && !isNaN(Number(choice))) {
+        const optionIndex = Number(choice) - 1;
+        switch (optionIndex) {
+          case 0: // Resize
+            handleImageDoubleClick(e);
+            break;
+          case 1: // Center
+            img.style.display = 'block';
+            img.style.margin = '10px auto';
+            img.style.float = 'none';
+            break;
+          case 2: // Align Left (text wraps)
+            img.style.display = 'block';
+            img.style.margin = '10px 0';
+            img.style.float = 'left';
+            img.style.marginRight = '15px';
+            img.style.marginBottom = '10px';
+            break;
+          case 3: // Align Right (text wraps)
+            img.style.display = 'block';
+            img.style.margin = '10px 0';
+            img.style.float = 'right';
+            img.style.marginLeft = '15px';
+            img.style.marginBottom = '10px';
+            break;
+          case 4: // Float Left (inline)
+            img.style.display = 'inline-block';
+            img.style.margin = '5px 10px 5px 0';
+            img.style.verticalAlign = 'top';
+            img.style.float = 'none';
+            break;
+          case 5: // Float Right (inline)
+            img.style.display = 'inline-block';
+            img.style.margin = '5px 0 5px 10px';
+            img.style.verticalAlign = 'top';
+            img.style.float = 'none';
+            break;
+          case 6: // Delete
+            img.remove();
+            setSelectedImage(null);
+            break;
+          case 7: // Copy URL
+            navigator.clipboard.writeText(img.src);
+            alert('Image URL copied to clipboard!');
+            break;
+        }
+        
+        if (editorRef.current && optionIndex !== 7) {
+          onChange(editorRef.current.innerHTML);
+        }
+      }
+    }
+  }, [onChange, handleImageDoubleClick]);
+
+  // Setup event listeners for image manipulation
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || readOnly) return;
+
+    editor.addEventListener('click', handleImageClick);
+    editor.addEventListener('dblclick', handleImageDoubleClick);
+    editor.addEventListener('contextmenu', handleImageContextMenu);
+    document.addEventListener('keydown', handleImageKeyDown);
+
+    return () => {
+      editor.removeEventListener('click', handleImageClick);
+      editor.removeEventListener('dblclick', handleImageDoubleClick);
+      editor.removeEventListener('contextmenu', handleImageContextMenu);
+      document.removeEventListener('keydown', handleImageKeyDown);
+    };
+  }, [handleImageClick, handleImageDoubleClick, handleImageKeyDown, handleImageContextMenu, readOnly]);
+
   // Default image upload handler
   const defaultImageUpload = async (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -189,9 +339,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         editorRef.current.focus();
       }
       
-      // Insert image with proper HTML structure and resize capabilities
+      // Insert image with better manipulation capabilities
       const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const imageHtml = `<div class="image-container" style="margin: 10px 0; text-align: center;"><img id="${imageId}" src="${imageUrl}" alt="Uploaded image" style="max-width: 100%; width: 300px; height: auto; border-radius: 8px; cursor: pointer; border: 2px solid transparent;" draggable="false" onload="console.log('✅ Image loaded:', this.src)" onerror="console.error('❌ Image failed to load:', this.src); this.style.border='2px solid red';" /></div><p><br></p>`;
+      const imageHtml = `<img id="${imageId}" src="${imageUrl}" alt="Uploaded image" style="max-width: 100%; width: 300px; height: auto; border-radius: 8px; cursor: move; border: 2px solid transparent; transition: border-color 0.2s ease; display: inline-block; vertical-align: top; margin: 5px;" draggable="true" contenteditable="false" onload="console.log('✅ Image loaded:', this.src)" onerror="console.error('❌ Image failed to load:', this.src); this.style.border='2px solid red';" title="Click to select, double-click to resize, drag to move, right-click for options" />`;
       
       console.log('📝 Inserting HTML:', imageHtml);
       
@@ -239,8 +389,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   };
 
-  // Handle image button click
-  const handleImageClick = () => {
+  // Handle image button click to open file dialog
+  const handleImageButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -296,7 +446,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     { icon: ListOrdered, command: 'insertOrderedList', title: 'Numbered List' },
     { icon: Quote, command: 'formatBlock', value: 'blockquote', title: 'Quote' },
     { type: 'separator' as const },
-    { icon: ImageIcon, action: handleImageClick, title: 'Insert Image' },
+    { icon: ImageIcon, action: handleImageButtonClick, title: 'Insert Image' },
     { icon: Link, action: () => setIsLinkModalOpen(true), title: 'Insert Link' },
     { type: 'separator' as const },
     { icon: Undo, command: 'undo', title: 'Undo' },
@@ -502,6 +652,42 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           wordWrap: 'break-word'
         }}
         data-placeholder={placeholder}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const htmlData = e.dataTransfer?.getData('text/html');
+          
+          if (htmlData && htmlData.includes('<img')) {
+            // Remove the original image
+            const allImages = editorRef.current?.querySelectorAll('img');
+            allImages?.forEach(img => {
+              if (img.style.opacity === '0.5') {
+                img.remove();
+              }
+            });
+
+            // Insert at new position
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = htmlData;
+              const newImg = tempDiv.firstElementChild;
+              
+              if (newImg) {
+                newImg.setAttribute('style', newImg.getAttribute('style')?.replace('opacity: 0.5', 'opacity: 1') || '');
+                range.insertNode(newImg);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+              }
+            }
+
+            if (editorRef.current) {
+              onChange(editorRef.current.innerHTML);
+            }
+          }
+        }}
       />
 
       {/* File input for images */}
