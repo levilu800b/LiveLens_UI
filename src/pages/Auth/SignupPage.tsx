@@ -109,11 +109,8 @@ const SignupPage: React.FC = () => {
         throw new Error('Google OAuth not configured. Please add VITE_GOOGLE_CLIENT_ID to your environment variables.');
       }
 
-      console.log('Starting Google sign-up...');
-      
       // Get Google user data
       const googleUser = await googleAuthService.signIn();
-      console.log('Google user data received:', { email: googleUser.email });
       
       // Call Google signup endpoint
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google-signup/`, {
@@ -136,7 +133,6 @@ const SignupPage: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('Google signup successful');
 
       // Store tokens using unifiedAuth
       if (data.access_token && data.refresh_token) {

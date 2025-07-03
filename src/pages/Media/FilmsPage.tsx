@@ -282,7 +282,7 @@ const FilmsPage = () => {
               <ContentCard
                 key={film.id}
                 {...film}
-                onLike={(id) => console.log('Liked film:', id)}
+                onLike={(id) => {}}
               />
             ))}
           </div>

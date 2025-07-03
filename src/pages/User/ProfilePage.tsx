@@ -89,26 +89,14 @@ const ProfilePage: React.FC = () => {
       // ✅ CRITICAL FIX: Only send dateOfBirth if it has a valid value
       if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
         formDataToSend.append('dateOfBirth', formData.dateOfBirth.trim());
-        console.log('📅 Date of birth included:', formData.dateOfBirth.trim());
-      } else {
-        // Don't send empty date field at all, let backend handle it as null
-        console.log('📅 Date of birth empty, not sending field');
       }
 
       if (avatarFile) {
         formDataToSend.append('avatar', avatarFile);
       }
 
-      // Log what we're sending for debugging
-      console.log('📤 Profile update - sending data:');
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`  ${key}:`, typeof value === 'string' ? value : '[File]');
-      }
-
       const responseData = await unifiedAuth.profile.updateProfile(formDataToSend);
       const updatedUser = responseData.user || responseData.updatedUser || responseData.data || null;
-      
-      console.log('📥 Received updated user data:', updatedUser);
       
       if (updatedUser) {
         unifiedAuth.user.setUser(updatedUser);
@@ -126,8 +114,6 @@ const ProfilePage: React.FC = () => {
       setIsEditing(false);
       setAvatarFile(null);
       setAvatarPreview(null);
-      
-      console.log('✅ Profile update successful');
       
     } catch (error: any) {
       console.error('❌ Profile update error:', error);

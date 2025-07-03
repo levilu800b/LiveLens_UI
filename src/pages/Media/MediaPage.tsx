@@ -235,7 +235,7 @@ const MediaPage = () => {
               <ContentCard
                 key={item.id}
                 {...item}
-                onLike={(id) => console.log('Liked:', id)}
+                onLike={(id) => {}}
               />
             ))}
           </div>

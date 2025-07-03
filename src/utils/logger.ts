@@ -7,7 +7,6 @@ class Logger {
   static log(...args: any[]): void {
     if (this.shouldLog) {
       const safeArgs = args.map(arg => this.sanitizeAny(arg));
-      console.log(...safeArgs);
     }
   }
 
@@ -21,7 +20,6 @@ class Logger {
   static logUserData(label: string, data: any): void {
     if (this.shouldLog) {
       const sanitized = this.sanitizeUserData(data);
-      console.log(label, sanitized);
     }
   }
 

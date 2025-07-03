@@ -22,14 +22,10 @@ const getAuthHeaders = () => {
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const headers = getAuthHeaders();
   
-  console.log('🚀 Making request to:', `${API_BASE_URL}${endpoint}`);
-  
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers,
     ...options,
   });
-
-  console.log('📡 Response:', response.status, response.statusText);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -49,7 +45,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const data = await response.json();
-  console.log('✅ Request successful');
   
   return data;
 };
@@ -58,7 +53,6 @@ export const contentService = {
   // User Library Functions
   async getUserLibrary(): Promise<ContentItem[]> {
     try {
-      console.log('📚 Fetching user library...');
       const data = await apiRequest('/user/library/');
       
       // Transform backend data to frontend format
@@ -173,18 +167,6 @@ export const contentService = {
         })));
       }
 
-      console.log('✅ Library data transformed:', {
-        totalItems: transformedData.length,
-        byType: {
-          stories: data.watched_stories?.length || 0,
-          films: data.watched_films?.length || 0,
-          content: data.watched_content?.length || 0,
-          podcasts: data.watched_podcasts?.length || 0,
-          animations: data.watched_animations?.length || 0,
-          sneakPeeks: data.watched_sneak_peeks?.length || 0,
-        }
-      });
-
       // Sort by most recently watched
       return transformedData.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -198,7 +180,6 @@ export const contentService = {
   // User Favorites Functions
   async getUserFavorites(): Promise<ContentItem[]> {
     try {
-      console.log('⭐ Fetching user favorites...');
       const data = await apiRequest('/user/favorites/');
       
       // Transform backend data to frontend format similar to library
@@ -224,8 +205,6 @@ export const contentService = {
           })));
         }
       });
-
-      console.log('⭐ Favorites loaded:', transformedData.length, 'items');
 
       // Sort by most recently favorited
       return transformedData.sort((a, b) => 

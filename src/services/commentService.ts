@@ -105,10 +105,6 @@ export interface BulkModerationData {
 class CommentService {
   private getAuthHeaders() {
     const token = unifiedAuth.getAccessToken();
-    console.log('CommentService auth token status:', {
-      hasToken: !!token,
-      tokenPreview: token ? `${token.substring(0, 30)}...` : 'No token'
-    });
     
     return {
       'Authorization': token ? `Bearer ${token}` : '',
@@ -122,24 +118,12 @@ class CommentService {
   ): Promise<T> {
     const url = `${API_BASE_URL}/comments${endpoint}`;
     
-    console.log('CommentService API Request:', {
-      url,
-      method: options.method || 'GET',
-      hasAuth: !!this.getAuthHeaders().Authorization
-    });
-    
     const response = await fetch(url, {
       ...options,
       headers: {
         ...this.getAuthHeaders(),
         ...options.headers,
       },
-    });
-
-    console.log('CommentService API Response:', {
-      url,
-      status: response.status,
-      statusText: response.statusText
     });
 
     if (!response.ok) {

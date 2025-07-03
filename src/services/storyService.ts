@@ -134,10 +134,6 @@ export interface StoryFilters {
 class StoryService {
   private getAuthHeaders() {
     const token = unifiedAuth.getAccessToken();
-    console.log('StoryService auth token status:', {
-      hasToken: !!token,
-      tokenPreview: token ? `${token.substring(0, 30)}...` : 'No token'
-    });
     
     if (token) {
       return {
@@ -340,16 +336,6 @@ class StoryService {
     if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
     if (data.cover_image) formData.append('cover_image', data.cover_image);
 
-    // Debug logging
-    console.log('Creating story with data:', {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      tags: data.tags,
-      status: data.status,
-      content_length: data.content.length
-    });
-
     return this.makeRequest('/stories/stories/', {
       method: 'POST',
       body: formData,
@@ -358,8 +344,6 @@ class StoryService {
 
   // Update story
   async updateStory(id: string, data: Partial<CreateStoryData>): Promise<Story> {
-    console.log('updateStory called with data:', data);
-    
     // Use JSON instead of FormData for updates to avoid Content-Type issues
     const updatePayload: Record<string, unknown> = {};
     
@@ -377,9 +361,6 @@ class StoryService {
     if (data.is_trending !== undefined) {
       updatePayload.is_trending = data.is_trending;
     }
-
-    console.log('Update payload:', updatePayload);
-    console.log('Making PATCH request to:', `/stories/stories/${id}/`);
 
     // For now, don't handle file uploads in updates (thumbnail, cover_image)
     // These can be handled separately if needed
@@ -413,12 +394,6 @@ class StoryService {
       interaction_type: interactionType,
       ...data,
     };
-    
-    console.log('Sending interaction request:', {
-      url: `/stories/stories/${id}/interact/`,
-      method: 'POST',
-      body: requestBody
-    });
     
     return this.makeRequest(`/stories/stories/${id}/interact/`, {
       method: 'POST',
@@ -502,7 +477,6 @@ if (typeof window !== 'undefined') {
   (window as unknown as { debugStoryAuth: () => Promise<{ valid: boolean; message: string }> }).debugStoryAuth = async () => {
     const service = new StoryService();
     const result = await service.validateToken();
-    console.log('Token validation result:', result);
     return result;
   };
 }

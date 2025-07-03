@@ -10,11 +10,9 @@ export const handleGoogleSignup = async (dispatch: any, navigate: any) => {
       throw new Error('Google OAuth not configured. Please add VITE_GOOGLE_CLIENT_ID to your environment variables.');
     }
 
-    console.log('🚀 Starting Google signup...');
     
     // Get Google user data
     const googleUser = await googleAuthService.signIn();
-    console.log('✅ Google user data received:', { 
       email: googleUser.email,
       name: `${googleUser.first_name} ${googleUser.last_name}`
     });
@@ -40,7 +38,6 @@ export const handleGoogleSignup = async (dispatch: any, navigate: any) => {
       // Handle specific error cases
       if (response.status === 400 && errorData.error?.includes('already exists')) {
         // User exists, try login instead
-        console.log('📧 User exists, attempting Google login...');
         return handleGoogleLogin(dispatch, navigate);
       }
       
@@ -48,7 +45,6 @@ export const handleGoogleSignup = async (dispatch: any, navigate: any) => {
     }
 
     const data = await response.json();
-    console.log('✅ Google signup successful');
 
     // Store authentication data using unifiedAuth
     if (data.access_token && data.refresh_token) {
@@ -84,11 +80,9 @@ export const handleGoogleSignup = async (dispatch: any, navigate: any) => {
 
 export const handleGoogleLogin = async (dispatch: any, navigate: any) => {
   try {
-    console.log('🚀 Starting Google login...');
     
     // Get Google user data
     const googleUser = await googleAuthService.signIn();
-    console.log('✅ Google user data received for login');
 
     // Use unifiedAuth for consistent authentication
     const response = await unifiedAuth.auth.googleLogin({
@@ -96,7 +90,6 @@ export const handleGoogleLogin = async (dispatch: any, navigate: any) => {
       google_id: googleUser.google_id
     });
 
-    console.log('✅ Google login successful');
     
     // Update Redux store with complete user data
     if (response.user) {
@@ -121,13 +114,6 @@ export const handleGoogleLogin = async (dispatch: any, navigate: any) => {
 
 // Debug helper for Google authentication issues
 export const debugGoogleAuth = async () => {
-  console.log('🔧 Google Auth Debug Information:');
-  console.log('Client ID configured:', !!import.meta.env.VITE_GOOGLE_CLIENT_ID);
-  console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
-  console.log('Google service available:', googleAuthService.isAvailable());
-  console.log('Current user:', unifiedAuth.user.getUser());
-  console.log('Has access token:', !!unifiedAuth.getAccessToken());
-  console.log('Is authenticated:', unifiedAuth.isAuthenticated());
   
   // Test backend connectivity
   try {
@@ -137,12 +123,9 @@ export const debugGoogleAuth = async () => {
         'Authorization': `Bearer ${unifiedAuth.getAccessToken()}`,
       },
     });
-    console.log('Profile endpoint accessible:', response.ok);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.log('Profile endpoint error:', errorData);
     }
   } catch (error) {
-    console.log('Profile endpoint error:', error);
   }
 };

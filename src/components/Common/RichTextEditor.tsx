@@ -392,10 +392,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Handle image upload
   const handleImageUpload = async (file: File) => {
     try {
-      console.log('🖼️ Starting image upload...', file.name);
       const imageUploadHandler = onImageUpload || defaultImageUpload;
       const imageUrl = await imageUploadHandler(file);
-      console.log('🔗 Image uploaded, URL:', imageUrl);
       
       // Focus the editor first
       if (editorRef.current) {
@@ -404,9 +402,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       
       // Insert image with better manipulation capabilities
       const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const imageHtml = `<img id="${imageId}" src="${imageUrl}" alt="Uploaded image" style="max-width: 100%; width: 300px; height: auto; border-radius: 8px; cursor: move; border: 2px solid transparent; transition: border-color 0.2s ease; display: inline-block; vertical-align: top; margin: 5px;" draggable="true" contenteditable="false" onload="console.log('✅ Image loaded:', this.src)" onerror="console.error('❌ Image failed to load:', this.src); this.style.border='2px solid red';" title="Click to select, double-click to resize, drag to move, right-click for options" />`;
-      
-      console.log('📝 Inserting HTML:', imageHtml);
+      const imageHtml = `<img id="${imageId}" src="${imageUrl}" alt="Uploaded image" style="max-width: 100%; width: 300px; height: auto; border-radius: 8px; cursor: move; border: 2px solid transparent; transition: border-color 0.2s ease; display: inline-block; vertical-align: top; margin: 5px;" draggable="true" contenteditable="false" title="Click to select, double-click to resize, drag to move, right-click for options" />`;
       
       // Insert the image at cursor position
       const selection = window.getSelection();
@@ -431,9 +427,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         selection.removeAllRanges();
         selection.addRange(range);
         
-        console.log('Image inserted into DOM');
+        // Image was inserted successfully
       } else {
-        console.log('No selection found, appending to end');
         // Fallback: append to end of editor
         if (editorRef.current) {
           editorRef.current.innerHTML += imageHtml;
@@ -442,7 +437,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       
       // Update content
       if (editorRef.current) {
-        console.log('Updating content with onChange');
         onChange(editorRef.current.innerHTML);
       }
       

@@ -52,7 +52,6 @@ const Analytics: React.FC = () => {
   const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
     setDateRange(range);
     // In production, this would trigger a new API call with the date range
-    console.log('Date range changed:', range);
   };
 
   useEffect(() => {

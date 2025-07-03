@@ -320,7 +320,7 @@ const ContentsPage = () => {
               <ContentCard
                 key={content.id}
                 {...content}
-                onLike={(id) => console.log('Liked content:', id)}
+                onLike={(id) => {}}
               />
             ))}
           </div>

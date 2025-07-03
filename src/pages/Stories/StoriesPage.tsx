@@ -15,8 +15,6 @@ interface RootState {
 }
 
 const StoriesPage: React.FC = () => {
-  console.log('🔍 StoriesPage: Component rendering - Version 2');
-  
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
   
@@ -33,14 +31,11 @@ const StoriesPage: React.FC = () => {
 
   const loadStories = async () => {
     try {
-      console.log('🔍 StoriesPage: Loading stories...');
       setLoading(true);
       const response = await storyService.getStories({
         status: 'published',
         page_size: 50
       });
-      console.log('🔍 StoriesPage: Stories loaded:', response);
-      console.log('🔍 StoriesPage: Number of stories:', response.results.length);
       setStories(response.results);
       setFilteredStories(response.results);
     } catch (error) {

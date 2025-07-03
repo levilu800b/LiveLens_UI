@@ -133,17 +133,12 @@ const StoryReaderPage: React.FC = () => {
         throw new Error('Story ID is required');
       }
 
-      console.log('Loading story with ID:', id);
       const storyData = await storyService.getStory(id);
-      console.log('Story loaded successfully:', storyData);
       setStory(storyData);
 
       // Use the main content field and split it into 5000-word pages
       if (storyData.content && storyData.content.trim()) {
-        console.log('Using main content field, length:', storyData.content.length);
-        console.log('Content preview:', storyData.content.substring(0, 200));
         const wordBasedPages = splitContentIntoPages(storyData.content, 5000);
-        console.log('Generated pages:', wordBasedPages.length);
         setPaginatedContent(wordBasedPages);
         setTotalPages(wordBasedPages.length);
       } else {
@@ -176,9 +171,7 @@ const StoryReaderPage: React.FC = () => {
     
     try {
       setCommentsLoading(true);
-      console.log('Loading comments for story:', id);
       const commentsData = await commentService.getStoryComments(id);
-      console.log('Comments loaded successfully:', commentsData);
       
       // Ensure we have the results array
       const commentsArray = commentsData.results || [];
@@ -221,9 +214,6 @@ const StoryReaderPage: React.FC = () => {
       loadStory();
       loadComments();
     }
-    
-    // Debug user info
-    console.log('StoryReaderPage userInfo:', userInfo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, userInfo]);
 
@@ -242,11 +232,7 @@ const StoryReaderPage: React.FC = () => {
     }
 
     try {
-      console.log('Attempting to like story:', story.id);
-      console.log('Current story like state:', { is_liked: story.is_liked, like_count: story.like_count });
-      
-      const response = await storyService.interactWithStory(story.id, 'like');
-      console.log('Like response:', response);
+      await storyService.interactWithStory(story.id, 'like');
       
       // Optimistically update the UI
       setStory(prev => {
@@ -256,7 +242,6 @@ const StoryReaderPage: React.FC = () => {
           is_liked: !prev.is_liked,
           like_count: prev.is_liked ? prev.like_count - 1 : prev.like_count + 1
         };
-        console.log('Updated story state:', { is_liked: newStory.is_liked, like_count: newStory.like_count });
         return newStory;
       });
     } catch (err) {
@@ -272,9 +257,7 @@ const StoryReaderPage: React.FC = () => {
     }
 
     try {
-      console.log('Attempting to bookmark story:', story.id);
-      const response = await storyService.interactWithStory(story.id, 'bookmark');
-      console.log('Bookmark response:', response);
+      await storyService.interactWithStory(story.id, 'bookmark');
       
       setStory(prev => prev ? {
         ...prev,
@@ -308,9 +291,7 @@ const StoryReaderPage: React.FC = () => {
     if (!newComment.trim() || !story || !userInfo) return;
 
     try {
-      console.log('Attempting to submit comment for story:', story.id);
       const comment = await commentService.createStoryComment(story.id, newComment.trim());
-      console.log('Comment submitted successfully:', comment);
       
       // Validate the comment response
       if (!comment || !comment.id || !comment.user) {
@@ -342,9 +323,7 @@ const StoryReaderPage: React.FC = () => {
     if (!replyText.trim() || !story || !userInfo) return;
 
     try {
-      console.log('Attempting to submit reply for comment:', parentId);
       const reply = await commentService.createStoryComment(story.id, replyText.trim(), parentId);
-      console.log('Reply submitted successfully:', reply);
       
       // Validate the reply response
       if (!reply || !reply.id || !reply.user) {
@@ -383,9 +362,7 @@ const StoryReaderPage: React.FC = () => {
     }
 
     try {
-      console.log('Attempting to like comment:', commentId);
-      const response = await commentService.interactWithComment(commentId, 'like');
-      console.log('Comment like response:', response);
+      await commentService.interactWithComment(commentId, 'like');
       
       // Update comment like count (optimistic update)
       setComments(prev => prev.map(comment => {

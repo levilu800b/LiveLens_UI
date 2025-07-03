@@ -26,7 +26,6 @@ export const performCompleteLogout = async () => {
   }
   
   // 3. FORCE CLEAR ALL AUTH DATA (this is the critical part)
-  console.log('🧹 Clearing all authentication data...');
   
   // Clear all auth-related localStorage items
   localStorage.removeItem('access_token');
@@ -44,27 +43,18 @@ export const performCompleteLogout = async () => {
   );
   
   authKeys.forEach(key => {
-    console.log(`Removing: ${key}`);
     localStorage.removeItem(key);
   });
   
   // Clear sessionStorage too
   sessionStorage.clear();
   
-  // 4. Verify everything is cleared
-  console.log('🔍 Verification - localStorage after logout:');
-  console.log('access_token:', localStorage.getItem('access_token'));
-  console.log('refresh_token:', localStorage.getItem('refresh_token'));
-  console.log('account:', localStorage.getItem('account'));
-  
-  // 5. Force redirect to login (important!)
+  // 4. Force redirect to login (important!)
   window.location.replace('/login');
 };
 
 // Enhanced storage clearing function
 export const clearAllAuthData = () => {
-  console.log('🚨 FORCE CLEARING ALL AUTH DATA');
-  
   // Clear specific known auth keys
   const authKeys = [
     'access_token',
@@ -81,7 +71,6 @@ export const clearAllAuthData = () => {
   
   authKeys.forEach(key => {
     if (localStorage.getItem(key)) {
-      console.log(`Removing ${key}`);
       localStorage.removeItem(key);
     }
   });
@@ -92,13 +81,10 @@ export const clearAllAuthData = () => {
         key.toLowerCase().includes('auth') || 
         key.toLowerCase().includes('user') ||
         key.toLowerCase().includes('session')) {
-      console.log(`Removing suspicious key: ${key}`);
       localStorage.removeItem(key);
     }
   });
   
   // Clear sessionStorage
   sessionStorage.clear();
-  
-  console.log('✅ All auth data cleared');
 };

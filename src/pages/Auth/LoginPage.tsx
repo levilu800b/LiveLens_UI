@@ -80,17 +80,13 @@ const LoginPage: React.FC = () => {
       }
 
       // Get Google user data
-      console.log('Starting Google sign-in...');
       const googleUser = await googleAuthService.signIn();
-      console.log('Google user data received:', { email: googleUser.email });
 
       // Call the unified auth Google login
       const response = await unifiedAuth.auth.googleLogin({
         email: googleUser.email,
         google_id: googleUser.google_id
       });
-
-      console.log('Google login successful');
       
       // Update Redux store
       dispatch(userActions.setUserInfo(response.user));

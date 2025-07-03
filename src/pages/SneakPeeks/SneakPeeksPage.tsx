@@ -383,7 +383,7 @@ const SneakPeeksPage = () => {
                 {...sneakPeek}
                 category={sneakPeek.category}
                 isTrailerAvailable={false}
-                onLike={(id) => console.log('Liked sneak peek:', id)}
+                onLike={(id) => {}}
               />
             ))}
           </div>

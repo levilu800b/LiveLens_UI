@@ -11,11 +11,6 @@ export const updateUserProfile = async (formData: {
 }, avatarFile?: File) => {
   
   try {
-    // Debug: Log current authentication state
-    console.log('🔧 Profile Update Debug:');
-    console.log('Is authenticated:', unifiedAuth.isAuthenticated());
-    console.log('Has access token:', !!unifiedAuth.getAccessToken());
-    
     const currentUser = unifiedAuth.user.getUser();
     if (!currentUser) {
       throw new Error('User not found. Please login again.');
@@ -44,22 +39,11 @@ export const updateUserProfile = async (formData: {
     // ✅ CRITICAL FIX: Only send dateOfBirth if it has a valid value
     if (formData.dateOfBirth && formData.dateOfBirth.trim()) {
       formDataToSend.append('dateOfBirth', formData.dateOfBirth.trim());
-      console.log('📅 Date of birth included:', formData.dateOfBirth.trim());
-    } else {
-      // Don't send empty date field at all, let backend handle it as null
-      console.log('📅 Date of birth empty, not sending field');
     }
 
     // Add avatar file if provided
     if (avatarFile) {
       formDataToSend.append('avatar', avatarFile);
-      console.log('🖼️ Avatar file included');
-    }
-
-    // Log what we're sending
-    console.log('📤 Sending profile update request...');
-    for (let [key, value] of formDataToSend.entries()) {
-      console.log(`  ${key}:`, typeof value === 'string' ? value : '[File]');
     }
 
     // Make the API call with explicit headers and error handling
@@ -72,11 +56,8 @@ export const updateUserProfile = async (formData: {
       body: formDataToSend,
     });
 
-    console.log('📥 Profile update response status:', response.status);
-
     // Handle authentication errors
     if (response.status === 401) {
-      console.log('🔄 Access token expired, attempting refresh...');
       
       try {
         // Try to refresh the token
@@ -84,7 +65,6 @@ export const updateUserProfile = async (formData: {
         const newToken = unifiedAuth.getAccessToken();
         
         if (newToken) {
-          console.log('✅ Token refreshed, retrying profile update...');
           
           // Retry the request with new token
           const retryResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/profile/`, {
@@ -97,7 +77,6 @@ export const updateUserProfile = async (formData: {
           
           if (retryResponse.ok) {
             const retryData = await retryResponse.json();
-            console.log('✅ Profile update successful after token refresh');
             return retryData;
           } else {
             const retryErrorData = await retryResponse.json().catch(() => ({}));
@@ -149,7 +128,6 @@ export const updateUserProfile = async (formData: {
 
     // Parse successful response
     const responseData = await response.json();
-    console.log('✅ Profile update successful:', responseData);
 
     // Update local user data - handle different response structures
     const updatedUser = responseData.user || responseData.updatedUser || responseData.data || responseData;
@@ -168,7 +146,6 @@ export const updateUserProfile = async (formData: {
       
       // Update stored user data
       unifiedAuth.user.setUser(completeUpdatedUser);
-      console.log('✅ Local user data updated');
       
       return {
         ...responseData,
@@ -239,12 +216,10 @@ export const validateProfileData = (formData: {
 };
 // Debug function for profile update issues
 export const debugProfileUpdate = async () => {
-  console.log('🔧 Profile Update Debug:');
   
   const user = unifiedAuth.user.getUser();
   const token = unifiedAuth.getAccessToken();
   
-  console.log('Current user:', user ? {
     id: user.id,
     email: user.email,
     firstName: user.firstName,
@@ -252,8 +227,6 @@ export const debugProfileUpdate = async () => {
     isVerified: user.isVerified
   } : 'No user data');
   
-  console.log('Access token available:', !!token);
-  console.log('Token length:', token ? token.length : 0);
   
   if (token) {
     try {
@@ -265,17 +238,13 @@ export const debugProfileUpdate = async () => {
         },
       });
       
-      console.log('Profile GET status:', response.status);
       
       if (response.ok) {
         const profileData = await response.json();
-        console.log('Profile data accessible:', !!profileData);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.log('Profile GET error:', errorData);
       }
     } catch (error) {
-      console.log('Profile GET failed:', error);
     }
   }
 };

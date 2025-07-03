@@ -377,7 +377,7 @@ const AnimationsPage = () => {
                 style={animation.style}
                 complexity={animation.complexity}
                 type="animation"
-                onLike={() => console.log(`Liked ${animation.title}`)}
+                onLike={() => {}}
               />
             ))}
           </div>

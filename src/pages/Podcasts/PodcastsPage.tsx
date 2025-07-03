@@ -319,7 +319,7 @@ const PodcastsPage = () => {
                 {...podcast}
                 season={podcast.season}
                 episode={podcast.episode}
-                onLike={(id) => console.log('Liked podcast:', id)}
+                onLike={(id) => {}}
               />
             ))}
           </div>

@@ -22,8 +22,6 @@ class UploadService {
 
   async uploadImage(file: File): Promise<string> {
     try {
-      console.log('📤 Uploading image:', file.name, file.size);
-      
       const formData = new FormData();
       formData.append('image', file);
       formData.append('upload_type', 'story_content');
@@ -34,8 +32,6 @@ class UploadService {
         body: formData,
       });
 
-      console.log('📡 Upload response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Upload failed:', response.statusText, errorText);
@@ -43,8 +39,6 @@ class UploadService {
       }
 
       const data = await response.json();
-      console.log('✅ Image uploaded successfully:', data);
-      console.log('🔗 Image URL:', data.url);
       
       // Validate the response structure
       if (!data.url) {
