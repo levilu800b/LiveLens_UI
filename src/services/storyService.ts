@@ -108,7 +108,7 @@ export interface StoryListItem {
 export interface CreateStoryData {
   title: string;
   description: string;
-  content?: string;
+  content: string; // Main story content
   category: string;
   tags: string[];
   thumbnail?: File;
@@ -116,11 +116,6 @@ export interface CreateStoryData {
   status: 'draft' | 'published';
   is_featured?: boolean;
   is_trending?: boolean;
-  pages_data?: Array<{
-    title: string;
-    content: string;
-    page_image?: File;
-  }>;
 }
 
 export interface StoryFilters {
@@ -329,7 +324,7 @@ class StoryService {
     // Add basic fields
     formData.append('title', data.title);
     formData.append('description', data.description);
-    if (data.content) formData.append('content', data.content);
+    formData.append('content', data.content);
     formData.append('category', data.category);
     formData.append('tags', JSON.stringify(data.tags));
     formData.append('status', data.status);
@@ -345,23 +340,6 @@ class StoryService {
     if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
     if (data.cover_image) formData.append('cover_image', data.cover_image);
 
-    // Add pages data
-    if (data.pages_data) {
-      formData.append('pages_data', JSON.stringify(
-        data.pages_data.map(page => ({
-          title: page.title,
-          content: page.content
-        }))
-      ));
-
-      // Add page images separately
-      data.pages_data.forEach((page, index) => {
-        if (page.page_image) {
-          formData.append(`page_${index}_image`, page.page_image);
-        }
-      });
-    }
-
     // Debug logging
     console.log('Creating story with data:', {
       title: data.title,
@@ -369,7 +347,7 @@ class StoryService {
       category: data.category,
       tags: data.tags,
       status: data.status,
-      pages_count: data.pages_data?.length || 0
+      content_length: data.content.length
     });
 
     return this.makeRequest('/stories/stories/', {
@@ -383,7 +361,7 @@ class StoryService {
     console.log('updateStory called with data:', data);
     
     // Use JSON instead of FormData for updates to avoid Content-Type issues
-    const updatePayload: any = {};
+    const updatePayload: Record<string, unknown> = {};
     
     // Add basic fields
     if (data.title) updatePayload.title = data.title;
@@ -400,21 +378,12 @@ class StoryService {
       updatePayload.is_trending = data.is_trending;
     }
 
-    // Add pages data as JSON
-    if (data.pages_data) {
-      console.log('Adding pages_data to payload:', data.pages_data);
-      updatePayload.pages_data = data.pages_data.map(page => ({
-        title: page.title,
-        content: page.content
-      }));
-    }
-
     console.log('Update payload:', updatePayload);
     console.log('Making PATCH request to:', `/stories/stories/${id}/`);
 
-    // For now, don't handle file uploads in updates (thumbnail, cover_image, page_images)
+    // For now, don't handle file uploads in updates (thumbnail, cover_image)
     // These can be handled separately if needed
-    if (data.thumbnail || data.cover_image || (data.pages_data && data.pages_data.some(p => p.page_image))) {
+    if (data.thumbnail || data.cover_image) {
       console.warn('File uploads not supported in story updates yet. Files will be ignored.');
     }
 

@@ -179,10 +179,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Handle image upload
   const handleImageUpload = async (file: File) => {
     try {
-      console.log('Starting image upload...', file.name);
+      console.log('🖼️ Starting image upload...', file.name);
       const imageUploadHandler = onImageUpload || defaultImageUpload;
       const imageUrl = await imageUploadHandler(file);
-      console.log('Image uploaded, URL:', imageUrl);
+      console.log('🔗 Image uploaded, URL:', imageUrl);
       
       // Focus the editor first
       if (editorRef.current) {
@@ -191,7 +191,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       
       // Insert image with proper HTML structure and resize capabilities
       const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const imageHtml = `<div class="image-container" style="margin: 10px 0; text-align: center;"><img id="${imageId}" src="${imageUrl}" alt="Uploaded image" style="max-width: 100%; width: 300px; height: auto; border-radius: 8px; cursor: pointer; border: 2px solid transparent;" draggable="false" /></div><p><br></p>`;
+      const imageHtml = `<div class="image-container" style="margin: 10px 0; text-align: center;"><img id="${imageId}" src="${imageUrl}" alt="Uploaded image" style="max-width: 100%; width: 300px; height: auto; border-radius: 8px; cursor: pointer; border: 2px solid transparent;" draggable="false" onload="console.log('✅ Image loaded:', this.src)" onerror="console.error('❌ Image failed to load:', this.src); this.style.border='2px solid red';" /></div><p><br></p>`;
+      
+      console.log('📝 Inserting HTML:', imageHtml);
       
       // Insert the image at cursor position
       const selection = window.getSelection();

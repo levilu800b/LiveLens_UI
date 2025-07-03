@@ -1,6 +1,6 @@
 // src/components/Content/StoryReader.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Heart, MessageCircle, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, Heart, MessageCircle } from 'lucide-react';
 
 interface StoryReaderProps {
   story: {
@@ -22,10 +22,10 @@ const StoryReader: React.FC<StoryReaderProps> = ({ story, onLike, onComment }) =
   const [pages, setPages] = useState<string[]>([]);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Split content into pages (300-400 words per page)
+  // Split content into pages (5000 words per page for better reading experience)
   useEffect(() => {
     const words = story.content.split(' ');
-    const wordsPerPage = 350;
+    const wordsPerPage = 5000;
     const storyPages: string[] = [];
 
     for (let i = 0; i < words.length; i += wordsPerPage) {

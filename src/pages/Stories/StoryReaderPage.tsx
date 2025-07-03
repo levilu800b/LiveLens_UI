@@ -20,7 +20,7 @@ import { useSelector } from 'react-redux';
 import storyService from '../../services/storyService';
 import commentService from '../../services/commentService';
 import MainLayout from '../../components/MainLayout/MainLayout';
-import type { Story, StoryPage } from '../../services/storyService';
+import type { Story } from '../../services/storyService';
 import type { Comment } from '../../services/commentService';
 import { config } from '../../config';
 
@@ -73,8 +73,8 @@ const StoryReaderPage: React.FC = () => {
   const [startTime] = useState<number>(Date.now());
   const pageRef = useRef<HTMLDivElement>(null);
 
-  // Split content into 1000-word chunks
-  const splitContentIntoPages = (content: string, maxWordsPerPage: number = 1000) => {
+  // Split content into 5000-word chunks
+  const splitContentIntoPages = (content: string, maxWordsPerPage: number = 5000) => {
     // Remove HTML tags for word counting but keep them for display
     const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const words = textContent.split(' ');
@@ -124,40 +124,6 @@ const StoryReaderPage: React.FC = () => {
   };
 
   // Combine all story pages and split by word count
-  const processStoryContent = (storyPages: StoryPage[]) => {
-    let allContent = '';
-    let hasImages = false;
-    let firstImage = '';
-
-    // Only use page images for content sections (cover image will be shown in header)
-    // Combine all pages into one content string
-    storyPages.forEach((page, index) => {
-      if (index > 0) allContent += '<div class="page-break"></div>';
-      if (page.title) {
-        allContent += `<h2 class="page-title">${page.title}</h2>`;
-      }
-      // Use page images for content sections
-      if (page.page_image && !hasImages) {
-        firstImage = page.page_image;
-        hasImages = true;
-      }
-      allContent += page.content;
-    });
-
-    // Split into 1000-word pages
-    const wordBasedPages = splitContentIntoPages(allContent, 1000);
-    
-    // Add page image to first page if available (not cover image)
-    const processedPages = wordBasedPages.map((page, index) => ({
-      ...page,
-      title: index === 0 ? storyPages[0]?.title : undefined,
-      image: index === 0 ? firstImage : undefined
-    }));
-
-    setPaginatedContent(processedPages);
-    setTotalPages(processedPages.length);
-  };
-
   const loadStory = async () => {
     try {
       setLoading(true);
@@ -172,11 +138,23 @@ const StoryReaderPage: React.FC = () => {
       console.log('Story loaded successfully:', storyData);
       setStory(storyData);
 
-      // Load pages
-      const pagesData = await storyService.getStoryPages(id);
-
-      // Process content into 1000-word pages
-      processStoryContent(pagesData.pages);
+      // Use the main content field and split it into 5000-word pages
+      if (storyData.content && storyData.content.trim()) {
+        console.log('Using main content field, length:', storyData.content.length);
+        console.log('Content preview:', storyData.content.substring(0, 200));
+        const wordBasedPages = splitContentIntoPages(storyData.content, 5000);
+        console.log('Generated pages:', wordBasedPages.length);
+        setPaginatedContent(wordBasedPages);
+        setTotalPages(wordBasedPages.length);
+      } else {
+        console.warn('No content found in story');
+        // Create a placeholder if no content is available
+        setPaginatedContent([{ 
+          content: '<p>This story has no content available.</p>', 
+          wordCount: 7 
+        }]);
+        setTotalPages(1);
+      }
 
     } catch (err) {
       console.error('Error loading story:', err);

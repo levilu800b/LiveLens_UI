@@ -6,21 +6,14 @@ import {
   Upload, 
   X, 
   FileText,
-  Plus,
-  Minus,
   AlertTriangle,
   ArrowLeft
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
 import RichTextEditor from '../../components/Common/RichTextEditor';
 import { storyService } from '../../services/storyService';
+import { uploadService } from '../../services/uploadService';
 import type { CreateStoryData, Story } from '../../services/storyService';
-
-interface StoryPage {
-  title: string;
-  content: string;
-  page_image?: File | null;
-}
 
 interface StoryFormData {
   title: string;
@@ -32,7 +25,7 @@ interface StoryFormData {
   thumbnail?: File | null;
   estimated_read_time: number;
   status: 'draft' | 'published' | 'archived';
-  pages_data: StoryPage[];
+  content: string; // Single long content field
   // Series support
   series_id?: string;
   series_position?: number;
@@ -57,7 +50,7 @@ const EditStoryPage: React.FC = () => {
     cover_image: null,
     estimated_read_time: 5,
     status: 'draft',
-    pages_data: [{ title: 'Page 1', content: '', page_image: null }]
+    content: '' // Single content field
   });
   const [tagInput, setTagInput] = useState('');
 
@@ -101,11 +94,7 @@ const EditStoryPage: React.FC = () => {
           thumbnail: null, // Will be set as URL, not File  
           estimated_read_time: storyData.estimated_read_time,
           status: storyData.status,
-          pages_data: storyData.pages.map(page => ({
-            title: page.title,
-            content: page.content,
-            page_image: null // Will be set as URL, not File
-          }))
+          content: storyData.content || '' // Use the main content field
         });
       } catch (err) {
         console.error('Error loading story:', err);
@@ -130,35 +119,6 @@ const EditStoryPage: React.FC = () => {
       ...prev,
       [field]: file
     }));
-  };
-
-  const handlePageChange = (pageIndex: number, field: keyof StoryPage, value: string | File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      pages_data: prev.pages_data.map((page, index) => 
-        index === pageIndex ? { ...page, [field]: value } : page
-      )
-    }));
-  };
-
-  const addPage = () => {
-    setFormData(prev => ({
-      ...prev,
-      pages_data: [...prev.pages_data, { 
-        title: `Page ${prev.pages_data.length + 1}`, 
-        content: '', 
-        page_image: null 
-      }]
-    }));
-  };
-
-  const removePage = (pageIndex: number) => {
-    if (formData.pages_data.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        pages_data: prev.pages_data.filter((_, index) => index !== pageIndex)
-      }));
-    }
   };
 
   const addTag = () => {
@@ -192,16 +152,8 @@ const EditStoryPage: React.FC = () => {
       if (!formData.description.trim()) {
         throw new Error('Description is required');
       }
-      if (formData.pages_data.some(page => !page.content.trim())) {
-        throw new Error('All pages must have content');
-      }
-
-      // Check word count for each page (500-600 words limit)
-      for (let i = 0; i < formData.pages_data.length; i++) {
-        const wordCount = formData.pages_data[i].content.trim().split(/\s+/).length;
-        if (wordCount > 600) {
-          throw new Error(`Page ${i + 1} exceeds the 600-word limit (current: ${wordCount} words). Please reduce the content.`);
-        }
+      if (!formData.content.trim()) {
+        throw new Error('Story content is required');
       }
 
       const updateData: Partial<CreateStoryData> = {
@@ -210,11 +162,7 @@ const EditStoryPage: React.FC = () => {
         category: formData.category,
         tags: formData.tags,
         status: action === 'publish' ? 'published' : 'draft',
-        pages_data: formData.pages_data.map(page => ({
-          title: page.title,
-          content: page.content
-          // Note: page_image files are not supported in updates yet
-        }))
+        content: formData.content.trim()
       };
 
       // Note: File uploads (cover_image, thumbnail) are not supported in updates yet
@@ -490,87 +438,30 @@ const EditStoryPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Story Pages */}
+            {/* Story Content */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-                <h3 className="text-lg font-semibold text-gray-900">Story Pages</h3>
-                <button
-                  type="button"
-                  onClick={addPage}
-                  className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Page
-                </button>
-              </div>
-
-              {formData.pages_data.map((page, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900 text-sm sm:text-base">Page {index + 1}</h4>
-                    {formData.pages_data.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePage(index)}
-                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                        aria-label={`Remove page ${index + 1}`}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Page Title
-                      </label>
-                      <input
-                        type="text"
-                        value={page.title}
-                        onChange={(e) => handlePageChange(index, 'title', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
-                        placeholder={`Page ${index + 1} title`}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Page Content * (Max 600 words)
-                      </label>
-                      <RichTextEditor
-                        value={page.content}
-                        onChange={(content) => handlePageChange(index, 'content', content)}
-                        placeholder="Write your story content here..."
-                        className="min-h-[200px] border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent"
-                      />
-                      <div className="mt-2 flex justify-between items-center">
-                        <span className="text-xs text-gray-500">
-                          Word count: {page.content.trim() ? page.content.trim().split(/\s+/).length : 0}/600
-                        </span>
-                        {page.content.trim().split(/\s+/).length > 600 && (
-                          <span className="text-xs text-red-600 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Exceeds word limit
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Page Image (Optional)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handlePageChange(index, 'page_image', e.target.files?.[0] || null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                    </div>
-                  </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Story Content</h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Story Content * (No word limit - will be split into pages on reading)
+                </label>
+                <RichTextEditor
+                  value={formData.content}
+                  onChange={(content) => handleInputChange('content', content)}
+                  placeholder="Write your complete story content here. It will be automatically split into readable pages when users view it..."
+                  className="min-h-[400px] border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent"
+                  onImageUpload={uploadService.uploadImage.bind(uploadService)}
+                />
+                <div className="mt-2">
+                  <span className="text-xs text-gray-500">
+                    Word count: {formData.content.trim() ? formData.content.trim().split(/\s+/).length : 0} words
+                  </span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Your story will be automatically split into ~5000 word pages when readers view it. Write as much as you need!
+                  </p>
                 </div>
-              ))}
+              </div>
             </div>
 
             {/* Action Buttons */}
