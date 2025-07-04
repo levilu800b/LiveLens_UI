@@ -1,121 +1,207 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Film, Play, ArrowRight, TrendingUp, Clock, Eye } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
-import SearchFilter from '../../components/Common/SearchFilter';
+import MediaFilter, { type FilterOptions } from '../../components/Common/MediaFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import mediaService, { type Film as FilmType, type Content as ContentType, type HeroMediaResponse } from '../../services/mediaService';
 
-// Mock data - replace with actual API calls
-const mockFilms = [
-  {
-    id: '1',
-    title: 'Digital Dreams',
-    description: 'A journey through the future of technology and human connection.',
-    thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop',
-    duration: '2h 15m',
-    type: 'film' as const,
-    tags: ['Sci-Fi', 'Drama', 'Technology'],
-    views: 125000,
-    likes: 8500,
-    isTrending: true
-  },
-  {
-    id: '2',
-    title: 'Ocean\'s Whisper',
-    description: 'An underwater adventure exploring the mysteries of the deep sea.',
-    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=600&fit=crop',
-    duration: '1h 45m',
-    type: 'film' as const,
-    tags: ['Adventure', 'Nature', 'Documentary'],
-    views: 89000,
-    likes: 6200
-  }
-];
-
-const mockContents = [
-  {
-    id: '3',
-    title: 'Tech Review: Latest Innovations',
-    description: 'Exploring the newest technological breakthroughs and their impact.',
-    thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=600&fit=crop',
-    duration: '25m',
-    type: 'content' as const,
-    tags: ['Technology', 'Review', 'Innovation'],
-    views: 45000,
-    likes: 3200
-  },
-  {
-    id: '4',
-    title: 'Cooking Masterclass',
-    description: 'Learn professional cooking techniques from renowned chefs.',
-    thumbnail: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=600&fit=crop',
-    duration: '35m',
-    type: 'content' as const,
-    tags: ['Cooking', 'Tutorial', 'Lifestyle'],
-    views: 67000,
-    likes: 4100
-  }
-];
+interface MediaItem {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  duration: string;
+  type: 'film' | 'content';
+  tags: string[];
+  views: number;
+  likes: number;
+  isTrending?: boolean;
+}
 
 const MediaPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('newest');
   const [activeTab, setActiveTab] = useState<'all' | 'films' | 'contents'>('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Data states
+  const [films, setFilms] = useState<FilmType[]>([]);
+  const [contents, setContents] = useState<ContentType[]>([]);
+  const [heroMedia, setHeroMedia] = useState<HeroMediaResponse | null>(null);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-  const allContent = [...mockFilms, ...mockContents];
-  const availableTags = Array.from(new Set(allContent.flatMap(item => item.tags)));
+  // Load initial data
+  useEffect(() => {
+    loadInitialData();
+  }, []);
 
-  const getFilteredContent = () => {
-    let content = allContent;
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load hero media, films, and content in parallel
+      const [heroResponse, filmsResponse, contentsResponse] = await Promise.all([
+        mediaService.getHeroMedia('film').catch(() => null),
+        mediaService.getFilms({ page_size: 20, status: 'published' }),
+        mediaService.getContent({ page_size: 20, status: 'published' })
+      ]);
+
+      if (heroResponse) {
+        setHeroMedia(heroResponse);
+      }
+
+      setFilms(filmsResponse.results);
+      setContents(contentsResponse.results);
+
+      // Extract unique tags from both films and content
+      const allTags = new Set<string>();
+      filmsResponse.results.forEach(film => {
+        if (film.tags && Array.isArray(film.tags)) {
+          film.tags.forEach(tag => {
+            if (tag && typeof tag === 'string') {
+              allTags.add(tag);
+            }
+          });
+        }
+      });
+      contentsResponse.results.forEach(content => {
+        if (content.tags && Array.isArray(content.tags)) {
+          content.tags.forEach(tag => {
+            if (tag && typeof tag === 'string') {
+              allTags.add(tag);
+            }
+          });
+        }
+      });
+      setAvailableTags(Array.from(allTags).sort());
+
+    } catch (err) {
+      console.error('Error loading media data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load media content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert API data to MediaItem format for ContentCard
+  const convertToMediaItem = (item: FilmType | ContentType, type: 'film' | 'content'): MediaItem => ({
+    id: item.id,
+    title: item.title || '',
+    description: item.description || '',
+    thumbnail: item.thumbnail || '',
+    duration: item.duration_formatted || '0m',
+    type,
+    tags: item.tags || [],
+    views: item.view_count || 0,
+    likes: item.like_count || 0,
+    isTrending: item.is_trending || false
+  });
+
+  const getFilteredContent = (): MediaItem[] => {
+    let allContent: MediaItem[] = [];
 
     // Filter by tab
     if (activeTab === 'films') {
-      content = mockFilms;
+      allContent = films.map(film => convertToMediaItem(film, 'film'));
     } else if (activeTab === 'contents') {
-      content = mockContents;
+      allContent = contents.map(content => convertToMediaItem(content, 'content'));
+    } else {
+      allContent = [
+        ...films.map(film => convertToMediaItem(film, 'film')),
+        ...contents.map(content => convertToMediaItem(content, 'content'))
+      ];
     }
 
     // Apply search filter
     if (searchTerm) {
-      content = content.filter(item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      allContent = allContent.filter(item =>
+        (item.title && item.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.tags && item.tags.some(tag => tag && tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
     // Apply tag filter
     if (selectedTags.length > 0) {
-      content = content.filter(item =>
-        selectedTags.some(tag => item.tags.includes(tag))
+      allContent = allContent.filter(item =>
+        item.tags && selectedTags.some(tag => item.tags.includes(tag))
       );
     }
 
     // Apply sorting
     switch (sortBy) {
       case 'most-liked':
-        content.sort((a, b) => b.likes - a.likes);
+        allContent.sort((a, b) => b.likes - a.likes);
         break;
       case 'most-viewed':
-        content.sort((a, b) => b.views - a.views);
+        allContent.sort((a, b) => b.views - a.views);
         break;
       case 'alphabetical':
-        content.sort((a, b) => a.title.localeCompare(b.title));
+        allContent.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         break;
       case 'trending':
-        content.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
+        allContent.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
         break;
       default:
-        // newest first - already in order
+        // newest first - data already comes sorted by newest
         break;
     }
 
-    return content;
+    return allContent;
   };
 
   const filteredContent = getFilteredContent();
-  const trendingContent = allContent.filter(item => item.isTrending)[0];
+  const trendingContent = filteredContent.find(item => item.isTrending);
+
+  // Memoized handlers to prevent infinite re-renders in MediaFilter
+  const handleSearch = useCallback((search: string) => {
+    setSearchTerm(search);
+  }, []);
+
+  const handleFilter = useCallback((filters: FilterOptions) => {
+    setSelectedTags(filters.tags);
+    setSortBy(filters.sortBy);
+    // optionally handle filters.duration and filters.dateRange if needed
+  }, []);
+
+  if (loading && films.length === 0 && contents.length === 0) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading media content...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <Film className="h-12 w-12 mx-auto mb-2" />
+              <p className="text-lg font-semibold">Error Loading Media</p>
+            </div>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={loadInitialData}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -157,33 +243,33 @@ const MediaPage = () => {
               </div>
               
               {/* Featured Content */}
-              {trendingContent && (
+              {(heroMedia || trendingContent) && (
                 <div className="relative">
                   <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl">
                     <div className="aspect-[4/5] bg-gradient-to-br from-slate-800 to-slate-900 relative">
                       <img 
-                        src={trendingContent.thumbnail} 
-                        alt={trendingContent.title}
+                        src={heroMedia?.thumbnail || trendingContent?.thumbnail} 
+                        alt={heroMedia?.title || trendingContent?.title}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
                       
                       <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
                         <TrendingUp className="w-4 h-4 mr-1" />
-                        Trending
+                        {heroMedia?.is_featured ? 'Featured' : 'Trending'}
                       </div>
                       
                       <div className="absolute bottom-6 left-6 right-6 text-white">
-                        <h3 className="text-2xl font-bold mb-2">{trendingContent.title}</h3>
-                        <p className="text-gray-200 text-sm mb-4">{trendingContent.description}</p>
+                        <h3 className="text-2xl font-bold mb-2">{heroMedia?.title || trendingContent?.title}</h3>
+                        <p className="text-gray-200 text-sm mb-4">{heroMedia?.description || trendingContent?.description}</p>
                         <div className="flex items-center space-x-4 text-sm">
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-1" />
-                            {trendingContent.duration}
+                            {heroMedia?.duration_formatted || trendingContent?.duration}
                           </div>
                           <div className="flex items-center">
                             <Eye className="w-4 h-4 mr-1" />
-                            {(trendingContent.views / 1000).toFixed(0)}K views
+                            {((heroMedia?.view_count || trendingContent?.views || 0) / 1000).toFixed(0)}K views
                           </div>
                         </div>
                       </div>
@@ -206,7 +292,7 @@ const MediaPage = () => {
             ].map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key as 'all' | 'films' | 'contents')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.key
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -219,15 +305,12 @@ const MediaPage = () => {
           </div>
 
           {/* Search and Filters */}
-          <SearchFilter
-  onSearch={setSearchTerm}
-  onFilter={(filters) => {
-    setSelectedTags(filters.tags);
-    setSortBy(filters.sortBy);
-    // optionally handle filters.duration and filters.dateRange if needed
-  }}
-  contentType="media"
-/>
+          <MediaFilter
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            contentType="media"
+            availableTags={availableTags}
+          />
 
           {/* Content Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -235,7 +318,6 @@ const MediaPage = () => {
               <ContentCard
                 key={item.id}
                 {...item}
-                onLike={(id) => {}}
               />
             ))}
           </div>

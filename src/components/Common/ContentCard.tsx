@@ -54,6 +54,19 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
 
+  // Generate a placeholder SVG
+  const getPlaceholderImage = (type: string) => {
+    const svg = `
+      <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+        <rect width="400" height="300" fill="#1f2937"/>
+        <text x="200" y="150" font-family="Arial, sans-serif" font-size="24" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">
+          ${type.toUpperCase()}
+        </text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  };
+
   const handleTrailerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -123,9 +136,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
       {/* Thumbnail */}
       <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden flex-shrink-0">
         <img 
-          src={thumbnail || '/api/placeholder/400/300'} 
+          src={thumbnail || getPlaceholderImage(type)} 
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = getPlaceholderImage(type);
+          }}
         />
         
         {/* Overlay */}

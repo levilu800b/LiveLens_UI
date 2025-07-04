@@ -1,193 +1,193 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, TrendingUp, Users, Clock } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
-import SearchFilter from '../../components/Common/SearchFilter';
+import MediaFilter, { type FilterOptions } from '../../components/Common/MediaFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import mediaService, { type Content as ContentType } from '../../services/mediaService';
 
-// Mock data - replace with actual API calls
-const mockContents = [
-  {
-    id: '1',
-    title: 'Tech Review: Latest Innovations',
-    description: 'Exploring the newest technological breakthroughs and their impact on our daily lives.',
-    thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=600&fit=crop',
-    duration: '25m',
-    type: 'content' as const,
-    tags: ['Technology', 'Review', 'Innovation'],
-    views: 45000,
-    likes: 3200,
-    releaseDate: '2024-11-15',
-    category: 'Educational'
-  },
-  {
-    id: '2',
-    title: 'Cooking Masterclass',
-    description: 'Learn professional cooking techniques from renowned chefs around the world.',
-    thumbnail: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=600&fit=crop',
-    duration: '35m',
-    type: 'content' as const,
-    tags: ['Cooking', 'Tutorial', 'Lifestyle'],
-    views: 67000,
-    likes: 4100,
-    isTrending: true,
-    releaseDate: '2024-11-20',
-    category: 'Tutorial'
-  },
-  {
-    id: '3',
-    title: 'Photography Basics',
-    description: 'Master the fundamentals of photography with this comprehensive beginner\'s guide.',
-    thumbnail: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=600&fit=crop',
-    duration: '28m',
-    type: 'content' as const,
-    tags: ['Photography', 'Tutorial', 'Creative'],
-    views: 52000,
-    likes: 3800,
-    releaseDate: '2024-11-10',
-    category: 'Tutorial'
-  },
-  {
-    id: '4',
-    title: 'Sustainable Living Guide',
-    description: 'Practical tips and strategies for living a more environmentally conscious lifestyle.',
-    thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=600&fit=crop',
-    duration: '42m',
-    type: 'content' as const,
-    tags: ['Environment', 'Lifestyle', 'Sustainability'],
-    views: 38000,
-    likes: 2900,
-    releaseDate: '2024-11-05',
-    category: 'Educational'
-  },
-  {
-    id: '5',
-    title: 'Digital Marketing Trends',
-    description: 'Stay ahead of the curve with the latest digital marketing strategies and trends.',
-    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=600&fit=crop',
-    duration: '31m',
-    type: 'content' as const,
-    tags: ['Marketing', 'Business', 'Digital'],
-    views: 73000,
-    likes: 5200,
-    isTrending: true,
-    releaseDate: '2024-11-18',
-    category: 'Business'
-  },
-  {
-    id: '6',
-    title: 'Fitness at Home',
-    description: 'Effective workout routines you can do from the comfort of your own home.',
-    thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop',
-    duration: '20m',
-    type: 'content' as const,
-    tags: ['Fitness', 'Health', 'Workout'],
-    views: 89000,
-    likes: 6700,
-    releaseDate: '2024-11-12',
-    category: 'Health'
-  },
-  {
-    id: '7',
-    title: 'Creative Writing Workshop',
-    description: 'Unleash your creativity with proven techniques for better storytelling and writing.',
-    thumbnail: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=600&fit=crop',
-    duration: '45m',
-    type: 'content' as const,
-    tags: ['Writing', 'Creative', 'Workshop'],
-    views: 34000,
-    likes: 2600,
-    releaseDate: '2024-11-08',
-    category: 'Creative'
-  },
-  {
-    id: '8',
-    title: 'Personal Finance 101',
-    description: 'Essential financial literacy skills for managing your money and building wealth.',
-    thumbnail: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=600&fit=crop',
-    duration: '38m',
-    type: 'content' as const,
-    tags: ['Finance', 'Money', 'Investment'],
-    views: 61000,
-    likes: 4300,
-    releaseDate: '2024-11-14',
-    category: 'Educational'
-  }
-];
-
-const categories = ['All', 'Educational', 'Tutorial', 'Business', 'Health', 'Creative'];
+interface ContentItem {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  duration: string;
+  type: 'content';
+  tags: string[];
+  views: number;
+  likes: number;
+  isTrending?: boolean;
+  releaseDate: string;
+  category: string;
+}
 
 const ContentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('newest');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Data states
+  const [contents, setContents] = useState<ContentType[]>([]);
+  const [featuredContents, setFeaturedContents] = useState<ContentType[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-  const availableTags = Array.from(new Set(mockContents.flatMap(item => item.tags)));
+  // Load contents data
+  useEffect(() => {
+    loadContentsData();
+  }, []);
 
-  const getFilteredContents = () => {
-  let contents = [...mockContents];
+  const loadContentsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  // Filter by category
-  if (selectedCategory !== 'All') {
-    contents = contents.filter(item => item.category === selectedCategory);
-  }
+      // Load contents and featured contents in parallel
+      const [contentsResponse, featuredResponse] = await Promise.all([
+        mediaService.getContent({ page_size: 50, status: 'published' }),
+        mediaService.getFeaturedContent().catch(() => [])
+      ]);
 
-  // Filter by search term (title and description)
-  if (searchTerm) {
-    const lowerSearch = searchTerm.toLowerCase();
-    contents = contents.filter(item =>
-      item.title.toLowerCase().includes(lowerSearch) ||
-      item.description.toLowerCase().includes(lowerSearch)
-    );
-  }
+      setContents(contentsResponse.results);
+      setFeaturedContents(featuredResponse);
 
-  // Filter by tags
-  if (selectedTags.length > 0) {
-    contents = contents.filter(item =>
-      selectedTags.some(tag =>
-        item.tags.some(t => t.toLowerCase() === tag.toLowerCase())
-      )
-    );
-  }
-
-  // Sorting
-  switch (sortBy) {
-    case 'most-liked':
-      contents.sort((a, b) => b.likes - a.likes);
-      break;
-    case 'most-viewed':
-      contents.sort((a, b) => b.views - a.views);
-      break;
-    case 'alphabetical':
-      contents.sort((a, b) => a.title.localeCompare(b.title));
-      break;
-    case 'trending':
-      contents.sort((a, b) => {
-        if (b.isTrending && !a.isTrending) return 1;
-        if (a.isTrending && !b.isTrending) return -1;
-        return b.views - a.views;
+      // Extract unique tags
+      const allTags = new Set<string>();
+      contentsResponse.results.forEach(content => {
+        if (content.tags && Array.isArray(content.tags)) {
+          content.tags.forEach(tag => {
+            if (tag && typeof tag === 'string') {
+              allTags.add(tag);
+            }
+          });
+        }
       });
-      break;
-    case 'oldest':
-      contents.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
-      break;
-    default: // newest
-      contents.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
-      break;
-  }
+      setAvailableTags(Array.from(allTags).sort());
 
-  return contents;
-};
+    } catch (err) {
+      console.error('Error loading contents:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert API data to ContentItem format for display
+  const convertToContentItem = (content: ContentType): ContentItem => ({
+    id: content.id,
+    title: content.title,
+    description: content.description,
+    thumbnail: content.thumbnail,
+    duration: content.duration_formatted,
+    type: 'content',
+    tags: content.tags,
+    views: content.view_count,
+    likes: content.like_count,
+    isTrending: content.is_trending,
+    releaseDate: content.published_at || content.created_at,
+    category: content.category
+  });
+
+  const getFilteredContents = (): ContentItem[] => {
+    let contentItems = contents.map(convertToContentItem);
+
+    // Apply search filter
+    if (searchTerm) {
+      contentItems = contentItems.filter(item =>
+        (item.title && item.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.tags && item.tags.some(tag => tag && tag.toLowerCase().includes(searchTerm.toLowerCase())))
+      );
+    }
+
+    // Apply tag filter
+    if (selectedTags.length > 0) {
+      contentItems = contentItems.filter(item =>
+        item.tags && selectedTags.some(tag => item.tags.includes(tag))
+      );
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'most-liked':
+        contentItems.sort((a, b) => b.likes - a.likes);
+        break;
+      case 'most-viewed':
+        contentItems.sort((a, b) => b.views - a.views);
+        break;
+      case 'alphabetical':
+        contentItems.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        break;
+      case 'trending':
+        contentItems.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
+        break;
+      case 'oldest':
+        contentItems.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+        break;
+      default:
+        // newest first
+        contentItems.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+        break;
+    }
+
+    return contentItems;
+  };
 
   const filteredContents = getFilteredContents();
-  const featuredContent = mockContents.find(content => content.isTrending) || mockContents[0];
+  const featuredContent = featuredContents.length > 0 
+    ? convertToContentItem(featuredContents[0]) 
+    : filteredContents.find(content => content.isTrending) || filteredContents[0];
 
-  const totalViews = mockContents.reduce((sum, content) => sum + content.views, 0);
-  const avgDuration = Math.round(
-    mockContents.reduce((sum, content) => sum + parseInt(content.duration), 0) / mockContents.length
-  );
+  // Memoized handlers to prevent infinite re-renders in MediaFilter
+  const handleSearch = useCallback((search: string) => {
+    setSearchTerm(search);
+  }, []);
 
-  return (
+  const handleFilter = useCallback((filters: FilterOptions) => {
+    setSelectedTags(filters.tags);
+    setSortBy(filters.sortBy);
+  }, []);
+
+  // Calculate stats from real data
+  const totalViews = contents.reduce((sum, content) => sum + content.view_count, 0);
+  const avgDuration = contents.length > 0 
+    ? Math.round(contents.reduce((sum, content) => sum + (content.duration || 0), 0) / contents.length)
+    : 0;
+
+  if (loading && contents.length === 0) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading content...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <BookOpen className="h-12 w-12 mx-auto mb-2" />
+              <p className="text-lg font-semibold">Error Loading Content</p>
+            </div>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={loadContentsData}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }  return (
     <MainLayout>
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
@@ -213,7 +213,7 @@ const ContentsPage = () => {
                 <div className="flex flex-wrap gap-8 mb-8">
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                      {mockContents.length}+
+                      {contents.length}+
                     </div>
                     <div className="text-sm text-gray-400">Learning Videos</div>
                   </div>
@@ -287,50 +287,31 @@ const ContentsPage = () => {
             </p>
           </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  selectedCategory === category
-                    ? 'bg-purple-500 text-white shadow-lg'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-
           {/* Search and Filters */}
-          <SearchFilter
-  onSearch={setSearchTerm}
-  onFilter={(filters) => {
-    setSelectedTags(filters.tags);
-    setSortBy(filters.sortBy);
-    // optionally handle filters.duration and filters.dateRange if needed
-  }}
-  contentType="content"
-/>
+          <MediaFilter
+            availableTags={availableTags}
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            contentType="content"
+            placeholder="Search content..."
+          />
+
           {/* Content Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredContents.map(content => (
               <ContentCard
                 key={content.id}
                 {...content}
-                onLike={(id) => {}}
               />
             ))}
           </div>
 
           {/* Empty State */}
-          {filteredContents.length === 0 && (
+          {filteredContents.length === 0 && !loading && (
             <div className="text-center py-12">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No content found</h3>
-              <p className="text-gray-600">Try adjusting your search, category, or filter criteria.</p>
+              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
             </div>
           )}
         </div>

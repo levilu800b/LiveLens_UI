@@ -1,147 +1,153 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Film, Award, Calendar, Star } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
-import SearchFilter from '../../components/Common/SearchFilter';
+import MediaFilter, { type FilterOptions } from '../../components/Common/MediaFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import mediaService, { type Film as FilmType } from '../../services/mediaService';
 
-// Mock data - replace with actual API calls
-const mockFilms = [
-  {
-    id: '1',
-    title: 'Digital Dreams',
-    description: 'A journey through the future of technology and human connection in a world where digital and reality merge.',
-    thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop',
-    duration: '2h 15m',
-    type: 'film' as const,
-    tags: ['Sci-Fi', 'Drama', 'Technology'],
-    views: 125000,
-    likes: 8500,
-    isTrending: true,
-    releaseDate: '2024-10-15',
-    rating: 4.8
-  },
-  {
-    id: '2',
-    title: 'Ocean\'s Whisper',
-    description: 'An underwater adventure exploring the mysteries of the deep sea and the creatures that call it home.',
-    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=600&fit=crop',
-    duration: '1h 45m',
-    type: 'film' as const,
-    tags: ['Adventure', 'Nature', 'Documentary'],
-    views: 89000,
-    likes: 6200,
-    releaseDate: '2024-09-20',
-    rating: 4.5
-  },
-  {
-    id: '3',
-    title: 'Midnight Chronicles',
-    description: 'A thrilling mystery that unfolds through the dark streets of a city that never sleeps.',
-    thumbnail: 'https://images.unsplash.com/photo-1489599440998-0c7eaad21187?w=400&h=600&fit=crop',
-    duration: '1h 58m',
-    type: 'film' as const,
-    tags: ['Thriller', 'Mystery', 'Crime'],
-    views: 156000,
-    likes: 12000,
-    releaseDate: '2024-11-05',
-    rating: 4.9
-  },
-  {
-    id: '4',
-    title: 'Canvas of Life',
-    description: 'An artistic journey following a painter who discovers that their art has the power to change reality.',
-    thumbnail: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop',
-    duration: '2h 30m',
-    type: 'film' as const,
-    tags: ['Drama', 'Art', 'Fantasy'],
-    views: 78000,
-    likes: 5900,
-    releaseDate: '2024-08-12',
-    rating: 4.3
-  },
-  {
-    id: '5',
-    title: 'Beyond the Horizon',
-    description: 'A space exploration epic that takes us to the edge of known universe and beyond.',
-    thumbnail: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=600&fit=crop',
-    duration: '2h 42m',
-    type: 'film' as const,
-    tags: ['Sci-Fi', 'Space', 'Adventure'],
-    views: 203000,
-    likes: 15600,
-    isTrending: true,
-    releaseDate: '2024-12-01',
-    rating: 4.7
-  },
-  {
-    id: '6',
-    title: 'The Last Garden',
-    description: 'In a post-apocalyptic world, a botanist fights to preserve the last remaining garden on Earth.',
-    thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=600&fit=crop',
-    duration: '1h 52m',
-    type: 'film' as const,
-    tags: ['Post-Apocalyptic', 'Drama', 'Nature'],
-    views: 92000,
-    likes: 7800,
-    releaseDate: '2024-07-18',
-    rating: 4.4
-  }
-];
+interface FilmItem {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  duration: string;
+  type: 'film';
+  tags: string[];
+  views: number;
+  likes: number;
+  isTrending?: boolean;
+  releaseDate: string;
+  rating: number;
+}
 
 const FilmsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('newest');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Data states
+  const [films, setFilms] = useState<FilmType[]>([]);
+  const [featuredFilms, setFeaturedFilms] = useState<FilmType[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-  const availableTags = Array.from(new Set(mockFilms.flatMap(item => item.tags)));
+  // Load films data
+  useEffect(() => {
+    loadFilmsData();
+  }, []);
 
-  const getFilteredFilms = () => {
-    let films = [...mockFilms];
+  const loadFilmsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load films and featured films in parallel
+      const [filmsResponse, featuredResponse] = await Promise.all([
+        mediaService.getFilms({ page_size: 50, status: 'published' }),
+        mediaService.getFeaturedFilms().catch(() => [])
+      ]);
+
+      setFilms(filmsResponse.results);
+      setFeaturedFilms(featuredResponse);
+
+      // Extract unique tags
+      const allTags = new Set<string>();
+      filmsResponse.results.forEach(film => {
+        if (film.tags && Array.isArray(film.tags)) {
+          film.tags.forEach(tag => {
+            if (tag && typeof tag === 'string') {
+              allTags.add(tag);
+            }
+          });
+        }
+      });
+      setAvailableTags(Array.from(allTags).sort());
+
+    } catch (err) {
+      console.error('Error loading films:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load films');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert API data to FilmItem format for display
+  const convertToFilmItem = (film: FilmType): FilmItem => ({
+    id: film.id,
+    title: film.title || '',
+    description: film.description || '',
+    thumbnail: film.thumbnail || '',
+    duration: film.duration_formatted || '0m',
+    type: 'film',
+    tags: film.tags || [],
+    views: film.view_count || 0,
+    likes: film.like_count || 0,
+    isTrending: film.is_trending || false,
+    releaseDate: film.published_at || film.created_at || '',
+    rating: film.average_rating || 0
+  });
+
+  const getFilteredFilms = (): FilmItem[] => {
+    let filmItems = films.map(convertToFilmItem);
 
     // Apply search filter
     if (searchTerm) {
-      films = films.filter(item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      filmItems = filmItems.filter(item =>
+        (item.title && item.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.tags && item.tags.some(tag => tag && tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
     // Apply tag filter
     if (selectedTags.length > 0) {
-      films = films.filter(item =>
-        selectedTags.some(tag => item.tags.includes(tag))
+      filmItems = filmItems.filter(item =>
+        item.tags && selectedTags.some(tag => item.tags.includes(tag))
       );
     }
 
     // Apply sorting
     switch (sortBy) {
       case 'most-liked':
-        films.sort((a, b) => b.likes - a.likes);
+        filmItems.sort((a, b) => b.likes - a.likes);
         break;
       case 'most-viewed':
-        films.sort((a, b) => b.views - a.views);
+        filmItems.sort((a, b) => b.views - a.views);
         break;
       case 'alphabetical':
-        films.sort((a, b) => a.title.localeCompare(b.title));
+        filmItems.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         break;
       case 'trending':
-        films.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
+        filmItems.sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
+        break;
+      case 'highest-rated':
+        filmItems.sort((a, b) => b.rating - a.rating);
         break;
       case 'oldest':
-        films.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
+        filmItems.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
         break;
       default:
         // newest first
-        films.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+        filmItems.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
         break;
     }
 
-    return films;
+    return filmItems;
   };
 
   const filteredFilms = getFilteredFilms();
-  const featuredFilm = mockFilms.find(film => film.isTrending) || mockFilms[0];
+  const featuredFilm = featuredFilms[0] || filteredFilms.find(film => film.isTrending) || filteredFilms[0];
+
+  // Memoized handlers to prevent infinite re-renders in MediaFilter
+  const handleSearch = useCallback((search: string) => {
+    setSearchTerm(search);
+  }, []);
+
+  const handleFilter = useCallback((filters: FilterOptions) => {
+    setSelectedTags(filters.tags);
+    setSortBy(filters.sortBy);
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', { 
@@ -166,6 +172,41 @@ const FilmsPage = () => {
 
     return stars;
   };
+
+  if (loading && films.length === 0) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading films...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <Film className="h-12 w-12 mx-auto mb-2" />
+              <p className="text-lg font-semibold">Error Loading Films</p>
+            </div>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={loadFilmsData}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -193,7 +234,7 @@ const FilmsPage = () => {
                 <div className="flex flex-wrap gap-8 mb-8">
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                      {mockFilms.length}+
+                      {films.length}+
                     </div>
                     <div className="text-sm text-gray-400">Films Available</div>
                   </div>
@@ -224,7 +265,7 @@ const FilmsPage = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
                       
-                      {featuredFilm.isTrending && (
+                      {featuredFilm?.is_trending && (
                         <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
                           <Award className="w-4 h-4 mr-1" />
                           Featured
@@ -234,17 +275,17 @@ const FilmsPage = () => {
                       <div className="absolute bottom-6 left-6 right-6 text-white">
                         <h3 className="text-2xl font-bold mb-2">{featuredFilm.title}</h3>
                         <div className="flex items-center mb-2">
-                          {renderStars(featuredFilm.rating)}
-                          <span className="ml-2 text-sm text-gray-300">{featuredFilm.rating}</span>
+                          {renderStars(featuredFilm?.average_rating || 0)}
+                          <span className="ml-2 text-sm text-gray-300">{featuredFilm?.average_rating || 0}</span>
                         </div>
                         <p className="text-gray-200 text-sm mb-4 line-clamp-2">{featuredFilm.description}</p>
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-4">
                             <span className="flex items-center">
                               <Calendar className="w-4 h-4 mr-1" />
-                              {formatDate(featuredFilm.releaseDate)}
+                              {formatDate(featuredFilm?.published_at || featuredFilm?.created_at || '')}
                             </span>
-                            <span>{featuredFilm.duration}</span>
+                            <span>{featuredFilm?.duration_formatted}</span>
                           </div>
                         </div>
                       </div>
@@ -266,15 +307,12 @@ const FilmsPage = () => {
           </div>
 
           {/* Search and Filters */}
-          <SearchFilter
-  onSearch={setSearchTerm}
-  onFilter={(filters) => {
-    setSelectedTags(filters.tags);
-    setSortBy(filters.sortBy);
-    // optionally handle filters.duration and filters.dateRange if needed
-  }}
-  contentType="film"
-/>
+          <MediaFilter
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            contentType="film"
+            availableTags={availableTags}
+          />
 
           {/* Films Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -282,7 +320,6 @@ const FilmsPage = () => {
               <ContentCard
                 key={film.id}
                 {...film}
-                onLike={(id) => {}}
               />
             ))}
           </div>
