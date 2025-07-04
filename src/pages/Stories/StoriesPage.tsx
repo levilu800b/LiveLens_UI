@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SearchFilter from '../../components/Common/SearchFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import Pagination from '../../components/Common/Pagination';
 import { BookOpen, TrendingUp, Clock, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -28,16 +29,23 @@ const StoriesPage: React.FC = () => {
     total_likes: 0,
     avg_read_time: 0
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const loadStories = async () => {
     try {
       setLoading(true);
       const response = await storyService.getStories({
         status: 'published',
-        page_size: 50
+        page: currentPage,
+        page_size: itemsPerPage
       });
       setStories(response.results);
       setFilteredStories(response.results);
+      setTotalCount(response.count);
+      setTotalPages(Math.ceil(response.count / itemsPerPage));
     } catch (error) {
       console.error('🔍 StoriesPage: Error loading stories:', error);
     } finally {
@@ -105,7 +113,7 @@ const StoriesPage: React.FC = () => {
     
     initializePage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentPage, itemsPerPage]); // Re-run when page or page size changes
 
   // Re-load hero story when stories are loaded (for fallback logic)
   useEffect(() => {
@@ -114,6 +122,16 @@ const StoriesPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stories]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -291,6 +309,23 @@ const StoriesPage: React.FC = () => {
                     isTrailerAvailable={false}
                   />
                 ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalCount > itemsPerPage && (
+              <div className="mt-12">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalCount}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                  showPageSizeSelector={true}
+                  showItemsInfo={true}
+                  pageSizeOptions={[6, 12, 24, 48]}
+                />
               </div>
             )}
           </div>

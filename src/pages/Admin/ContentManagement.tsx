@@ -20,6 +20,7 @@ import type { ContentItem } from '../../services/adminService';
 import AdminLayout from '../../components/Admin/AdminLayout';
 import BulkActionsBar from '../../components/Admin/BulkActionsBar';
 import ExportButton from '../../components/Admin/ExportButton';
+import Pagination from '../../components/Common/Pagination';
 import { commonBulkActions } from '../../constants/bulkActions';
 
 const ContentManagement: React.FC = () => {
@@ -34,20 +35,28 @@ const ContentManagement: React.FC = () => {
     search: ''
   });
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchContent = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await adminService.getContentManagement(filters);
+      const data = await adminService.getContentManagement({
+        ...filters,
+        page: currentPage,
+        page_size: itemsPerPage
+      });
       setContent(data.content);
       setTotalCount(data.total_count);
+      setTotalPages(data.total_pages || Math.ceil(data.total_count / itemsPerPage));
     } catch (err) {
       setError('Failed to load content. Please try again.');
       console.error('Error fetching content:', err);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, currentPage, itemsPerPage]);
 
   useEffect(() => {
     fetchContent();
@@ -58,6 +67,16 @@ const ContentManagement: React.FC = () => {
       ...prev,
       [key]: value
     }));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
   };
 
   const handleSelectItem = (contentId: string) => {
@@ -510,6 +529,22 @@ const ContentManagement: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalCount > 0 && (
+          <div className="mt-6">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              showPageSizeSelector={true}
+              showItemsInfo={true}
+            />
+          </div>
+        )}
         </div>
       </div>
     </AdminLayout>

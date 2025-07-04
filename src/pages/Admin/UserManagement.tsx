@@ -18,6 +18,7 @@ import { debounce } from 'lodash';
 import adminService from '../../services/adminService';
 import type { User as UserType } from '../../services/adminService';
 import AdminLayout from '../../components/Admin/AdminLayout';
+import Pagination from '../../components/Common/Pagination';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
@@ -30,6 +31,9 @@ const UserManagement: React.FC = () => {
   });
   const [searchInput, setSearchInput] = useState(''); // Separate state for search input
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Create debounced search function
   const debouncedSearch = useMemo(
@@ -52,16 +56,21 @@ const UserManagement: React.FC = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await adminService.getUserManagement(filters);
+      const data = await adminService.getUserManagement({
+        ...filters,
+        page: currentPage,
+        page_size: itemsPerPage
+      });
       setUsers(data.users);
       setTotalCount(data.total_count);
+      setTotalPages(data.total_pages || Math.ceil(data.total_count / itemsPerPage));
     } catch (err) {
       setError('Failed to load users. Please try again.');
       console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, currentPage, itemsPerPage]);
 
   useEffect(() => {
     fetchUsers();
@@ -77,6 +86,16 @@ const UserManagement: React.FC = () => {
         [key]: value
       }));
     }
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
   };
 
   const handleMakeAdmin = async (userId: string) => {
@@ -87,12 +106,12 @@ const UserManagement: React.FC = () => {
       const response = await adminService.makeUserAdmin(userId);
       await fetchUsers(); // Refresh the list
       alert(response.message || 'User has been made an admin successfully!');
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to make user admin. Please try again.';
-      alert(errorMessage);
+    } catch (err: unknown) {
+      alert('Failed to make user admin. Please try again.');
       console.error('Error making user admin:', err);
     } finally {
       setLoadingActions(prev => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [userId]: _, ...rest } = prev;
         return rest;
       });
@@ -107,12 +126,12 @@ const UserManagement: React.FC = () => {
       const response = await adminService.removeUserAdmin(userId);
       await fetchUsers(); // Refresh the list
       alert(response.message || 'Admin privileges have been removed successfully!');
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to remove admin privileges. Please try again.';
-      alert(errorMessage);
+    } catch (err: unknown) {
+      alert('Failed to remove admin privileges. Please try again.');
       console.error('Error removing admin:', err);
     } finally {
       setLoadingActions(prev => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [userId]: _, ...rest } = prev;
         return rest;
       });
@@ -127,12 +146,12 @@ const UserManagement: React.FC = () => {
       const response = await adminService.deleteUser(userId);
       await fetchUsers(); // Refresh the list
       alert(response.message || 'User has been deleted successfully!');
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to delete user. Please try again.';
-      alert(errorMessage);
+    } catch (err: unknown) {
+      alert('Failed to delete user. Please try again.');
       console.error('Error deleting user:', err);
     } finally {
       setLoadingActions(prev => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [userId]: _, ...rest } = prev;
         return rest;
       });
@@ -447,6 +466,22 @@ const UserManagement: React.FC = () => {
               <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
               <p className="text-gray-500">Try adjusting your filters or search terms.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalCount > 0 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                showPageSizeSelector={true}
+                showItemsInfo={true}
+              />
             </div>
           )}
         </div>

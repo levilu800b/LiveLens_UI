@@ -289,19 +289,29 @@ class AdminService {
     content_type?: string;
     status?: string;
     search?: string;
+    page?: number;
+    page_size?: number;
   } = {}): Promise<{
     content: ContentItem[];
     total_count: number;
+    page?: number;
+    page_size?: number;
+    total_pages?: number;
   }> {
     const params = new URLSearchParams();
     if (filters.content_type) params.append('content_type', filters.content_type);
     if (filters.status) params.append('status', filters.status);
     if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.page_size) params.append('page_size', filters.page_size.toString());
     
     const endpoint = `content/${params.toString() ? `?${params.toString()}` : ''}`;
     return this.makeRequest<{
       content: ContentItem[];
       total_count: number;
+      page?: number;
+      page_size?: number;
+      total_pages?: number;
     }>(endpoint);
   }
 
@@ -309,18 +319,28 @@ class AdminService {
   async getUserManagement(filters: {
     status?: string;
     search?: string;
+    page?: number;
+    page_size?: number;
   } = {}): Promise<{
     users: User[];
     total_count: number;
+    page?: number;
+    page_size?: number;
+    total_pages?: number;
   }> {
     const params = new URLSearchParams();
     if (filters.status) params.append('status', filters.status);
     if (filters.search) params.append('search', filters.search);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.page_size) params.append('page_size', filters.page_size.toString());
     
     const endpoint = `users/${params.toString() ? `?${params.toString()}` : ''}`;
     return this.makeRequest<{
       users: User[];
       total_count: number;
+      page?: number;
+      page_size?: number;
+      total_pages?: number;
     }>(endpoint);
   }
 

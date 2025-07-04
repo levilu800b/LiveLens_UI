@@ -18,6 +18,7 @@ import {
 import AdminLayout from '../../components/Admin/AdminLayout';
 import BulkActionsBar from '../../components/Admin/BulkActionsBar';
 import ExportButton from '../../components/Admin/ExportButton';
+import Pagination from '../../components/Common/Pagination';
 import commentService, { type ModerationComment, type CommentModerationStats } from '../../services/commentService';
 
 const CommentManagement: React.FC = () => {
@@ -32,6 +33,10 @@ const CommentManagement: React.FC = () => {
     content_type: '',
     search: ''
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchComments = useCallback(async () => {
     try {
@@ -43,16 +48,20 @@ const CommentManagement: React.FC = () => {
         flagged: filters.flagged || undefined,
         content_type: filters.content_type || undefined,
         search: filters.search || undefined,
+        page: currentPage,
+        page_size: itemsPerPage,
       });
       
       setComments(data.results || []);
+      setTotalCount(data.count || 0);
+      setTotalPages(Math.ceil((data.count || 0) / itemsPerPage));
     } catch (err) {
       setError('Failed to load comments. Please try again.');
       console.error('Error fetching comments:', err);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, currentPage, itemsPerPage]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -67,6 +76,20 @@ const CommentManagement: React.FC = () => {
     fetchComments();
     fetchStats();
   }, [fetchComments, fetchStats]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
 
   const handleBulkAction = async (action: string, commentIds?: string[]) => {
     const idsToProcess = commentIds || selectedComments;
@@ -265,7 +288,7 @@ const CommentManagement: React.FC = () => {
                 <input
                   type="text"
                   value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  onChange={(e) => handleFilterChange({ search: e.target.value })}
                   className="pl-10 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   placeholder="Search comments..."
                 />
@@ -275,7 +298,7 @@ const CommentManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
                 value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                onChange={(e) => handleFilterChange({ status: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
               >
                 <option value="all">All Statuses</option>
@@ -289,7 +312,7 @@ const CommentManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
               <select
                 value={filters.content_type}
-                onChange={(e) => setFilters({ ...filters, content_type: e.target.value })}
+                onChange={(e) => handleFilterChange({ content_type: e.target.value })}
                 className="mt-1 block w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm"
               >
                 <option value="">All Types</option>
@@ -306,7 +329,7 @@ const CommentManagement: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={filters.flagged}
-                    onChange={(e) => setFilters({ ...filters, flagged: e.target.checked })}
+                    onChange={(e) => handleFilterChange({ flagged: e.target.checked })}
                     className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">Flagged only</span>
@@ -698,6 +721,22 @@ const CommentManagement: React.FC = () => {
                 </table>
               </div>
             </>
+          )}
+
+          {/* Pagination */}
+          {totalCount > 0 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                showPageSizeSelector={true}
+                showItemsInfo={true}
+              />
+            </div>
           )}
         </div>
       </div>
