@@ -251,7 +251,7 @@ const StoriesPage: React.FC = () => {
             />
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 mt-8">
               <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
                 <div className="text-2xl font-bold text-purple-600 mb-2">
                   {stats.total_stories}
