@@ -18,6 +18,7 @@ interface FilmItem {
   isTrending?: boolean;
   releaseDate: string;
   rating: number;
+  category: string;
 }
 
 const FilmsPage = () => {
@@ -76,8 +77,8 @@ const FilmsPage = () => {
   const convertToFilmItem = (film: FilmType): FilmItem => ({
     id: film.id,
     title: film.title || '',
-    description: film.description || '',
-    thumbnail: film.thumbnail || '',
+    description: film.short_description || film.description || '',
+    thumbnail: film.thumbnail || `https://picsum.photos/400/300?random=${film.id}`,
     duration: film.duration_formatted || '0m',
     type: 'film',
     tags: film.tags || [],
@@ -85,7 +86,8 @@ const FilmsPage = () => {
     likes: film.like_count || 0,
     isTrending: film.is_trending || false,
     releaseDate: film.published_at || film.created_at || '',
-    rating: film.average_rating || 0
+    rating: film.average_rating || 0,
+    category: film.category || ''
   });
 
   const getFilteredFilms = (): FilmItem[] => {
@@ -137,7 +139,9 @@ const FilmsPage = () => {
   };
 
   const filteredFilms = getFilteredFilms();
-  const featuredFilm = featuredFilms[0] || filteredFilms.find(film => film.isTrending) || filteredFilms[0];
+  const featuredFilm = featuredFilms.length > 0 
+    ? convertToFilmItem(featuredFilms[0]) 
+    : filteredFilms.find(film => film.isTrending) || filteredFilms[0];
 
   // Memoized handlers to prevent infinite re-renders in MediaFilter
   const handleSearch = useCallback((search: string) => {
@@ -150,7 +154,10 @@ const FilmsPage = () => {
   }, []);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
+    if (!dateString) return 'Date TBA';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Date TBA';
+    return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
@@ -259,13 +266,17 @@ const FilmsPage = () => {
                   <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl">
                     <div className="aspect-[4/5] bg-gradient-to-br from-slate-800 to-slate-900 relative">
                       <img 
-                        src={featuredFilm.thumbnail} 
+                        src={featuredFilm.thumbnail && featuredFilm.thumbnail.trim() ? 
+                             featuredFilm.thumbnail :
+                             `https://picsum.photos/400/600?random=${featuredFilm.id}`
+                        } 
                         alt={featuredFilm.title}
                         className="w-full h-full object-cover"
                       />
+                      
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
                       
-                      {featuredFilm?.is_trending && (
+                      {featuredFilm.isTrending && (
                         <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
                           <Award className="w-4 h-4 mr-1" />
                           Featured
@@ -273,19 +284,26 @@ const FilmsPage = () => {
                       )}
                       
                       <div className="absolute bottom-6 left-6 right-6 text-white">
+                        {featuredFilm.category && (
+                          <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-medium mb-2 inline-block">
+                            {featuredFilm.category}
+                          </div>
+                        )}
                         <h3 className="text-2xl font-bold mb-2">{featuredFilm.title}</h3>
-                        <div className="flex items-center mb-2">
-                          {renderStars(featuredFilm?.average_rating || 0)}
-                          <span className="ml-2 text-sm text-gray-300">{featuredFilm?.average_rating || 0}</span>
-                        </div>
+                        {featuredFilm.rating > 0 && (
+                          <div className="flex items-center mb-2">
+                            {renderStars(featuredFilm.rating)}
+                            <span className="ml-2 text-sm text-gray-300">{featuredFilm.rating.toFixed(1)}</span>
+                          </div>
+                        )}
                         <p className="text-gray-200 text-sm mb-4 line-clamp-2">{featuredFilm.description}</p>
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-4">
                             <span className="flex items-center">
                               <Calendar className="w-4 h-4 mr-1" />
-                              {formatDate(featuredFilm?.published_at || featuredFilm?.created_at || '')}
+                              {formatDate(featuredFilm.releaseDate)}
                             </span>
-                            <span>{featuredFilm?.duration_formatted}</span>
+                            <span>{featuredFilm.duration}</span>
                           </div>
                         </div>
                       </div>

@@ -76,8 +76,8 @@ const ContentsPage = () => {
   const convertToContentItem = (content: ContentType): ContentItem => ({
     id: content.id,
     title: content.title,
-    description: content.description,
-    thumbnail: content.thumbnail,
+    description: content.short_description || content.description || '',
+    thumbnail: content.thumbnail || `https://picsum.photos/400/300?random=${content.id}`,
     duration: content.duration_formatted,
     type: 'content',
     tags: content.tags,
@@ -238,10 +238,14 @@ const ContentsPage = () => {
                   <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl">
                     <div className="aspect-[4/5] bg-gradient-to-br from-slate-800 to-slate-900 relative">
                       <img 
-                        src={featuredContent.thumbnail} 
+                        src={featuredContent.thumbnail && featuredContent.thumbnail.trim() ? 
+                             featuredContent.thumbnail :
+                             `https://picsum.photos/400/600?random=${featuredContent.id}`
+                        } 
                         alt={featuredContent.title}
                         className="w-full h-full object-cover"
                       />
+                      
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
                       
                       {featuredContent.isTrending && (
@@ -252,9 +256,11 @@ const ContentsPage = () => {
                       )}
                       
                       <div className="absolute bottom-6 left-6 right-6 text-white">
-                        <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium mb-2 inline-block">
-                          {featuredContent.category}
-                        </div>
+                        {featuredContent.category && (
+                          <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium mb-2 inline-block">
+                            {featuredContent.category}
+                          </div>
+                        )}
                         <h3 className="text-2xl font-bold mb-2">{featuredContent.title}</h3>
                         <p className="text-gray-200 text-sm mb-4 line-clamp-2">{featuredContent.description}</p>
                         <div className="flex items-center justify-between text-sm">

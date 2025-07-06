@@ -1,7 +1,7 @@
 // src/pages/User/LibraryPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { Clock, BookOpen, Play, Heart } from 'lucide-react';
+import { Clock, BookOpen, Play } from 'lucide-react';
 import { contentService } from '../../services/contentService';
 import type { ContentItem } from '../../types';
 import MainLayout from '../../components/MainLayout/MainLayout';
@@ -17,25 +17,26 @@ const LibraryPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
 
-  useEffect(() => {
-    fetchLibrary();
-  }, []);
-
-  const fetchLibrary = async () => {
+  const fetchLibrary = useCallback(async () => {
     try {
       setIsLoading(true);
       const libraryData = await contentService.getUserLibrary();
       setLibrary(libraryData);
       setFilteredLibrary(libraryData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load library';
       dispatch(uiActions.addNotification({
         type: 'error',
-        message: error.message || 'Failed to load library'
+        message: errorMessage
       }));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    fetchLibrary();
+  }, [fetchLibrary]);
 
   const handleSearch = (query: string) => {
     const filtered = library.filter(item =>

@@ -165,6 +165,8 @@ export interface HeroMediaResponse {
   id: string;
   title: string;
   description: string;
+  short_description?: string;
+  category: string;
   thumbnail: string;
   banner?: string;
   type: 'film' | 'content';

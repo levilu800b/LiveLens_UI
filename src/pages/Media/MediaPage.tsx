@@ -17,6 +17,7 @@ interface MediaItem {
   views: number;
   likes: number;
   isTrending?: boolean;
+  category: string;
 }
 
 const MediaPage = () => {
@@ -91,14 +92,15 @@ const MediaPage = () => {
   const convertToMediaItem = (item: FilmType | ContentType, type: 'film' | 'content'): MediaItem => ({
     id: item.id,
     title: item.title || '',
-    description: item.description || '',
-    thumbnail: item.thumbnail || '',
+    description: item.short_description || item.description || '',
+    thumbnail: item.thumbnail || `https://picsum.photos/400/300?random=${item.id}`,
     duration: item.duration_formatted || '0m',
     type,
     tags: item.tags || [],
     views: item.view_count || 0,
     likes: item.like_count || 0,
-    isTrending: item.is_trending || false
+    isTrending: item.is_trending || false,
+    category: item.category || ''
   });
 
   const getFilteredContent = (): MediaItem[] => {
@@ -248,10 +250,14 @@ const MediaPage = () => {
                   <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl">
                     <div className="aspect-[4/5] bg-gradient-to-br from-slate-800 to-slate-900 relative">
                       <img 
-                        src={heroMedia?.thumbnail || trendingContent?.thumbnail} 
+                        src={(heroMedia?.thumbnail && heroMedia.thumbnail.trim()) || (trendingContent?.thumbnail && trendingContent.thumbnail.trim()) ? 
+                             heroMedia?.thumbnail || trendingContent?.thumbnail :
+                             `https://picsum.photos/400/600?random=${heroMedia?.id || trendingContent?.id || 'hero'}`
+                        } 
                         alt={heroMedia?.title || trendingContent?.title}
                         className="w-full h-full object-cover"
                       />
+                      
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
                       
                       <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
@@ -260,8 +266,15 @@ const MediaPage = () => {
                       </div>
                       
                       <div className="absolute bottom-6 left-6 right-6 text-white">
+                        {(heroMedia?.category || trendingContent?.category) && (
+                          <div className={`text-white px-2 py-1 rounded text-xs font-medium mb-2 inline-block ${
+                            heroMedia?.type === 'film' ? 'bg-red-500' : 'bg-blue-500'
+                          }`}>
+                            {heroMedia?.category || trendingContent?.category}
+                          </div>
+                        )}
                         <h3 className="text-2xl font-bold mb-2">{heroMedia?.title || trendingContent?.title}</h3>
-                        <p className="text-gray-200 text-sm mb-4">{heroMedia?.description || trendingContent?.description}</p>
+                        <p className="text-gray-200 text-sm mb-4">{heroMedia?.short_description || heroMedia?.description || trendingContent?.description}</p>
                         <div className="flex items-center space-x-4 text-sm">
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-1" />

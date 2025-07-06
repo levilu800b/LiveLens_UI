@@ -1,6 +1,7 @@
 // src/pages/Admin/AddFilmPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { 
   Save, 
   Upload, 
@@ -9,6 +10,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 interface FilmFormData {
   title: string;
@@ -40,6 +42,7 @@ interface FilmFormData {
 
 const AddFilmPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FilmFormData>({
@@ -166,77 +169,77 @@ const AddFilmPage: React.FC = () => {
       if (!formData.description.trim()) {
         throw new Error('Description is required');
       }
-      if (!formData.video_file) {
-        throw new Error('Video file is required');
-      }
+      // Video file is optional for now
+      // if (!formData.video_file) {
+      //   throw new Error('Video file is required');
+      // }
 
-      const submitData = new FormData();
-      
-      // Basic fields
-      submitData.append('title', formData.title.trim());
-      submitData.append('description', formData.description.trim());
-      submitData.append('short_description', formData.short_description.trim() || formData.description.substring(0, 200));
-      submitData.append('category', formData.category);
-      submitData.append('tags', JSON.stringify(formData.tags));
-      submitData.append('duration', formData.duration.toString());
-      submitData.append('trailer_duration', formData.trailer_duration.toString());
-      submitData.append('video_quality', formData.video_quality);
-      submitData.append('status', action === 'publish' ? 'published' : 'draft');
-      submitData.append('language', formData.language);
-      submitData.append('director', formData.director);
-      submitData.append('cast', JSON.stringify(formData.cast));
-      submitData.append('producer', formData.producer);
-      submitData.append('studio', formData.studio);
-      submitData.append('mpaa_rating', formData.mpaa_rating);
-      submitData.append('is_series', formData.is_series.toString());
-      
-      if (formData.release_year) {
-        submitData.append('release_year', formData.release_year.toString());
-      }
-      
-      if (formData.is_series) {
-        submitData.append('series_name', formData.series_name);
-        if (formData.episode_number) {
-          submitData.append('episode_number', formData.episode_number.toString());
-        }
-        if (formData.season_number) {
-          submitData.append('season_number', formData.season_number.toString());
-        }
-      }
+      // Create JSON payload for testing
+      const submitData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        short_description: formData.short_description.trim() || formData.description.substring(0, 200),
+        category: formData.category,
+        tags: formData.tags,
+        duration: formData.duration,
+        trailer_duration: formData.trailer_duration,
+        video_quality: formData.video_quality,
+        status: action === 'publish' ? 'published' : 'draft',
+        language: formData.language,
+        director: formData.director,
+        cast: formData.cast,
+        producer: formData.producer,
+        studio: formData.studio,
+        mpaa_rating: formData.mpaa_rating,
+        is_series: formData.is_series,
+        series_name: formData.series_name,
+        ...(formData.release_year && { release_year: formData.release_year }),
+        ...(formData.episode_number && { episode_number: formData.episode_number }),
+        ...(formData.season_number && { season_number: formData.season_number })
+      };
 
-      // Files
-      if (formData.thumbnail) submitData.append('thumbnail', formData.thumbnail);
-      if (formData.poster) submitData.append('poster', formData.poster);
-      if (formData.banner) submitData.append('banner', formData.banner);
-      if (formData.video_file) submitData.append('video_file', formData.video_file);
-      if (formData.trailer_file) submitData.append('trailer_file', formData.trailer_file);
+      // Debug: Log the JSON payload
+      console.log('Submitting JSON payload:', submitData);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/media/films/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/media/films/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json'
         },
-        body: submitData
+        body: JSON.stringify(submitData)
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.detail || 'Failed to create film');
+        console.error('Full error response:', errorData);
+        throw new Error(errorData.message || errorData.detail || JSON.stringify(errorData) || 'Failed to create film');
       }
 
       await response.json();
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
-      alert(`Film "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        type: 'success',
+        message: `Film "${formData.title}" has been ${actionText} successfully!`
+      }));
 
-      // Navigate back to content management
-      navigate('/admin/content');
+      // Navigate to the media/films page to show the new film
+      if (action === 'publish') {
+        navigate('/media/films');
+      } else {
+        navigate('/admin/content');
+      }
 
     } catch (err: unknown) {
       console.error('Error creating film:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create film. Please try again.';
       setError(errorMessage);
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: errorMessage
+      }));
     } finally {
       setLoading(false);
     }

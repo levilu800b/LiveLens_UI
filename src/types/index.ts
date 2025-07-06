@@ -350,6 +350,14 @@ export interface Notification {
   isRead?: boolean;
 }
 
+export interface ToastProps {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  duration?: number;
+  onClose: () => void;
+}
+
 export interface NotificationAction {
   label: string;
   action: () => void;
@@ -372,11 +380,10 @@ export interface UserState {
 }
 
 export interface UIState {
-  notifications: Notification[];
-  isLoading: boolean;
-  error: string | null;
+  isSidebarOpen: boolean;
   theme: 'light' | 'dark';
-  sidebarOpen: boolean;
+  notifications: ToastProps[];
+  modals: Record<string, boolean>;
 }
 
 export interface ContentState {

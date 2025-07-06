@@ -23,7 +23,7 @@ const uiSlice = createSlice({
 		setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
 			state.theme = action.payload;
 		},
-		addNotification: (state, action: PayloadAction<Omit<ToastProps, 'onClose'>>) => {
+		addNotification: (state, action: PayloadAction<Omit<ToastProps, 'id' | 'onClose'>>) => {
 			const notification = {
 				...action.payload,
 				id: Date.now().toString(),

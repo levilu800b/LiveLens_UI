@@ -134,7 +134,13 @@ const ContentTrailerSection: React.FC = () => {
               <div className={`absolute inset-0 w-full h-full z-0 transition-transform duration-500
                 ${item.type !== 'story' ? 'group-hover:-translate-y-2 group-hover:scale-105' : ''}
               `}>
-                <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                {item.thumbnail ? (
+                  <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white text-lg font-bold">{item.title.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
 

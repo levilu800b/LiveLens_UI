@@ -1,6 +1,7 @@
 // src/pages/Admin/AddContentPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { 
   Save, 
   Upload, 
@@ -9,6 +10,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 interface ContentFormData {
   title: string;
@@ -39,14 +41,15 @@ interface ContentFormData {
 
 const AddContentPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ContentFormData>({
     title: '',
     description: '',
     short_description: '',
-    category: 'tutorial',
-    content_type: 'tutorial',
+    category: 'documentary', // Use valid category from backend
+    content_type: 'tutorial', // This is the content type
     tags: [],
     duration: 15,
     trailer_duration: 2,
@@ -61,6 +64,31 @@ const AddContentPage: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
 
   const categoryOptions = [
+    { value: 'action', label: 'Action' },
+    { value: 'adventure', label: 'Adventure' },
+    { value: 'comedy', label: 'Comedy' },
+    { value: 'drama', label: 'Drama' },
+    { value: 'horror', label: 'Horror' },
+    { value: 'romance', label: 'Romance' },
+    { value: 'sci_fi', label: 'Science Fiction' },
+    { value: 'fantasy', label: 'Fantasy' },
+    { value: 'thriller', label: 'Thriller' },
+    { value: 'documentary', label: 'Documentary' },
+    { value: 'animation', label: 'Animation' },
+    { value: 'mystery', label: 'Mystery' },
+    { value: 'crime', label: 'Crime' },
+    { value: 'biography', label: 'Biography' },
+    { value: 'history', label: 'History' },
+    { value: 'music', label: 'Music' },
+    { value: 'sport', label: 'Sport' },
+    { value: 'family', label: 'Family' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'tech', label: 'Technology' },
+    { value: 'lifestyle', label: 'Lifestyle' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  const contentTypeOptions = [
     { value: 'tutorial', label: 'Tutorial' },
     { value: 'review', label: 'Review' },
     { value: 'vlog', label: 'Vlog' },
@@ -139,85 +167,82 @@ const AddContentPage: React.FC = () => {
       if (!formData.description.trim()) {
         throw new Error('Description is required');
       }
-      if (!formData.is_live && !formData.video_file) {
-        throw new Error('Video file is required (unless this is a live stream)');
+      if (formData.description.trim().length < 10) {
+        throw new Error('Description must be at least 10 characters long');
       }
+      // Video file is optional for now
+      // if (!formData.is_live && !formData.video_file) {
+      //   throw new Error('Video file is required (unless this is a live stream)');
+      // }
       if (formData.is_live && !formData.live_stream_url && !formData.scheduled_live_time) {
         throw new Error('Live stream URL or scheduled time is required for live content');
       }
 
-      const submitData = new FormData();
-      
-      // Basic fields
-      submitData.append('title', formData.title.trim());
-      submitData.append('description', formData.description.trim());
-      submitData.append('short_description', formData.short_description.trim() || formData.description.substring(0, 200));
-      submitData.append('category', formData.category);
-      submitData.append('content_type', formData.content_type);
-      submitData.append('tags', JSON.stringify(formData.tags));
-      submitData.append('duration', formData.duration.toString());
-      submitData.append('trailer_duration', formData.trailer_duration.toString());
-      submitData.append('video_quality', formData.video_quality);
-      submitData.append('status', action === 'publish' ? 'published' : 'draft');
-      submitData.append('language', formData.language);
-      submitData.append('creator', formData.creator);
-      submitData.append('difficulty_level', formData.difficulty_level);
-      submitData.append('is_live', formData.is_live.toString());
-      
-      if (formData.release_year) {
-        submitData.append('release_year', formData.release_year.toString());
-      }
-      
-      if (formData.series_name) {
-        submitData.append('series_name', formData.series_name);
-      }
-      
-      if (formData.episode_number) {
-        submitData.append('episode_number', formData.episode_number.toString());
-      }
+      // Create JSON payload for testing
+      const submitData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        short_description: formData.short_description.trim() || formData.description.substring(0, 200),
+        category: formData.category,
+        content_type: formData.content_type,
+        tags: formData.tags,
+        duration: formData.duration,
+        trailer_duration: formData.trailer_duration,
+        video_quality: formData.video_quality,
+        status: action === 'publish' ? 'published' : 'draft',
+        language: formData.language,
+        creator: formData.creator,
+        difficulty_level: formData.difficulty_level,
+        is_live: formData.is_live,
+        ...(formData.release_year && { release_year: formData.release_year }),
+        ...(formData.series_name && { series_name: formData.series_name }),
+        ...(formData.episode_number && { episode_number: formData.episode_number }),
+        ...(formData.is_live && formData.live_stream_url && { live_stream_url: formData.live_stream_url }),
+        ...(formData.is_live && formData.scheduled_live_time && { scheduled_live_time: formData.scheduled_live_time })
+      };
 
-      if (formData.is_live) {
-        if (formData.live_stream_url) {
-          submitData.append('live_stream_url', formData.live_stream_url);
-        }
-        if (formData.scheduled_live_time) {
-          submitData.append('scheduled_live_time', formData.scheduled_live_time);
-        }
-      }
+      // Debug: Log the JSON payload
+      console.log('Submitting JSON payload:', submitData);
 
-      // Files
-      if (formData.thumbnail) submitData.append('thumbnail', formData.thumbnail);
-      if (formData.poster) submitData.append('poster', formData.poster);
-      if (formData.banner) submitData.append('banner', formData.banner);
-      if (formData.video_file) submitData.append('video_file', formData.video_file);
-      if (formData.trailer_file) submitData.append('trailer_file', formData.trailer_file);
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/media/content/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/media/content/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json'
         },
-        body: submitData
+        body: JSON.stringify(submitData)
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.detail || 'Failed to create content');
+        console.error('Full error response:', errorData);
+        throw new Error(errorData.message || errorData.detail || JSON.stringify(errorData) || 'Failed to create content');
       }
 
       await response.json();
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
-      alert(`Content "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        type: 'success',
+        message: `Content "${formData.title}" has been ${actionText} successfully!`
+      }));
 
-      // Navigate back to content management
-      navigate('/admin/content');
+      // Navigate to the media/contents page to show the new content
+      if (action === 'publish') {
+        navigate('/media/contents');
+      } else {
+        navigate('/admin/content');
+      }
 
     } catch (err: unknown) {
       console.error('Error creating content:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create content. Please try again.';
       setError(errorMessage);
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: errorMessage
+      }));
     } finally {
       setLoading(false);
     }

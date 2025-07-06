@@ -22,6 +22,7 @@ import Analytics from './pages/Admin/Analytics';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import { useAuthInit } from './hooks/useAuthInit';
+import ToastContainer from './components/Common/ToastContainer';
 
 // Import the actual implemented user pages instead of placeholders
 import ProfilePage from './pages/User/ProfilePage';
@@ -210,6 +211,7 @@ function App() {
         } />
         {/* Additional Admin Routes */}
       </Routes>
+      <ToastContainer />
     </div>
   );
 }

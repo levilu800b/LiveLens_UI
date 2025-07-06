@@ -54,18 +54,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
 
-  // Generate a placeholder SVG
-  const getPlaceholderImage = (type: string) => {
-    const svg = `
-      <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-        <rect width="400" height="300" fill="#1f2937"/>
-        <text x="200" y="150" font-family="Arial, sans-serif" font-size="24" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">
-          ${type.toUpperCase()}
-        </text>
-      </svg>
-    `;
-    return `data:image/svg+xml;base64,${btoa(svg)}`;
-  };
+
 
   const handleTrailerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,34 +71,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
       navigate(`/story/${id}`);
     } else {
       navigate(`/watch/${type}/${id}`);
-    }
-  };
-
-  const getTypeIcon = () => {
-    switch (type) {
-      case 'story':
-        return <BookOpen className="h-4 w-4" />;
-      default:
-        return <Play className="h-4 w-4" />;
-    }
-  };
-
-  const getTypeColor = () => {
-    switch (type) {
-      case 'story':
-        return 'from-green-500 to-emerald-600';
-      case 'film':
-        return 'from-red-500 to-pink-600';
-      case 'content':
-        return 'from-blue-500 to-indigo-600';
-      case 'podcast':
-        return 'from-purple-500 to-violet-600';
-      case 'animation':
-        return 'from-yellow-500 to-orange-600';
-      case 'sneak-peek':
-        return 'from-pink-500 to-rose-600';
-      default:
-        return 'from-gray-500 to-gray-600';
     }
   };
 
@@ -136,13 +97,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
       {/* Thumbnail */}
       <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden flex-shrink-0">
         <img 
-          src={thumbnail || getPlaceholderImage(type)} 
+          src={thumbnail} 
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = getPlaceholderImage(type);
-          }}
         />
         
         {/* Overlay */}
@@ -180,12 +137,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
             {category}
           </div>
         )}
-        
-        {/* Type Badge - Positioned to avoid conflict with episode badge */}
-        <div className={`absolute ${season && episode ? 'top-4 left-20' : 'top-4 left-4'} px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor()} text-white text-xs font-semibold flex items-center gap-2 shadow-md`}>
-          {getTypeIcon()}
-          {type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
-        </div>
         
         {/* Duration - Only show if not an animation or sneak peek with special badges */}
         {!style && !complexity && !category && (
