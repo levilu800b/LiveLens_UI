@@ -133,6 +133,9 @@ const ContentManagement: React.FC = () => {
       case 'films':
         navigate(`/admin/edit-film/${contentId}`);
         break;
+      case 'content':
+        navigate(`/admin/edit-content/${contentId}`);
+        break;
       case 'podcasts':
         navigate(`/admin/edit-podcast/${contentId}`);
         break;

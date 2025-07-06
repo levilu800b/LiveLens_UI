@@ -37,7 +37,9 @@ const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-whit
 import AddStoryPage from './pages/Admin/AddStoryPage';
 import EditStoryPage from './pages/Admin/EditStoryPage';
 import AddFilmPage from './pages/Admin/AddFilmPage';
+import EditFilmPage from './pages/Admin/EditFilmPage';
 import AddContentPage from './pages/Admin/AddContentPage';
+import EditContentPage from './pages/Admin/EditContentPage';
 import AddPodcastPage from './pages/Admin/AddPodcastPage';
 import AddAnimationPage from './pages/Admin/AddAnimationPage';
 import AddSneakPeekPage from './pages/Admin/AddSneakPeekPage';
@@ -184,9 +186,19 @@ function App() {
             <AddFilmPage />
           </AdminRoute>
         } />
+        <Route path="/admin/edit-film/:id" element={
+          <AdminRoute>
+            <EditFilmPage />
+          </AdminRoute>
+        } />
         <Route path="/admin/add-content" element={
           <AdminRoute>
             <AddContentPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/edit-content/:id" element={
+          <AdminRoute>
+            <EditContentPage />
           </AdminRoute>
         } />
         <Route path="/admin/add-podcast" element={

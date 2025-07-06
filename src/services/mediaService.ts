@@ -358,11 +358,20 @@ class MediaService {
     });
   }
 
-  async updateFilm(id: string, formData: FormData): Promise<Film> {
-    return apiRequest(`/films/${id}/`, {
-      method: 'PATCH',
-      body: formData,
-    });
+  async updateFilm(id: string, data: FormData | Record<string, unknown>): Promise<Film> {
+    // Handle both FormData and JSON updates
+    if (data instanceof FormData) {
+      return apiRequest(`/films/${id}/`, {
+        method: 'PATCH',
+        body: data,
+      });
+    } else {
+      // For JSON updates (when no files involved)
+      return apiRequest(`/films/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    }
   }
 
   async deleteFilm(id: string): Promise<void> {
@@ -463,11 +472,20 @@ class MediaService {
     });
   }
 
-  async updateContent(id: string, formData: FormData): Promise<Content> {
-    return apiRequest(`/content/${id}/`, {
-      method: 'PATCH',
-      body: formData,
-    });
+  async updateContent(id: string, data: FormData | Record<string, unknown>): Promise<Content> {
+    // Handle both FormData and JSON updates
+    if (data instanceof FormData) {
+      return apiRequest(`/content/${id}/`, {
+        method: 'PATCH',
+        body: data,
+      });
+    } else {
+      // For JSON updates (when no files involved)
+      return apiRequest(`/content/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    }
   }
 
   async deleteContent(id: string): Promise<void> {
