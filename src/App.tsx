@@ -31,7 +31,7 @@ import FavoritesPage from './pages/User/FavoritesPage';
 import SettingsPage from './pages/User/SettingsPage';
 
 import StoryReaderPage from './pages/Stories/StoryReaderPage';
-const VideoPlayerPage = () => <div className="min-h-screen bg-gray-900 text-white p-8"><h1>Video Player - Coming Soon</h1></div>;
+import VideoPlayerPage from './pages/Media/VideoPlayerPage';
 
 // Import the implemented admin content creation pages
 import AddStoryPage from './pages/Admin/AddStoryPage';

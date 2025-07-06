@@ -26,6 +26,15 @@ export interface Author {
   email: string;
 }
 
+export interface Subtitle {
+  id: string;
+  language: string;
+  language_code: string;
+  label: string;
+  url: string;
+  is_default?: boolean;
+}
+
 export interface MediaInteraction {
   id: string;
   interaction_type: 'like' | 'bookmark' | 'watch' | 'rate';
@@ -69,6 +78,7 @@ export interface Film {
   release_year?: number;
   language: string;
   subtitles_available: string[];
+  subtitles?: Subtitle[];
   director: string;
   cast: string[];
   producer: string;
@@ -125,6 +135,7 @@ export interface Content {
   release_year?: number;
   language: string;
   subtitles_available: string[];
+  subtitles?: Subtitle[];
   creator: string;
   series_name?: string;
   episode_number?: number;

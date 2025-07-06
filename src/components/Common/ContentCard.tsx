@@ -58,6 +58,14 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   const handleTrailerClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!userInfo) {
+      navigate('/login');
+      return;
+    }
+    
+    if (type === 'film' || type === 'content') {
+      navigate(`/watch/${type}/${id}?trailer=true`);
+    }
   };
 
   const handlePlayClick = (e: React.MouseEvent) => {
