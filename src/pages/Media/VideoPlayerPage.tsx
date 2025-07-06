@@ -34,6 +34,7 @@ import MainLayout from '../../components/MainLayout/MainLayout';
 import type { Film, Content, Subtitle } from '../../services/mediaService';
 import type { Comment } from '../../services/commentService';
 import { config } from '../../config';
+import unifiedAuth from '../../utils/unifiedAuth';
 
 // Add subtitle styling
 const subtitleStyles = `
@@ -88,6 +89,7 @@ const VideoPlayerPage: React.FC = () => {
   const location = useLocation();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const commentsLoadedRef = useRef<string | null>(null);
   
   const [media, setMedia] = useState<Film | Content | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,6 +110,7 @@ const VideoPlayerPage: React.FC = () => {
   // Comments state
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -148,6 +151,15 @@ const VideoPlayerPage: React.FC = () => {
         }
         
         setMedia(mediaData);
+        
+        // Initialize comment count from media data
+        setCommentCount(mediaData.comment_count || 0);
+        
+        // Reset comments loaded ref for new media
+        commentsLoadedRef.current = null;
+        
+        // Reset comments for new media
+        setComments([]);
         
         // Load subtitles if available (for now, create sample data based on subtitles_available)
         if (mediaData.subtitles && Array.isArray(mediaData.subtitles)) {
@@ -205,7 +217,6 @@ const VideoPlayerPage: React.FC = () => {
           ];
           
           setSubtitles(demoSubtitles);
-          console.log('Demo subtitles created:', demoSubtitles);
           // Don't set any subtitle as default for demo
         }
         
@@ -237,8 +248,12 @@ const VideoPlayerPage: React.FC = () => {
     const loadComments = async () => {
       if (!media) return;
       
+      // Prevent loading comments multiple times for the same media
+      if (commentsLoadedRef.current === media.id) return;
+      
       try {
         setCommentsLoading(true);
+        commentsLoadedRef.current = media.id;
         const commentsData = type === 'film' 
           ? await commentService.getComments({
               content_type: 'film',
@@ -256,8 +271,14 @@ const VideoPlayerPage: React.FC = () => {
             });
         
         setComments(commentsData.results || []);
+        
+        // Update comment count with accurate server data
+        const actualCount = commentsData.count !== undefined ? commentsData.count : commentsData.results?.length || 0;
+        setCommentCount(prevCount => prevCount !== actualCount ? actualCount : prevCount);
       } catch (err) {
         console.error('Error loading comments:', err);
+        // Reset the ref on error so comments can be retried
+        commentsLoadedRef.current = null;
       } finally {
         setCommentsLoading(false);
       }
@@ -473,7 +494,8 @@ const VideoPlayerPage: React.FC = () => {
     if (!existingTrack) {
       const track = document.createElement('track');
       track.kind = 'subtitles';
-      track.src = getFullMediaUrl(subtitle.url) || subtitle.url;
+      // Don't apply getFullMediaUrl to blob URLs (they start with 'blob:')
+      track.src = subtitle.url.startsWith('blob:') ? subtitle.url : (getFullMediaUrl(subtitle.url) || subtitle.url);
       track.srclang = subtitle.language_code;
       track.label = subtitle.label;
       track.default = subtitle.is_default || false;
@@ -754,7 +776,21 @@ We hope you find this feature useful and accessible.`;
 
   // Comment handlers
   const submitComment = async () => {
-    if (!newComment.trim() || !media || !userInfo) return;
+    if (!newComment.trim() || !media) {
+      return;
+    }
+
+    if (!userInfo) {
+      alert('Please log in to submit comments.');
+      return;
+    }
+
+    // Check authentication status using unifiedAuth
+    if (!unifiedAuth.isAuthenticated()) {
+      alert('Your session has expired. Please log in again to submit comments.');
+      navigate('/login');
+      return;
+    }
 
     try {
       const comment = type === 'film'
@@ -771,20 +807,72 @@ We hope you find this feature useful and accessible.`;
       
       setComments(prev => [comment, ...prev]);
       setNewComment('');
+      setCommentCount(prev => prev + 1);
       
       setMedia(prev => prev ? {
         ...prev,
         comment_count: prev.comment_count + 1
       } : null);
       
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error submitting comment:', err);
-      alert('Failed to submit comment. Please try again.');
+      
+      const error = err as { status?: number; message?: string };
+      
+      if (error.status === 401 || error.message?.includes('Unauthorized')) {
+        try {
+          // Attempt immediate token refresh
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (refreshToken) {
+            const response = await fetch(`${config.backendUrl}/api/auth/token/refresh/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                refresh: refreshToken
+              })
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              localStorage.setItem('access_token', data.access);
+              if (data.refresh) {
+                localStorage.setItem('refresh_token', data.refresh);
+              }
+              
+              alert('Your session was refreshed. Please try submitting your comment again.');
+              return;
+            }
+          }
+        } catch {
+          // Token refresh failed, fall through to login redirect
+        }
+        
+        alert('Your session has expired. Please log in again to submit comments.');
+        navigate('/login');
+      } else {
+        alert(`Failed to submit comment: ${error.message || 'Unknown error'}. Please try again.`);
+      }
     }
   };
 
   const submitReply = async (parentId: string) => {
-    if (!replyText.trim() || !media || !userInfo) return;
+    if (!replyText.trim() || !media) {
+      return;
+    }
+
+    if (!userInfo) {
+      alert('Please log in to submit replies.');
+      return;
+    }
+
+    // Check authentication status using unifiedAuth
+    if (!unifiedAuth.isAuthenticated()) {
+      alert('Your session has expired. Please log in again to submit replies.');
+      navigate('/login');
+      return;
+    }
 
     try {
       const reply = type === 'film'
@@ -814,9 +902,46 @@ We hope you find this feature useful and accessible.`;
       setReplyText('');
       setReplyTo(null);
       
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error submitting reply:', err);
-      alert('Failed to submit reply. Please try again.');
+      
+      const error = err as { status?: number; message?: string };
+      
+      if (error.status === 401 || error.message?.includes('Unauthorized')) {
+        try {
+          // Attempt immediate token refresh
+          const refreshToken = localStorage.getItem('refresh_token');
+          if (refreshToken) {
+            const response = await fetch(`${config.backendUrl}/api/auth/token/refresh/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                refresh: refreshToken
+              })
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              localStorage.setItem('access_token', data.access);
+              if (data.refresh) {
+                localStorage.setItem('refresh_token', data.refresh);
+              }
+              
+              alert('Your session was refreshed. Please try submitting your reply again.');
+              return;
+            }
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+        }
+        
+        alert('Your session has expired. Please log in again to submit replies.');
+        navigate('/login');
+      } else {
+        alert(`Failed to submit reply: ${error.message || 'Unknown error'}. Please try again.`);
+      }
     }
   };
 
@@ -867,6 +992,76 @@ We hope you find this feature useful and accessible.`;
       day: 'numeric'
     });
   };
+
+  // Monitor authentication status and handle token refresh
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      // If userInfo exists in Redux but authentication is lost, this indicates a token issue
+      if (userInfo && !unifiedAuth.isAuthenticated()) {
+        console.warn('User exists in Redux but authentication is invalid - possible token expiry');
+        
+        // Attempt to refresh the token
+        handleTokenRefresh();
+      }
+    };
+    
+    const handleTokenRefresh = async () => {
+      try {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!refreshToken) {
+          handleLogout();
+          return;
+        }
+        
+        // Try to refresh the token using the unifiedAuth service
+        const response = await fetch(`${config.backendUrl}/api/auth/token/refresh/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            refresh: refreshToken
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Update tokens
+          localStorage.setItem('access_token', data.access);
+          if (data.refresh) {
+            localStorage.setItem('refresh_token', data.refresh);
+          }
+        } else {
+          handleLogout();
+        }
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+        handleLogout();
+      }
+    };
+    
+    const handleLogout = () => {
+      // Clear all authentication data
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('account');
+      
+      // Show user-friendly message
+      alert('Your session has expired. Please log in again.');
+      
+      // Redirect to login
+      navigate('/login');
+    };
+    
+    // Check immediately
+    checkAuthStatus();
+    
+    // Check periodically (every 30 seconds) - useful for detecting token expiry
+    const intervalId = setInterval(checkAuthStatus, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [userInfo, navigate]);
 
   if (loading) {
     return (
@@ -924,7 +1119,7 @@ We hope you find this feature useful and accessible.`;
                   <track
                     key={subtitle.id}
                     kind="subtitles"
-                    src={getFullMediaUrl(subtitle.url) || subtitle.url}
+                    src={subtitle.url.startsWith('blob:') ? subtitle.url : (getFullMediaUrl(subtitle.url) || subtitle.url)}
                     srcLang={subtitle.language_code}
                     label={subtitle.label}
                     default={subtitle.is_default}
@@ -1620,7 +1815,7 @@ We hope you find this feature useful and accessible.`;
               <div className="bg-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-bold mb-6 flex items-center">
                   <MessageCircle className="h-5 w-5 mr-2" />
-                  Comments ({media.comment_count})
+                  Comments ({commentCount})
                 </h3>
                 
                 {/* Add Comment */}
@@ -1651,7 +1846,7 @@ We hope you find this feature useful and accessible.`;
                         <div className="flex justify-end mt-3">
                           <button
                             onClick={submitComment}
-                            disabled={!newComment.trim()}
+                            disabled={!newComment.trim() || !unifiedAuth.isAuthenticated()}
                             className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <Send className="h-4 w-4 mr-2" />
