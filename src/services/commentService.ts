@@ -136,7 +136,19 @@ class CommentService {
       throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
     }
 
-    return response.json();
+    // Handle empty responses (like 204 No Content from DELETE requests)
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return {} as T;
+    }
+
+    // Check if response has content before parsing JSON
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    }
+
+    // For non-JSON responses, return empty object
+    return {} as T;
   }
 
   // Get comments for content

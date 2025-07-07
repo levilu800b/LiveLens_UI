@@ -25,7 +25,9 @@ import {
   Eye,
   Subtitles,
   X,
-  HelpCircle
+  HelpCircle,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import mediaService from '../../services/mediaService';
@@ -114,6 +116,11 @@ const VideoPlayerPage: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  
+  // Comment edit/delete state
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [deletingComment, setDeletingComment] = useState<string | null>(null);
   
   // UI state
   const [showDescription, setShowDescription] = useState(false);
@@ -649,6 +656,15 @@ We hope you find this feature useful and accessible.`;
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -985,83 +1001,203 @@ We hope you find this feature useful and accessible.`;
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const editComment = async (commentId: string, newText: string) => {
+    if (!newText.trim()) {
+      alert('Comment cannot be empty');
+      return;
+    }
+
+    try {
+      const updatedComment = await commentService.updateComment(commentId, newText.trim());
+      
+      setComments(prev => prev.map(comment => {
+        const updateComment = (c: typeof comment): typeof comment => {
+          if (c.id === commentId) {
+            return {
+              ...c,
+              text: updatedComment.text,
+              is_edited: true,
+              updated_at: updatedComment.updated_at
+            };
+          }
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(updateComment)
+            };
+          }
+          return c;
+        };
+        return updateComment(comment);
+      }));
+      
+      setEditingComment(null);
+      setEditText('');
+      
+    } catch (err) {
+      console.error('Error editing comment:', err);
+      alert('Failed to edit comment. Please try again.');
+    }
   };
 
-  // Monitor authentication status and handle token refresh
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      // If userInfo exists in Redux but authentication is lost, this indicates a token issue
-      if (userInfo && !unifiedAuth.isAuthenticated()) {
-        console.warn('User exists in Redux but authentication is invalid - possible token expiry');
+  const deleteComment = async (commentId: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      setDeletingComment(commentId);
+      await commentService.deleteComment(commentId);
+      
+      // Update UI immediately after successful deletion
+      setComments(prev => {
+        let commentDeleted = false;
         
-        // Attempt to refresh the token
-        handleTokenRefresh();
-      }
-    };
-    
-    const handleTokenRefresh = async () => {
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          handleLogout();
-          return;
-        }
-        
-        // Try to refresh the token using the unifiedAuth service
-        const response = await fetch(`${config.backendUrl}/api/auth/token/refresh/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            refresh: refreshToken
-          })
+        const updatedComments = prev.filter(comment => {
+          // Remove the comment if it's the one being deleted
+          if (comment.id === commentId) {
+            commentDeleted = true;
+            return false;
+          }
+          
+          // Remove replies if they match the commentId
+          if (comment.replies) {
+            const originalReplyCount = comment.replies.length;
+            comment.replies = comment.replies.filter(reply => reply.id !== commentId);
+            
+            // If a reply was removed, update the reply count
+            if (comment.replies.length !== originalReplyCount) {
+              comment.reply_count = Math.max(0, (comment.reply_count || 0) - 1);
+            }
+          }
+          
+          return true;
         });
         
-        if (response.ok) {
-          const data = await response.json();
+        // Update counts based on what was deleted
+        if (commentDeleted) {
+          setCommentCount(prevCount => Math.max(0, prevCount - 1));
+          setMedia(prevMedia => prevMedia ? {
+            ...prevMedia,
+            comment_count: Math.max(0, prevMedia.comment_count - 1)
+          } : null);
+        }
+        
+        return updatedComments;
+      });
+      
+      // Clear any edit states if the deleted comment was being edited
+      if (editingComment === commentId) {
+        setEditingComment(null);
+        setEditText('');
+      }
+      
+      // Clear reply state if replying to deleted comment
+      if (replyTo === commentId) {
+        setReplyTo(null);
+        setReplyText('');
+      }
+      
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      alert('Failed to delete comment. Please try again.');
+    } finally {
+      setDeletingComment(null);
+    }
+  };
+
+  const startEditingComment = (comment: Comment) => {
+    setEditingComment(comment.id);
+    setEditText(comment.text);
+    setReplyTo(null); // Close any open reply forms
+  };
+
+  const cancelEditingComment = () => {
+    setEditingComment(null);
+    setEditText('');
+  };
+
+  const toggleDescription = () => {
+    setShowDescription(prev => !prev);
+  };
+
+  // Load media data on mount and when type/id change
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!type || !id) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch media details
+        const mediaData = type === 'film'
+          ? await mediaService.getFilm(id)
+          : await mediaService.getContentItem(id);
+        
+        setMedia(mediaData);
+        
+        // Set comment count
+        setCommentCount(mediaData.comment_count || 0);
+        
+        // Load comments if not already loaded
+        if (commentsLoadedRef.current !== mediaData.id) {
+          const commentsData = await commentService.getComments({
+            content_type: type,
+            object_id: mediaData.id,
+            page: 1,
+            page_size: 20,
+            ordering: '-created_at'
+          });
           
-          // Update tokens
-          localStorage.setItem('access_token', data.access);
-          if (data.refresh) {
-            localStorage.setItem('refresh_token', data.refresh);
+          setComments(commentsData.results || []);
+          commentsLoadedRef.current = mediaData.id;
+        }
+        
+        // Load subtitles
+        if (mediaData.subtitles && mediaData.subtitles.length > 0) {
+          setSubtitles(mediaData.subtitles);
+          
+          // Set default subtitle if available
+          const defaultSubtitle = mediaData.subtitles.find((sub: Subtitle) => sub.is_default);
+          if (defaultSubtitle) {
+            setCurrentSubtitle(defaultSubtitle.id);
           }
         } else {
-          handleLogout();
+          setSubtitles([]);
+          setCurrentSubtitle(null);
         }
-      } catch (error) {
-        console.error('Error refreshing token:', error);
-        handleLogout();
+        
+      } catch (err) {
+        setError(err.message || 'Failed to load media');
+      } finally {
+        setLoading(false);
       }
     };
-    
-    const handleLogout = () => {
-      // Clear all authentication data
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('account');
-      
-      // Show user-friendly message
-      alert('Your session has expired. Please log in again.');
-      
-      // Redirect to login
-      navigate('/login');
-    };
-    
-    // Check immediately
-    checkAuthStatus();
-    
-    // Check periodically (every 30 seconds) - useful for detecting token expiry
-    const intervalId = setInterval(checkAuthStatus, 30000);
-    
-    return () => clearInterval(intervalId);
-  }, [userInfo, navigate]);
+
+    fetchData();
+  }, [type, id]);
+
+  // Refresh comment count periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (media && media.id) {
+        commentService.getComments({
+          content_type: type,
+          object_id: media.id,
+          page: 1,
+          page_size: 1,
+          ordering: '-created_at'
+        }).then(commentsData => {
+          setCommentCount(commentsData.count || 0);
+        }).catch(err => {
+          console.error('Error refreshing comment count:', err);
+        });
+      }
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [media, type]);
 
   if (loading) {
     return (
@@ -1914,7 +2050,35 @@ We hope you find this feature useful and accessible.`;
                                 )}
                               </div>
                               
-                              <p className="text-gray-300 mb-3">{comment.text}</p>
+                              {/* Comment text or edit form */}
+                              {editingComment === comment.id ? (
+                                <div className="mb-3">
+                                  <textarea
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-gray-400 resize-none text-sm"
+                                    rows={3}
+                                  />
+                                  
+                                  <div className="flex justify-end space-x-2 mt-2">
+                                    <button
+                                      onClick={cancelEditingComment}
+                                      className="px-3 py-1 text-gray-400 hover:text-white transition-colors text-sm"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => editComment(comment.id, editText)}
+                                      disabled={!editText.trim()}
+                                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-gray-300 mb-3">{comment.text}</p>
+                              )}
                               
                               <div className="flex items-center space-x-4">
                                 <button
@@ -1929,13 +2093,39 @@ We hope you find this feature useful and accessible.`;
                                   <span>{comment.like_count}</span>
                                 </button>
                                 
-                                {userInfo && (
+                                {userInfo && editingComment !== comment.id && (
                                   <button
                                     onClick={() => setReplyTo(comment.id)}
                                     className="text-sm text-gray-400 hover:text-white transition-colors"
                                   >
                                     Reply
                                   </button>
+                                )}
+                                
+                                {/* Edit and Delete buttons for own comments */}
+                                {userInfo && comment.user.id === userInfo.id && editingComment !== comment.id && (
+                                  <>
+                                    <button
+                                      onClick={() => startEditingComment(comment)}
+                                      className="text-sm text-gray-400 hover:text-white transition-colors flex items-center"
+                                      title="Edit comment"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </button>
+                                    
+                                    <button
+                                      onClick={() => deleteComment(comment.id)}
+                                      disabled={deletingComment === comment.id}
+                                      className="text-sm text-gray-400 hover:text-red-400 transition-colors flex items-center disabled:opacity-50"
+                                      title="Delete comment"
+                                    >
+                                      {deletingComment === comment.id ? (
+                                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-4 w-4" />
+                                      )}
+                                    </button>
+                                  </>
                                 )}
                               </div>
                               
@@ -2017,7 +2207,35 @@ We hope you find this feature useful and accessible.`;
                                           )}
                                         </div>
                                         
-                                        <p className="text-gray-300 text-sm mb-2">{reply.text}</p>
+                                        {/* Reply text or edit form */}
+                                        {editingComment === reply.id ? (
+                                          <div className="mb-2">
+                                            <textarea
+                                              value={editText}
+                                              onChange={(e) => setEditText(e.target.value)}
+                                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white placeholder-gray-400 resize-none text-xs"
+                                              rows={2}
+                                            />
+                                            
+                                            <div className="flex justify-end space-x-2 mt-2">
+                                              <button
+                                                onClick={cancelEditingComment}
+                                                className="px-2 py-1 text-gray-400 hover:text-white transition-colors text-xs"
+                                              >
+                                                Cancel
+                                              </button>
+                                              <button
+                                                onClick={() => editComment(reply.id, editText)}
+                                                disabled={!editText.trim()}
+                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+                                              >
+                                                Save
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <p className="text-gray-300 text-sm mb-2">{reply.text}</p>
+                                        )}
                                         
                                         <div className="flex items-center space-x-3">
                                           <button
@@ -2032,13 +2250,39 @@ We hope you find this feature useful and accessible.`;
                                             <span>{reply.like_count}</span>
                                           </button>
                                           
-                                          {userInfo && (
+                                          {userInfo && editingComment !== reply.id && (
                                             <button
                                               onClick={() => setReplyTo(reply.id)}
                                               className="text-xs text-gray-400 hover:text-white transition-colors"
                                             >
                                               Reply
                                             </button>
+                                          )}
+                                          
+                                          {/* Edit and Delete buttons for own replies */}
+                                          {userInfo && reply.user.id === userInfo.id && editingComment !== reply.id && (
+                                            <>
+                                              <button
+                                                onClick={() => startEditingComment(reply)}
+                                                className="text-xs text-gray-400 hover:text-white transition-colors flex items-center"
+                                                title="Edit reply"
+                                              >
+                                                <Edit className="h-3 w-3" />
+                                              </button>
+                                              
+                                              <button
+                                                onClick={() => deleteComment(reply.id)}
+                                                disabled={deletingComment === reply.id}
+                                                className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center disabled:opacity-50"
+                                                title="Delete reply"
+                                              >
+                                                {deletingComment === reply.id ? (
+                                                  <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                  <Trash2 className="h-3 w-3" />
+                                                )}
+                                              </button>
+                                            </>
                                           )}
                                         </div>
                                       </div>

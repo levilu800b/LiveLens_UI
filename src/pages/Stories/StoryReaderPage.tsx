@@ -14,7 +14,9 @@ import {
   User,
   Calendar,
   ThumbsUp,
-  Send
+  Send,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import storyService from '../../services/storyService';
@@ -68,6 +70,11 @@ const StoryReaderPage: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  
+  // Comment edit/delete state
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [deletingComment, setDeletingComment] = useState<string | null>(null);
   
   // Reading progress tracking
   const [startTime] = useState<number>(Date.now());
@@ -419,6 +426,126 @@ const StoryReaderPage: React.FC = () => {
       console.error('Error liking comment:', err);
       alert('Failed to like comment. Please try again.');
     }
+  };
+
+  const editComment = async (commentId: string, newText: string) => {
+    if (!newText.trim()) {
+      alert('Comment cannot be empty');
+      return;
+    }
+
+    try {
+      const updatedComment = await commentService.updateComment(commentId, newText.trim());
+      
+      setComments(prev => prev.map(comment => {
+        const updateComment = (c: typeof comment): typeof comment => {
+          if (c.id === commentId) {
+            return {
+              ...c,
+              text: updatedComment.text,
+              is_edited: true,
+              updated_at: updatedComment.updated_at
+            };
+          }
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(updateComment)
+            };
+          }
+          return c;
+        };
+        return updateComment(comment);
+      }));
+      
+      setEditingComment(null);
+      setEditText('');
+      
+      // Refresh comments to ensure consistency
+      setTimeout(() => {
+        loadComments();
+      }, 500);
+      
+    } catch (err) {
+      console.error('Error editing comment:', err);
+      alert('Failed to edit comment. Please try again.');
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      setDeletingComment(commentId);
+      await commentService.deleteComment(commentId);
+      
+      // Update UI immediately after successful deletion
+      setComments(prev => {
+        let commentDeleted = false;
+        
+        const updatedComments = prev.filter(comment => {
+          // Remove the comment if it's the one being deleted
+          if (comment.id === commentId) {
+            commentDeleted = true;
+            return false;
+          }
+          
+          // Remove replies if they match the commentId
+          if (comment.replies) {
+            const originalReplyCount = comment.replies.length;
+            comment.replies = comment.replies.filter(reply => reply.id !== commentId);
+            
+            // If a reply was removed, update the reply count
+            if (comment.replies.length !== originalReplyCount) {
+              comment.reply_count = Math.max(0, (comment.reply_count || 0) - 1);
+            }
+          }
+          
+          return true;
+        });
+        
+        // Update story comment count based on what was deleted
+        if (commentDeleted) {
+          setStory(prevStory => prevStory ? {
+            ...prevStory,
+            comment_count: Math.max(0, prevStory.comment_count - 1)
+          } : null);
+        }
+        
+        return updatedComments;
+      });
+      
+      // Clear any edit states if the deleted comment was being edited
+      if (editingComment === commentId) {
+        setEditingComment(null);
+        setEditText('');
+      }
+      
+      // Clear reply state if replying to deleted comment
+      if (replyTo === commentId) {
+        setReplyTo(null);
+        setReplyText('');
+      }
+      
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      alert('Failed to delete comment. Please try again.');
+    } finally {
+      setDeletingComment(null);
+    }
+  };
+
+  const startEditingComment = (comment: Comment) => {
+    setEditingComment(comment.id);
+    setEditText(comment.text);
+    setReplyTo(null); // Close any open reply forms
+  };
+
+  const cancelEditingComment = () => {
+    setEditingComment(null);
+    setEditText('');
   };
 
   const navigateToPage = (pageNumber: number) => {
@@ -864,7 +991,35 @@ const StoryReaderPage: React.FC = () => {
                           )}
                         </div>
                         
-                        <p className="text-gray-800 mb-3">{comment.text}</p>
+                        {/* Comment text or edit form */}
+                        {editingComment === comment.id ? (
+                          <div className="mb-3">
+                            <textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"
+                              rows={3}
+                            />
+                            
+                            <div className="flex justify-end space-x-2 mt-2">
+                              <button
+                                onClick={cancelEditingComment}
+                                className="px-3 py-1 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => editComment(comment.id, editText)}
+                                disabled={!editText.trim()}
+                                className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-gray-800 mb-3">{comment.text}</p>
+                        )}
                         
                         <div className="flex items-center space-x-4">
                           <button
@@ -879,13 +1034,39 @@ const StoryReaderPage: React.FC = () => {
                             <span>{comment.like_count}</span>
                           </button>
                           
-                          {userInfo && (
+                          {userInfo && editingComment !== comment.id && (
                             <button
                               onClick={() => setReplyTo(comment.id)}
                               className="text-sm text-gray-500 hover:text-purple-600 transition-colors"
                             >
                               Reply
                             </button>
+                          )}
+                          
+                          {/* Edit and Delete buttons for own comments */}
+                          {userInfo && comment.user.id === userInfo.id && editingComment !== comment.id && (
+                            <>
+                              <button
+                                onClick={() => startEditingComment(comment)}
+                                className="text-sm text-gray-500 hover:text-purple-600 transition-colors flex items-center"
+                                title="Edit comment"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              
+                              <button
+                                onClick={() => deleteComment(comment.id)}
+                                disabled={deletingComment === comment.id}
+                                className="text-sm text-gray-500 hover:text-red-600 transition-colors flex items-center disabled:opacity-50"
+                                title="Delete comment"
+                              >
+                                {deletingComment === comment.id ? (
+                                  <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            </>
                           )}
                         </div>
                         
@@ -967,7 +1148,35 @@ const StoryReaderPage: React.FC = () => {
                                     )}
                                   </div>
                                   
-                                  <p className="text-gray-800 text-sm mb-2">{reply.text}</p>
+                                  {/* Reply text or edit form */}
+                                  {editingComment === reply.id ? (
+                                    <div className="mb-2">
+                                      <textarea
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 text-xs resize-none"
+                                        rows={2}
+                                      />
+                                      
+                                      <div className="flex justify-end space-x-1 mt-1">
+                                        <button
+                                          onClick={cancelEditingComment}
+                                          className="px-2 py-1 text-gray-600 hover:text-gray-800 transition-colors text-xs"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          onClick={() => editComment(reply.id, editText)}
+                                          disabled={!editText.trim()}
+                                          className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+                                        >
+                                          Save
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-gray-800 text-sm mb-2">{reply.text}</p>
+                                  )}
                                   
                                   <div className="flex items-center space-x-3">
                                     <button
@@ -982,13 +1191,39 @@ const StoryReaderPage: React.FC = () => {
                                       <span>{reply.like_count}</span>
                                     </button>
                                     
-                                    {userInfo && (
+                                    {userInfo && editingComment !== reply.id && (
                                       <button
                                         onClick={() => setReplyTo(reply.id)}
                                         className="text-xs text-gray-500 hover:text-purple-600 transition-colors"
                                       >
                                         Reply
                                       </button>
+                                    )}
+                                    
+                                    {/* Edit and Delete buttons for own replies */}
+                                    {userInfo && reply.user.id === userInfo.id && editingComment !== reply.id && (
+                                      <>
+                                        <button
+                                          onClick={() => startEditingComment(reply)}
+                                          className="text-xs text-gray-500 hover:text-purple-600 transition-colors flex items-center"
+                                          title="Edit reply"
+                                        >
+                                          <Edit className="h-3 w-3" />
+                                        </button>
+                                        
+                                        <button
+                                          onClick={() => deleteComment(reply.id)}
+                                          disabled={deletingComment === reply.id}
+                                          className="text-xs text-gray-500 hover:text-red-600 transition-colors flex items-center disabled:opacity-50"
+                                          title="Delete reply"
+                                        >
+                                          {deletingComment === reply.id ? (
+                                            <div className="w-3 h-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                          ) : (
+                                            <Trash2 className="h-3 w-3" />
+                                          )}
+                                        </button>
+                                      </>
                                     )}
                                   </div>
                                   
