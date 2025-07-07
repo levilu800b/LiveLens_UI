@@ -132,41 +132,36 @@ export interface StoryFilters {
 }
 
 class StoryService {
-  private getAuthHeaders() {
-    const token = unifiedAuth.getAccessToken();
-    
-    if (token) {
-      return {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-    }
-    return {
-      'Content-Type': 'application/json',
-    };
-  }
-
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    // Don't set Content-Type for FormData - let browser handle it
+    // Create headers object
     const headers: Record<string, string> = {};
     
     // Add auth headers if available
-    const authHeaders = this.getAuthHeaders();
-    Object.assign(headers, authHeaders);
+    const token = unifiedAuth.getAccessToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-    // Only add Content-Type if it's not FormData
+    // Only add Content-Type if it's not FormData (browser will set the correct boundary)
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
 
     // Merge with any headers from options (but don't override Content-Type for FormData)
     if (options.headers) {
-      Object.assign(headers, options.headers);
+      const optionHeaders = options.headers as Record<string, string>;
+      Object.entries(optionHeaders).forEach(([key, value]) => {
+        // Don't override Content-Type for FormData
+        if (key.toLowerCase() === 'content-type' && options.body instanceof FormData) {
+          return;
+        }
+        headers[key] = value;
+      });
     }
     
     const response = await fetch(url, {
@@ -175,11 +170,21 @@ class StoryService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      let errorData: Record<string, unknown> = {};
+      try {
+        errorData = await response.json();
+      } catch {
+        // If we can't parse JSON, try to get text
+        try {
+          const errorText = await response.text();
+          errorData = { message: errorText, raw_error: errorText };
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
+      }
       
       // Handle authentication errors specifically
       if (response.status === 401) {
-        const token = unifiedAuth.getAccessToken();
         console.error('Authentication failed:', {
           endpoint: url,
           status: response.status,
@@ -194,13 +199,40 @@ class StoryService {
         }
       }
       
-      console.error('API Error:', {
+      // Enhanced error logging for debugging
+      console.error('API Error Details:', {
         endpoint: url,
+        method: options.method || 'GET',
         status: response.status,
-        error: errorData
+        statusText: response.statusText,
+        error: errorData,
+        requestHeaders: headers,
+        hasFormData: options.body instanceof FormData,
+        formDataKeys: options.body instanceof FormData ? 
+          Array.from((options.body as FormData).keys()) : 'N/A'
       });
       
-      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      // Create a detailed error message
+      let errorMessage = (errorData.detail as string) || (errorData.message as string) || `HTTP ${response.status}: ${response.statusText}`;
+      
+      // If there are field-specific errors, include them
+      if (errorData.errors || (typeof errorData === 'object' && !errorData.detail && !errorData.message)) {
+        const fieldErrors = errorData.errors || errorData;
+        if (typeof fieldErrors === 'object' && fieldErrors !== null) {
+          const errorDetails = Object.entries(fieldErrors)
+            .map(([field, messages]) => {
+              const msgArray = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${msgArray.join(', ')}`;
+            })
+            .join('; ');
+          
+          if (errorDetails) {
+            errorMessage += ` - Field errors: ${errorDetails}`;
+          }
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -322,7 +354,15 @@ class StoryService {
     formData.append('description', data.description);
     formData.append('content', data.content);
     formData.append('category', data.category);
-    formData.append('tags', JSON.stringify(data.tags));
+    
+    // Handle tags properly - send each tag individually instead of JSON string
+    if (data.tags && data.tags.length > 0) {
+      // Send tags as individual form fields - Django will handle this as a list
+      data.tags.forEach(tag => {
+        formData.append('tags', tag);
+      });
+    }
+    
     formData.append('status', data.status);
     
     if (data.is_featured !== undefined) {
