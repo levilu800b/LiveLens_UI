@@ -154,6 +154,18 @@ const ContentsPage = () => {
     ? Math.round(contents.reduce((sum, content) => sum + (content.duration || 0), 0) / contents.length)
     : 0;
 
+  // Format view count for display
+  const formatViewCount = (views: number): string => {
+    if (views >= 1000000) {
+      const millions = views / 1000000;
+      return millions % 1 === 0 ? `${millions.toFixed(0)}M` : `${millions.toFixed(1)}M`;
+    } else if (views >= 1000) {
+      const thousands = views / 1000;
+      return thousands % 1 === 0 ? `${thousands.toFixed(0)}K` : `${thousands.toFixed(1)}K`;
+    }
+    return views.toString();
+  };
+
   if (loading && contents.length === 0) {
     return (
       <MainLayout>
@@ -219,7 +231,7 @@ const ContentsPage = () => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {(totalViews / 1000).toFixed(0)}K+
+                      {formatViewCount(totalViews)}+
                     </div>
                     <div className="text-sm text-gray-400">Total Views</div>
                   </div>
@@ -271,7 +283,7 @@ const ContentsPage = () => {
                             </span>
                             <span className="flex items-center">
                               <Users className="w-4 h-4 mr-1" />
-                              {(featuredContent.views / 1000).toFixed(0)}K views
+                              {formatViewCount(featuredContent.views)} views
                             </span>
                           </div>
                         </div>

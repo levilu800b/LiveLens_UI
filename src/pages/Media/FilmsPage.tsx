@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Film, Award, Calendar, Star } from 'lucide-react';
+import { Film, Award, Calendar } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import MediaFilter, { type FilterOptions } from '../../components/Common/MediaFilter';
 import ContentCard from '../../components/Common/ContentCard';
@@ -143,6 +143,21 @@ const FilmsPage = () => {
     ? convertToFilmItem(featuredFilms[0]) 
     : filteredFilms.find(film => film.isTrending) || filteredFilms[0];
 
+  // Calculate stats from real data
+  const totalViews = films.reduce((sum, film) => sum + (film.view_count || 0), 0);
+
+  // Format view count for display
+  const formatViewCount = (views: number): string => {
+    if (views >= 1000000) {
+      const millions = views / 1000000;
+      return millions % 1 === 0 ? `${millions.toFixed(0)}M` : `${millions.toFixed(1)}M`;
+    } else if (views >= 1000) {
+      const thousands = views / 1000;
+      return thousands % 1 === 0 ? `${thousands.toFixed(0)}K` : `${thousands.toFixed(1)}K`;
+    }
+    return views.toString();
+  };
+
   // Memoized handlers to prevent infinite re-renders in MediaFilter
   const handleSearch = useCallback((search: string) => {
     setSearchTerm(search);
@@ -162,22 +177,6 @@ const FilmsPage = () => {
       month: 'long', 
       day: 'numeric' 
     });
-  };
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={i} className="w-4 h-4 fill-current text-yellow-400" />);
-    }
-
-    if (hasHalfStar) {
-      stars.push(<Star key="half" className="w-4 h-4 fill-current text-yellow-400 opacity-50" />);
-    }
-
-    return stars;
   };
 
   if (loading && films.length === 0) {
@@ -247,9 +246,9 @@ const FilmsPage = () => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      4.5★
+                      {formatViewCount(totalViews)}+
                     </div>
-                    <div className="text-sm text-gray-400">Average Rating</div>
+                    <div className="text-sm text-gray-400">Total Views</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-cyan-400 bg-clip-text text-transparent">
@@ -290,12 +289,6 @@ const FilmsPage = () => {
                           </div>
                         )}
                         <h3 className="text-2xl font-bold mb-2">{featuredFilm.title}</h3>
-                        {featuredFilm.rating > 0 && (
-                          <div className="flex items-center mb-2">
-                            {renderStars(featuredFilm.rating)}
-                            <span className="ml-2 text-sm text-gray-300">{featuredFilm.rating.toFixed(1)}</span>
-                          </div>
-                        )}
                         <p className="text-gray-200 text-sm mb-4 line-clamp-2">{featuredFilm.description}</p>
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-4">
@@ -304,6 +297,10 @@ const FilmsPage = () => {
                               {formatDate(featuredFilm.releaseDate)}
                             </span>
                             <span>{featuredFilm.duration}</span>
+                            <span className="flex items-center">
+                              <Film className="w-4 h-4 mr-1" />
+                              {formatViewCount(featuredFilm.views)} views
+                            </span>
                           </div>
                         </div>
                       </div>

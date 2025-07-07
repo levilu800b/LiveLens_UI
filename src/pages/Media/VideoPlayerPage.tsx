@@ -17,7 +17,6 @@ import {
   User,
   Calendar,
   Clock,
-  Star,
   ThumbsUp,
   Send,
   Tag,
@@ -1613,10 +1612,6 @@ We hope you find this feature useful and accessible.`;
                         <Eye className="h-4 w-4" />
                         <span>{media.view_count.toLocaleString()} views</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4" />
-                        <span>{media.average_rating.toFixed(1)} ({media.rating_count})</span>
-                      </div>
                     </div>
 
                     {/* Series Info */}
@@ -1795,11 +1790,6 @@ We hope you find this feature useful and accessible.`;
                           <p className="text-white">{(media as Film).release_year}</p>
                         </div>
                       )}
-
-                      <div>
-                        <span className="text-gray-400 text-sm">Rating</span>
-                        <p className="text-white">{(media as Film).mpaa_rating}</p>
-                      </div>
 
                       <div>
                         <span className="text-gray-400 text-sm">Language</span>
