@@ -13,11 +13,12 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
+import podcastService from '../../services/podcastService';
 
 interface PodcastSeries {
   id: string;
   title: string;
-  slug: string;
+  slug?: string;
 }
 
 interface PodcastFormData {
@@ -69,14 +70,27 @@ const AddPodcastPage: React.FC = () => {
     external_url: ''
   });
   const [tagInput, setTagInput] = useState('');
+  const [showCreateSeriesModal, setShowCreateSeriesModal] = useState(false);
+  const [seriesFormData, setSeriesFormData] = useState({
+    title: '',
+    description: '',
+    short_description: '',
+    host: '',
+    category: '',
+    language: 'en',
+    tags: [] as string[],
+    is_featured: false,
+    is_explicit: false
+  });
+  const [seriesTagInput, setSeriesTagInput] = useState('');
 
   const episodeTypeOptions = [
-    { value: 'full', label: 'Full Episode' },
-    { value: 'trailer', label: 'Trailer' },
-    { value: 'bonus', label: 'Bonus Content' },
-    { value: 'interview', label: 'Interview' },
-    { value: 'recap', label: 'Recap' },
-    { value: 'special', label: 'Special Episode' }
+    { value: 'full', label: 'Full Episode', description: 'Complete podcast episode' },
+    { value: 'trailer', label: 'Trailer/Preview', description: 'Short preview or teaser' },
+    { value: 'bonus', label: 'Bonus Content', description: 'Additional content for subscribers' },
+    { value: 'interview', label: 'Interview', description: 'Guest interview episode' },
+    { value: 'recap', label: 'Recap/Summary', description: 'Summary of previous content' },
+    { value: 'special', label: 'Special Episode', description: 'Special event or themed episode' }
   ];
 
   const audioQualityOptions = [
@@ -93,18 +107,24 @@ const AddPodcastPage: React.FC = () => {
 
   const fetchPodcastSeries = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/podcasts/series/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPodcastSeries(data.results || data);
-      }
+      const response = await podcastService.getPodcastSeries();
+      setPodcastSeries(response.results);
     } catch (err) {
       console.error('Error fetching podcast series:', err);
+    }
+  };
+
+  const fetchNextEpisodeNumber = async (seriesId: string, seasonNumber: number = 1) => {
+    try {
+      const response = await podcastService.getNextEpisodeNumber(seriesId, seasonNumber);
+      setFormData(prev => ({
+        ...prev,
+        episode_number: response.next_episode_number
+      }));
+    } catch (err) {
+      console.error('Error fetching next episode number:', err);
+      // If there's an error, default to episode 1 as a fallback
+      // User can manually change it if needed
     }
   };
 
@@ -118,15 +138,26 @@ const AddPodcastPage: React.FC = () => {
         [name]: checked
       }));
     } else if (type === 'number') {
+      const numValue = parseInt(value) || 0;
       setFormData(prev => ({
         ...prev,
-        [name]: parseInt(value) || 0
+        [name]: numValue
       }));
+      
+      // If season number changes and we have a series selected, fetch next episode number
+      if (name === 'season_number' && formData.series) {
+        fetchNextEpisodeNumber(formData.series, numValue);
+      }
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
+    }
+
+    // If series changes, fetch next episode number
+    if (name === 'series' && value) {
+      fetchNextEpisodeNumber(value, formData.season_number);
     }
   };
 
@@ -162,6 +193,103 @@ const AddPodcastPage: React.FC = () => {
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+  };
+
+  // Series creation functions
+  const handleSeriesInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setSeriesFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else {
+      setSeriesFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const addSeriesTag = () => {
+    if (seriesTagInput.trim() && !seriesFormData.tags.includes(seriesTagInput.trim().toLowerCase())) {
+      setSeriesFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, seriesTagInput.trim().toLowerCase()]
+      }));
+      setSeriesTagInput('');
+    }
+  };
+
+  const removeSeriesTag = (tagToRemove: string) => {
+    setSeriesFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const handleCreateSeries = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!seriesFormData.title || !seriesFormData.description || !seriesFormData.host || !seriesFormData.category) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      const submitData = new FormData();
+      submitData.append('title', seriesFormData.title);
+      submitData.append('description', seriesFormData.description);
+      submitData.append('short_description', seriesFormData.short_description);
+      submitData.append('host', seriesFormData.host);
+      submitData.append('category', seriesFormData.category);
+      submitData.append('language', seriesFormData.language);
+      submitData.append('is_featured', seriesFormData.is_featured.toString());
+      submitData.append('is_explicit', seriesFormData.is_explicit.toString());
+      
+      if (seriesFormData.tags.length > 0) {
+        submitData.append('tags', JSON.stringify(seriesFormData.tags));
+      }
+
+      const newSeries = await podcastService.createPodcastSeries(submitData);
+      
+      // Refresh the series list
+      await fetchPodcastSeries();
+      
+      // Select the newly created series
+      setFormData(prev => ({
+        ...prev,
+        series: newSeries.id
+      }));
+      
+      // Reset the series form
+      setSeriesFormData({
+        title: '',
+        description: '',
+        short_description: '',
+        host: '',
+        category: '',
+        language: 'en',
+        tags: [],
+        is_featured: false,
+        is_explicit: false
+      });
+      setSeriesTagInput('');
+      setShowCreateSeriesModal(false);
+      
+      // If we have a season number, fetch next episode number for the new series
+      if (newSeries.id) {
+        fetchNextEpisodeNumber(newSeries.id, formData.season_number);
+      }
+      
+    } catch (err) {
+      console.error('Error creating series:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create series');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDuration = (seconds: number): string => {
@@ -244,27 +372,35 @@ const AddPodcastPage: React.FC = () => {
         submitData.append('thumbnail', formData.thumbnail);
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/podcasts/episodes/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.detail || 'Failed to create podcast episode');
-      }
-
-      await response.json();
+      await podcastService.createEpisode(submitData);
       
-      // Show success message
+      // Show success message with episode type context
       const actionText = action === 'publish' ? 'published' : action === 'schedule' ? 'scheduled' : 'saved as draft';
-      alert(`Podcast episode "${formData.title}" has been ${actionText} successfully!`);
+      const episodeTypeText = episodeTypeOptions.find(opt => opt.value === formData.episode_type)?.label || 'Episode';
+      
+      alert(`${episodeTypeText} "${formData.title}" has been ${actionText} successfully!`);
 
-      // Navigate back to content management
-      navigate('/admin/content');
+      // Navigate based on episode type and action
+      if (action === 'publish') {
+        // If published, navigate to the appropriate public page based on episode type
+        switch (formData.episode_type) {
+          case 'trailer':
+            navigate('/sneak-peeks'); // Trailers go to sneak peeks section
+            break;
+          case 'full':
+          case 'interview':
+          case 'special':
+          case 'bonus':
+          case 'recap':
+            navigate('/podcasts'); // All other types go to main podcasts page
+            break;
+          default:
+            navigate('/podcasts');
+        }
+      } else {
+        // If draft or scheduled, go back to admin content management
+        navigate('/admin/content');
+      }
 
     } catch (err: unknown) {
       console.error('Error creating podcast episode:', err);
@@ -334,19 +470,29 @@ const AddPodcastPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Podcast Series *
                 </label>
-                <select
-                  name="series"
-                  value={formData.series}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                >
-                  <option value="">Select a series</option>
-                  {podcastSeries.map(series => (
-                    <option key={series.id} value={series.id}>
-                      {series.title}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    name="series"
+                    value={formData.series}
+                    onChange={handleInputChange}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  >
+                    <option value="">Select a series</option>
+                    {podcastSeries.map(series => (
+                      <option key={series.id} value={series.id}>
+                        {series.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateSeriesModal(true)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Series
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -392,6 +538,9 @@ const AddPodcastPage: React.FC = () => {
                   min="1"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.series ? 'Auto-updated based on selected series' : 'Select a series to auto-set episode number'}
+                </p>
               </div>
 
               <div>
@@ -410,13 +559,14 @@ const AddPodcastPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Episode Type
+                  Episode Type *
                 </label>
                 <select
                   name="episode_type"
                   value={formData.episode_type}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
                 >
                   {episodeTypeOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -424,6 +574,10 @@ const AddPodcastPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                <p className="mt-1 text-sm text-gray-500">
+                  {episodeTypeOptions.find(opt => opt.value === formData.episode_type)?.description || 'Select an episode type'}
+                  {formData.episode_type === 'trailer' && ' (Will appear in Sneak Peeks section)'}
+                </p>
               </div>
             </div>
 
@@ -702,7 +856,7 @@ const AddPodcastPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Add
@@ -852,6 +1006,265 @@ const AddPodcastPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create New Series Modal */}
+      {showCreateSeriesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Create New Podcast Series</h2>
+                <button
+                  onClick={() => {
+                    setShowCreateSeriesModal(false);
+                    setSeriesFormData({
+                      title: '',
+                      description: '',
+                      short_description: '',
+                      host: '',
+                      category: '',
+                      language: 'en',
+                      tags: [],
+                      is_featured: false,
+                      is_explicit: false
+                    });
+                    setSeriesTagInput('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateSeries();
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Series Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={seriesFormData.title}
+                      onChange={handleSeriesInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="Enter series title"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description *
+                    </label>
+                    <textarea
+                      name="description"
+                      value={seriesFormData.description}
+                      onChange={handleSeriesInputChange}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="Enter detailed series description"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Short Description
+                    </label>
+                    <textarea
+                      name="short_description"
+                      value={seriesFormData.short_description}
+                      onChange={handleSeriesInputChange}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="Brief series summary"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Host *
+                      </label>
+                      <input
+                        type="text"
+                        name="host"
+                        value={seriesFormData.host}
+                        onChange={handleSeriesInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        placeholder="Host name"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Category *
+                      </label>
+                      <select
+                        name="category"
+                        value={seriesFormData.category}
+                        onChange={handleSeriesInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        required
+                      >
+                        <option value="">Select category</option>
+                        <option value="technology">Technology</option>
+                        <option value="business">Business</option>
+                        <option value="education">Education</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="health_fitness">Health & Fitness</option>
+                        <option value="arts">Arts</option>
+                        <option value="comedy">Comedy</option>
+                        <option value="news">News</option>
+                        <option value="sports">Sports</option>
+                        <option value="science">Science</option>
+                        <option value="history">History</option>
+                        <option value="true_crime">True Crime</option>
+                        <option value="society_culture">Society & Culture</option>
+                        <option value="religion_spirituality">Religion & Spirituality</option>
+                        <option value="kids_family">Kids & Family</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Language
+                    </label>
+                    <select
+                      name="language"
+                      value={seriesFormData.language}
+                      onChange={handleSeriesInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="it">Italian</option>
+                      <option value="pt">Portuguese</option>
+                      <option value="ja">Japanese</option>
+                      <option value="ko">Korean</option>
+                      <option value="zh">Chinese</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tags
+                    </label>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={seriesTagInput}
+                        onChange={(e) => setSeriesTagInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSeriesTag())}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        placeholder="Add tags..."
+                      />
+                      <button
+                        type="button"
+                        onClick={addSeriesTag}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {seriesFormData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeSeriesTag(tag)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="is_featured"
+                        checked={seriesFormData.is_featured}
+                        onChange={handleSeriesInputChange}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Featured Series</span>
+                    </label>
+
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="is_explicit"
+                        checked={seriesFormData.is_explicit}
+                        onChange={handleSeriesInputChange}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Explicit Content</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateSeriesModal(false);
+                      setSeriesFormData({
+                        title: '',
+                        description: '',
+                        short_description: '',
+                        host: '',
+                        category: '',
+                        language: 'en',
+                        tags: [],
+                        is_featured: false,
+                        is_explicit: false
+                      });
+                      setSeriesTagInput('');
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Create Series
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

@@ -7,7 +7,7 @@ interface ContentCardProps {
   id: string;
   title: string;
   description: string;
-  thumbnail: string;
+  thumbnail?: string;
   duration: string;
   type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek';
   tags: string[];
@@ -103,12 +103,21 @@ const ContentCard: React.FC<ContentCardProps> = ({
       onClick={() => handlePlayClick({ stopPropagation: () => {} } as React.MouseEvent)}
     >
       {/* Thumbnail */}
-      <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden flex-shrink-0">
-        <img 
-          src={thumbnail} 
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+      <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden flex-shrink-0 bg-gradient-to-br from-slate-700 to-slate-900">
+        {thumbnail ? (
+          <img 
+            src={thumbnail} 
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center text-white/60">
+              <div className="text-4xl mb-2">🎧</div>
+              <div className="text-sm">No Image</div>
+            </div>
+          </div>
+        )}
         
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
