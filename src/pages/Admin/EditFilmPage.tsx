@@ -228,14 +228,12 @@ const EditFilmPage: React.FC = () => {
         submitFormData.append('description', formData.description);
         submitFormData.append('short_description', formData.short_description);
         submitFormData.append('category', formData.category);
-        submitFormData.append('tags', JSON.stringify(formData.tags));
         submitFormData.append('duration', formData.duration.toString());
         submitFormData.append('trailer_duration', formData.trailer_duration.toString());
         submitFormData.append('video_quality', formData.video_quality);
         submitFormData.append('status', formData.status);
         submitFormData.append('language', formData.language);
         submitFormData.append('director', formData.director);
-        submitFormData.append('cast', JSON.stringify(formData.cast));
         submitFormData.append('producer', formData.producer);
         submitFormData.append('studio', formData.studio);
         submitFormData.append('mpaa_rating', formData.mpaa_rating);
@@ -244,6 +242,14 @@ const EditFilmPage: React.FC = () => {
         submitFormData.append('is_featured', formData.is_featured.toString());
         submitFormData.append('is_trending', formData.is_trending.toString());
         submitFormData.append('is_premium', formData.is_premium.toString());
+
+        // Add arrays (tags and cast)
+        formData.tags.forEach(tag => {
+          submitFormData.append('tags', tag);
+        });
+        formData.cast.forEach(member => {
+          submitFormData.append('cast', member);
+        });
 
         if (formData.release_year) {
           submitFormData.append('release_year', formData.release_year.toString());

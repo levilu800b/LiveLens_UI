@@ -217,7 +217,6 @@ const EditContentPage: React.FC = () => {
         submitFormData.append('short_description', formData.short_description);
         submitFormData.append('category', formData.category);
         submitFormData.append('content_type', formData.content_type);
-        submitFormData.append('tags', JSON.stringify(formData.tags));
         submitFormData.append('duration', formData.duration.toString());
         submitFormData.append('trailer_duration', formData.trailer_duration.toString());
         submitFormData.append('video_quality', formData.video_quality);
@@ -230,6 +229,11 @@ const EditContentPage: React.FC = () => {
         submitFormData.append('is_featured', formData.is_featured.toString());
         submitFormData.append('is_trending', formData.is_trending.toString());
         submitFormData.append('is_premium', formData.is_premium.toString());
+
+        // Add arrays (tags)
+        formData.tags.forEach(tag => {
+          submitFormData.append('tags', tag);
+        });
 
         if (formData.release_year) {
           submitFormData.append('release_year', formData.release_year.toString());

@@ -1,5 +1,5 @@
 // src/pages/Admin/AddContentPage.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { 
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
 import { uiActions } from '../../store/reducers/uiReducers';
+import mediaService from '../../services/mediaService';
 
 interface ContentFormData {
   title: string;
@@ -178,48 +179,73 @@ const AddContentPage: React.FC = () => {
         throw new Error('Live stream URL or scheduled time is required for live content');
       }
 
-      // Create JSON payload for testing
-      const submitData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        short_description: formData.short_description.trim() || formData.description.substring(0, 200),
-        category: formData.category,
-        content_type: formData.content_type,
-        tags: formData.tags,
-        duration: formData.duration,
-        trailer_duration: formData.trailer_duration,
-        video_quality: formData.video_quality,
-        status: action === 'publish' ? 'published' : 'draft',
-        language: formData.language,
-        creator: formData.creator,
-        difficulty_level: formData.difficulty_level,
-        is_live: formData.is_live,
-        ...(formData.release_year && { release_year: formData.release_year }),
-        ...(formData.series_name && { series_name: formData.series_name }),
-        ...(formData.episode_number && { episode_number: formData.episode_number }),
-        ...(formData.is_live && formData.live_stream_url && { live_stream_url: formData.live_stream_url }),
-        ...(formData.is_live && formData.scheduled_live_time && { scheduled_live_time: formData.scheduled_live_time })
-      };
+      // Create FormData for file uploads
+      const submitData = new FormData();
+      
+      // Add text fields
+      submitData.append('title', formData.title.trim());
+      submitData.append('description', formData.description.trim());
+      submitData.append('short_description', formData.short_description.trim() || formData.description.substring(0, 200));
+      submitData.append('category', formData.category);
+      submitData.append('content_type', formData.content_type);
+      submitData.append('duration', formData.duration.toString());
+      submitData.append('trailer_duration', formData.trailer_duration.toString());
+      submitData.append('video_quality', formData.video_quality);
+      submitData.append('status', action === 'publish' ? 'published' : 'draft');
+      submitData.append('language', formData.language);
+      submitData.append('creator', formData.creator);
+      submitData.append('difficulty_level', formData.difficulty_level);
+      submitData.append('is_live', formData.is_live.toString());
 
-      // Debug: Log the JSON payload
-      console.log('Submitting JSON payload:', submitData);
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/media/content/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(submitData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Full error response:', errorData);
-        throw new Error(errorData.message || errorData.detail || JSON.stringify(errorData) || 'Failed to create content');
+      // Add optional fields
+      if (formData.release_year) {
+        submitData.append('release_year', formData.release_year.toString());
+      }
+      if (formData.series_name) {
+        submitData.append('series_name', formData.series_name);
+      }
+      if (formData.episode_number) {
+        submitData.append('episode_number', formData.episode_number.toString());
+      }
+      if (formData.is_live && formData.live_stream_url) {
+        submitData.append('live_stream_url', formData.live_stream_url);
+      }
+      if (formData.is_live && formData.scheduled_live_time) {
+        submitData.append('scheduled_live_time', formData.scheduled_live_time);
       }
 
-      await response.json();
+      // Add arrays (tags)
+      formData.tags.forEach(tag => {
+        submitData.append('tags', tag);
+      });
+
+      // Add file uploads
+      if (formData.thumbnail) {
+        submitData.append('thumbnail', formData.thumbnail);
+      }
+      if (formData.poster) {
+        submitData.append('poster', formData.poster);
+      }
+      if (formData.banner) {
+        submitData.append('banner', formData.banner);
+      }
+      if (formData.video_file) {
+        submitData.append('video_file', formData.video_file);
+      }
+      if (formData.trailer_file) {
+        submitData.append('trailer_file', formData.trailer_file);
+      }
+
+      // Debug: Log the FormData contents
+      console.log('Submitting FormData with files:', {
+        hasThumb: !!formData.thumbnail,
+        hasPoster: !!formData.poster,
+        hasBanner: !!formData.banner,
+        hasVideo: !!formData.video_file,
+        hasTrailer: !!formData.trailer_file
+      });
+
+      await mediaService.createContent(submitData);
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
@@ -336,17 +362,31 @@ const AddContentPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category/Content Type
+                    Category
                   </label>
                   <select
                     value={formData.category}
-                    onChange={(e) => {
-                      handleInputChange('category', e.target.value);
-                      handleInputChange('content_type', e.target.value);
-                    }}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   >
                     {categoryOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Content Type
+                  </label>
+                  <select
+                    value={formData.content_type}
+                    onChange={(e) => handleInputChange('content_type', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
+                  >
+                    {contentTypeOptions.map(option => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
