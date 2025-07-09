@@ -6,7 +6,8 @@ import {
   Plus,
   AlertTriangle,
   Mic,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
 import podcastService from '../../services/podcastService';
@@ -16,6 +17,42 @@ interface PodcastSeries {
   id: string;
   title: string;
   slug?: string;
+}
+
+interface ExtendedPodcast extends ContentItem {
+  episode?: number;
+  season?: number;
+  isTrending?: boolean;
+  releaseDate?: string;
+  series?: {
+    id: string;
+    title: string;
+    slug?: string;
+  };
+  guest?: string;
+  audioFile?: string;
+  videoFile?: string;
+  transcriptFile?: string;
+  episodeType?: string;
+  isExplicit?: boolean;
+  isPremium?: boolean;
+  averageRating?: number;
+  ratingCount?: number;
+  isLiked?: boolean;
+  userRating?: number;
+  listenProgress?: number;
+  summary?: string;
+  episode_number?: number;
+  season_number?: number;
+  episode_type?: string;
+  is_featured?: boolean;
+  is_premium?: boolean;
+  is_explicit?: boolean;
+  status?: 'draft' | 'published' | 'archived';
+  audio_file?: string;
+  video_file?: string;
+  transcript_file?: string;
+  cover_image?: string;
 }
 
 interface PodcastFormData {
@@ -47,7 +84,7 @@ const EditPodcastPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   
-  const [podcast, setPodcast] = useState<ContentItem | null>(null);
+  const [podcast, setPodcast] = useState<ExtendedPodcast | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,33 +126,27 @@ const EditPodcastPage: React.FC = () => {
     { value: '320kbps', label: '320 kbps' }
   ];
 
-  const statusOptions = [
-    { value: 'draft', label: 'Draft' },
-    { value: 'published', label: 'Published' },
-    { value: 'scheduled', label: 'Scheduled' }
-  ];
-
   useEffect(() => {
     const loadPodcast = async () => {
       if (!id) return;
       
       try {
         setLoading(true);
-        const podcastData = await podcastService.getPodcast(id);
+        const podcastData = await podcastService.getPodcast(id) as ExtendedPodcast;
         setPodcast(podcastData);
         
         // Populate form with existing data
         setFormData({
           title: podcastData.title || '',
           description: podcastData.description || '',
-          summary: podcastData.summary || '',
+          summary: podcastData.summary || podcastData.description || '',
           series: podcastData.series?.id || '',
-          episode_number: podcastData.episode_number || 1,
-          season_number: podcastData.season_number || 1,
-          episode_type: (podcastData.episode_type as any) || 'full',
+          episode_number: podcastData.episode || podcastData.episode_number || 1,
+          season_number: podcastData.season || podcastData.season_number || 1,
+          episode_type: (podcastData.episodeType || podcastData.episode_type || 'full') as 'full' | 'bonus' | 'interview' | 'recap' | 'special',
           guest: podcastData.guest || '',
           tags: podcastData.tags || [],
-          status: podcastData.status || 'draft',
+          status: (podcastData.status === 'archived' ? 'draft' : podcastData.status || 'draft') as 'draft' | 'published' | 'scheduled',
           is_featured: podcastData.is_featured || false,
           is_premium: podcastData.is_premium || false,
           is_explicit: podcastData.is_explicit || false,
@@ -124,9 +155,9 @@ const EditPodcastPage: React.FC = () => {
           external_url: ''
         });
         
-        // Load series
-        const seriesData = await podcastService.getSeries();
-        setSeries(seriesData);
+        // Load series list
+        const seriesData = await podcastService.getPodcastSeries();
+        setSeries(seriesData.results.map(s => ({ id: s.id, title: s.title })));
         
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load podcast');
@@ -138,7 +169,7 @@ const EditPodcastPage: React.FC = () => {
     loadPodcast();
   }, [id]);
 
-  const handleInputChange = (field: keyof PodcastFormData, value: any) => {
+  const handleInputChange = (field: keyof PodcastFormData, value: string | number | boolean | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -259,11 +290,40 @@ const EditPodcastPage: React.FC = () => {
       
       alert(`${episodeTypeText} "${formData.title}" has been ${actionText} successfully!`);
 
-      // Navigate back to podcasts page
-      navigate('/admin/podcasts');
+      // Navigate back to content management page
+      navigate('/admin/content');
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update podcast');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    
+    const confirmDelete = confirm(
+      `Are you sure you want to delete "${formData.title}"? This action cannot be undone.`
+    );
+    
+    if (!confirmDelete) return;
+    
+    setSaving(true);
+    setError(null);
+    
+    try {
+      await podcastService.deletePodcast(id);
+      
+      // Show success message
+      alert(`Podcast episode "${formData.title}" has been deleted successfully.`);
+      
+      // Navigate back to content management page
+      navigate('/admin/content');
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete podcast');
+      console.error('Error deleting podcast:', err);
     } finally {
       setSaving(false);
     }
@@ -290,10 +350,10 @@ const EditPodcastPage: React.FC = () => {
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => navigate('/admin/podcasts')}
+              onClick={() => navigate('/admin/content')}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
-              Back to Podcasts
+              Back to Content Management
             </button>
           </div>
         </div>
@@ -303,27 +363,37 @@ const EditPodcastPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/admin/podcasts')}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Podcasts
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Podcast Episode</h1>
-              <p className="text-gray-600">Update podcast episode details</p>
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="py-4 sm:py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center min-w-0 flex-1">
+                  <button
+                    onClick={() => navigate('/admin/content')}
+                    className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
+                  >
+                    <ArrowLeft className="h-5 w-5 mr-2" />
+                    <span className="hidden sm:inline">Back to Content Management</span>
+                    <span className="sm:hidden">Back</span>
+                  </button>
+                  <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Edit Podcast Episode</h1>
+                    <p className="text-sm sm:text-base text-gray-600 hidden sm:block">Update podcast episode details</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 ml-4">
+                  <Mic className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  <span className="text-xs sm:text-sm text-gray-500 hidden md:inline">Podcast Management</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Mic className="h-6 w-6 text-purple-600" />
-            <span className="text-sm text-gray-500">Podcast Management</span>
-          </div>
         </div>
+
+        {/* Content */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -336,10 +406,10 @@ const EditPodcastPage: React.FC = () => {
 
         <form className="space-y-6">
           {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Episode Title *
@@ -370,7 +440,7 @@ const EditPodcastPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Season Number
@@ -397,7 +467,7 @@ const EditPodcastPage: React.FC = () => {
                 />
               </div>
 
-              <div>
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Episode Type
                 </label>
@@ -418,7 +488,7 @@ const EditPodcastPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Guest(s)
@@ -475,10 +545,10 @@ const EditPodcastPage: React.FC = () => {
           </div>
 
           {/* File Uploads */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Media Files</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Audio File
@@ -489,7 +559,7 @@ const EditPodcastPage: React.FC = () => {
                   onChange={(e) => handleFileChange('audio_file', e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                {podcast?.audio_file && (
+                {podcast?.audioFile && (
                   <div className="mt-2 text-sm text-gray-600">
                     Current audio file exists
                   </div>
@@ -506,7 +576,7 @@ const EditPodcastPage: React.FC = () => {
                   onChange={(e) => handleFileChange('video_file', e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                {podcast?.video_file && (
+                {podcast?.videoFile && (
                   <div className="mt-2 text-sm text-gray-600">
                     Current video file exists
                   </div>
@@ -547,7 +617,7 @@ const EditPodcastPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="md:col-span-2">
+              <div className="lg:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Transcript File (Optional)
                 </label>
@@ -557,7 +627,7 @@ const EditPodcastPage: React.FC = () => {
                   onChange={(e) => handleFileChange('transcript_file', e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                {podcast?.transcript_file && (
+                {podcast?.transcriptFile && (
                   <div className="mt-2 text-sm text-gray-600">
                     Current transcript file exists
                   </div>
@@ -567,7 +637,7 @@ const EditPodcastPage: React.FC = () => {
           </div>
 
           {/* Tags */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Tags</h2>
             
             <div className="flex flex-wrap gap-2 mb-4">
@@ -588,7 +658,7 @@ const EditPodcastPage: React.FC = () => {
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={tagInput}
@@ -600,19 +670,19 @@ const EditPodcastPage: React.FC = () => {
               <button
                 type="button"
                 onClick={addTag}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add
+                <span>Add</span>
               </button>
             </div>
           </div>
 
           {/* Settings */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Audio Quality
@@ -687,32 +757,47 @@ const EditPodcastPage: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate('/admin/podcasts')}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSubmit('draft')}
-              disabled={saving}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Draft'}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSubmit('publish')}
-              disabled={saving}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-            >
-              {saving ? 'Publishing...' : 'Update & Publish'}
-            </button>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={saving}
+                className="px-4 sm:px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center space-x-2 order-2 sm:order-1"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>{saving ? 'Deleting...' : 'Delete Episode'}</span>
+              </button>
+              
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 order-1 sm:order-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/content')}
+                  className="px-4 sm:px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('draft')}
+                  disabled={saving}
+                  className="px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save Draft'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('publish')}
+                  disabled={saving}
+                  className="px-4 sm:px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {saving ? 'Publishing...' : 'Update & Publish'}
+                </button>
+              </div>
+            </div>
           </div>
         </form>
+        </div>
       </div>
     </AdminLayout>
   );

@@ -543,6 +543,65 @@ export const podcastService = {
       throw error;
     }
   },
+
+  // Update podcast episode
+  async updatePodcast(id: string, data: FormData | Record<string, unknown>): Promise<BackendPodcast> {
+    try {
+      // Handle both FormData and JSON updates
+      if (data instanceof FormData) {
+        // Remove Content-Type header to let browser set it for FormData
+        const token = localStorage.getItem('access_token');
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/podcasts/episodes/${id}/`, {
+          method: 'PATCH',
+          headers,
+          body: data,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          
+          if (response.status === 401) {
+            console.error('🚫 Authentication failed');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('account');
+            window.location.href = '/login';
+            throw new Error('Your session has expired. Please log in again.');
+          }
+          
+          throw new Error(errorData.message || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+      } else {
+        // For JSON updates (when no files involved)
+        return apiRequest(`/podcasts/episodes/${id}/`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error updating podcast episode:', error);
+      throw error;
+    }
+  },
+
+  // Delete podcast episode
+  async deletePodcast(id: string): Promise<void> {
+    try {
+      await apiRequest(`/podcasts/episodes/${id}/`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('❌ Error deleting podcast episode:', error);
+      throw error;
+    }
+  },
 };
 
 export default podcastService;
