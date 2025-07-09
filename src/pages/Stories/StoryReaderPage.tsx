@@ -472,14 +472,10 @@ const StoryReaderPage: React.FC = () => {
     }
   };
 
-  const deleteComment = async (commentId: string) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
-
+  const handleDeleteComment = async (commentId: string) => {
     try {
-      setDeletingComment(commentId);
       await commentService.deleteComment(commentId);
+      setDeletingComment(null);
       
       // Update UI immediately after successful deletion
       setComments(prev => {
@@ -532,8 +528,6 @@ const StoryReaderPage: React.FC = () => {
     } catch (err) {
       console.error('Error deleting comment:', err);
       alert('Failed to delete comment. Please try again.');
-    } finally {
-      setDeletingComment(null);
     }
   };
 
@@ -1055,7 +1049,7 @@ const StoryReaderPage: React.FC = () => {
                               </button>
                               
                               <button
-                                onClick={() => deleteComment(comment.id)}
+                                onClick={() => setDeletingComment(comment.id)}
                                 disabled={deletingComment === comment.id}
                                 className="text-sm text-gray-500 hover:text-red-600 transition-colors flex items-center disabled:opacity-50"
                                 title="Delete comment"
@@ -1212,7 +1206,7 @@ const StoryReaderPage: React.FC = () => {
                                         </button>
                                         
                                         <button
-                                          onClick={() => deleteComment(reply.id)}
+                                          onClick={() => setDeletingComment(reply.id)}
                                           disabled={deletingComment === reply.id}
                                           className="text-xs text-gray-500 hover:text-red-600 transition-colors flex items-center disabled:opacity-50"
                                           title="Delete reply"
@@ -1289,6 +1283,32 @@ const StoryReaderPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Comment Modal */}
+      {deletingComment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-white mb-4">Delete Comment</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => handleDeleteComment(deletingComment)}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setDeletingComment(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 };
