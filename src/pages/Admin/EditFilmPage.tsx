@@ -302,7 +302,6 @@ const EditFilmPage: React.FC = () => {
       }
 
       // Simple success message - you can implement notifications later
-      console.log('Film updated successfully!');
       navigate('/admin/content');
     } catch (err) {
       console.error('Error updating film:', err);
