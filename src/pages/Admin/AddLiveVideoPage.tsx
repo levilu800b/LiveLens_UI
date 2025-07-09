@@ -1,6 +1,8 @@
 // src/pages/Admin/AddLiveVideoPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Save, 
   X, 
@@ -41,6 +43,7 @@ interface LiveVideoFormData {
 
 const AddLiveVideoPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<LiveVideoFormData>({
@@ -199,7 +202,10 @@ const AddLiveVideoPage: React.FC = () => {
       await response.json();
       
       // Show success message
-      alert(`Live video "${formData.title}" has been scheduled successfully!`);
+      dispatch(uiActions.addNotification({
+        message: `Live video "${formData.title}" has been scheduled successfully!`,
+        type: 'success'
+      }));
 
       // Navigate back to content management
       navigate('/admin/content');

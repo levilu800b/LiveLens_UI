@@ -27,12 +27,14 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import podcastService from '../../services/podcastService';
 import commentService from '../../services/commentService';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import type { ContentItem } from '../../types';
 import type { Comment } from '../../services/commentService';
 import { config } from '../../config';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 interface RootState {
   user: {
@@ -102,6 +104,7 @@ const formatTime = (seconds: number): string => {
 const PodcastPlayerPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -428,7 +431,10 @@ const PodcastPlayerPage: React.FC = () => {
       
     } catch (error) {
       console.error('Error adding comment:', error);
-      alert(`Failed to add comment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: `Failed to add comment: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }));
     }
   };
 
@@ -454,7 +460,10 @@ const PodcastPlayerPage: React.FC = () => {
       
     } catch (error) {
       console.error('Error replying to comment:', error);
-      alert('Failed to add reply. Please try again.');
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Failed to add reply. Please try again.'
+      }));
     }
   };
 
@@ -472,7 +481,10 @@ const PodcastPlayerPage: React.FC = () => {
       
     } catch (error) {
       console.error('Error editing comment:', error);
-      alert('Failed to edit comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Failed to edit comment. Please try again.'
+      }));
     }
   };
 
@@ -487,7 +499,10 @@ const PodcastPlayerPage: React.FC = () => {
       
     } catch (error) {
       console.error('Error deleting comment:', error);
-      alert('Failed to delete comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Failed to delete comment. Please try again.'
+      }));
     }
   };
 

@@ -1,6 +1,8 @@
 // src/pages/Stories/CreateStoryPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Save, 
   Upload, 
@@ -37,6 +39,7 @@ interface StoryFormData {
 
 const CreateStoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<StoryFormData>({
@@ -176,7 +179,10 @@ const CreateStoryPage: React.FC = () => {
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
-      alert(`Story "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        message: `Story "${formData.title}" has been ${actionText} successfully!`,
+        type: 'success'
+      }));
 
       // Navigate to the new story
       navigate(`/story/${newStory.id}`);

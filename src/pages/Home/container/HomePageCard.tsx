@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Play, Film, Headphones, BookOpen, X } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../../store/reducers/uiReducers';
 
 interface ContentItem {
   id: string;
@@ -104,16 +106,23 @@ const gridSpans = [
 ];
 
 const ContentTrailerSection: React.FC = () => {
+  const dispatch = useDispatch();
   const [activeTrailer, setActiveTrailer] = useState<string | null>(null);
 
   // Example Play Now handler
   const handlePlayNow = (item: ContentItem) => {
-    alert(`Play Now: ${item.title}`);
+    dispatch(uiActions.addNotification({
+      message: `Play Now: ${item.title}`,
+      type: 'info'
+    }));
   };
 
   // Example Read Story handler
   const handleReadStory = (item: ContentItem) => {
-    alert(`Read Story: ${item.title}`);
+    dispatch(uiActions.addNotification({
+      message: `Read Story: ${item.title}`,
+      type: 'info'
+    }));
   };
 
   return (

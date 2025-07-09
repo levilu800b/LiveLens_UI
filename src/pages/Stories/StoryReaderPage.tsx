@@ -1,6 +1,7 @@
 // src/pages/Stories/StoryReaderPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { 
   ArrowLeft, 
   Heart, 
@@ -18,13 +19,13 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
 import storyService from '../../services/storyService';
 import commentService from '../../services/commentService';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import type { Story } from '../../services/storyService';
 import type { Comment } from '../../services/commentService';
 import { config } from '../../config';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 interface RootState {
   user: {
@@ -50,6 +51,7 @@ const getFullAvatarUrl = (avatarUrl: string | null | undefined): string | undefi
 const StoryReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
   
   const [story, setStory] = useState<Story | null>(null);
@@ -272,7 +274,10 @@ const StoryReaderPage: React.FC = () => {
       });
     } catch (err) {
       console.error('Error liking story:', err);
-      alert(`Failed to ${story.is_liked ? 'unlike' : 'like'} story. Please try again.`);
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: `Failed to ${story.is_liked ? 'unlike' : 'like'} story. Please try again.`
+      }));
     }
   };
 
@@ -291,7 +296,10 @@ const StoryReaderPage: React.FC = () => {
       } : null);
     } catch (err) {
       console.error('Error bookmarking story:', err);
-      alert(`Failed to ${story.is_bookmarked ? 'remove bookmark' : 'bookmark'} story. Please try again.`);
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: `Failed to ${story.is_bookmarked ? 'remove bookmark' : 'bookmark'} story. Please try again.`
+      }));
     }
   };
 
@@ -309,7 +317,10 @@ const StoryReaderPage: React.FC = () => {
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      dispatch(uiActions.addNotification({
+        type: 'success',
+        message: 'Link copied to clipboard!'
+      }));
     }
   };
 
@@ -341,7 +352,10 @@ const StoryReaderPage: React.FC = () => {
       
     } catch (err) {
       console.error('Error submitting comment:', err);
-      alert('Failed to submit comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Failed to submit comment. Please try again.'
+      }));
     }
   };
 
@@ -377,7 +391,10 @@ const StoryReaderPage: React.FC = () => {
       
     } catch (err) {
       console.error('Error submitting reply:', err);
-      alert('Failed to submit reply. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to submit reply. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
@@ -424,13 +441,19 @@ const StoryReaderPage: React.FC = () => {
       
     } catch (err) {
       console.error('Error liking comment:', err);
-      alert('Failed to like comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to like comment. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
   const editComment = async (commentId: string, newText: string) => {
     if (!newText.trim()) {
-      alert('Comment cannot be empty');
+      dispatch(uiActions.addNotification({
+        message: 'Comment cannot be empty',
+        type: 'warning'
+      }));
       return;
     }
 
@@ -468,7 +491,10 @@ const StoryReaderPage: React.FC = () => {
       
     } catch (err) {
       console.error('Error editing comment:', err);
-      alert('Failed to edit comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to edit comment. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
@@ -527,7 +553,10 @@ const StoryReaderPage: React.FC = () => {
       
     } catch (err) {
       console.error('Error deleting comment:', err);
-      alert('Failed to delete comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to delete comment. Please try again.',
+        type: 'error'
+      }));
     }
   };
 

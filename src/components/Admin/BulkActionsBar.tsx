@@ -1,6 +1,8 @@
 // src/components/Admin/BulkActionsBar.tsx
 import React, { useState } from 'react';
 import { CheckSquare } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 interface BulkAction {
   id: string;
@@ -28,6 +30,7 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
   onBulkAction,
   actions
 }) => {
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
   const handleBulkAction = async (action: BulkAction) => {
@@ -47,7 +50,10 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
       onClearSelection();
     } catch (error) {
       console.error('Bulk action error:', error);
-      alert(`Failed to ${action.label.toLowerCase()}. Please try again.`);
+      dispatch(uiActions.addNotification({
+        message: `Failed to ${action.label.toLowerCase()}. Please try again.`,
+        type: 'error'
+      }));
     } finally {
       setIsLoading(null);
     }

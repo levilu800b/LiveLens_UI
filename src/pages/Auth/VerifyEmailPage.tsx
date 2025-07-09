@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 const VerifyEmailPage = () => {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
@@ -99,6 +100,12 @@ const VerifyEmailPage = () => {
 
     dispatch(userActions.setUserInfo(userData));
     localStorage.setItem('account', JSON.stringify(userData));
+    
+    // Show success toast
+    dispatch(uiActions.addNotification({
+      message: 'Email verified successfully! You can now log in.',
+      type: 'success'
+    }));
     
     // Navigate to login page with success message
     navigate('/login', {

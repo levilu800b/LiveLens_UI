@@ -1,6 +1,8 @@
 // src/pages/Admin/EditStoryPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Save, 
   Upload, 
@@ -36,6 +38,7 @@ interface StoryFormData {
 
 const EditStoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -175,7 +178,10 @@ const EditStoryPage: React.FC = () => {
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'updated';
-      alert(`Story "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        message: `Story "${formData.title}" has been ${actionText} successfully!`,
+        type: 'success'
+      }));
 
       // Navigate back to content management
       navigate('/admin/content');

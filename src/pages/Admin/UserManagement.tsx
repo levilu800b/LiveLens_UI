@@ -14,6 +14,8 @@ import {
   UserMinus
 } from 'lucide-react';
 import { debounce } from 'lodash';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 import adminService from '../../services/adminService';
 import type { User as UserType } from '../../services/adminService';
@@ -21,6 +23,7 @@ import AdminLayout from '../../components/Admin/AdminLayout';
 import Pagination from '../../components/Common/Pagination';
 
 const UserManagement: React.FC = () => {
+  const dispatch = useDispatch();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,10 +117,16 @@ const UserManagement: React.FC = () => {
     try {
       const response = await adminService.makeUserAdmin(makingAdminUser);
       await fetchUsers(); // Refresh the list
-      alert(response.message || 'User has been made an admin successfully!');
+      dispatch(uiActions.addNotification({
+        message: response.message || 'User has been made an admin successfully!',
+        type: 'success'
+      }));
       setMakingAdminUser(null);
     } catch (err: unknown) {
-      alert('Failed to make user admin. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to make user admin. Please try again.',
+        type: 'error'
+      }));
       console.error('Error making user admin:', err);
       setMakingAdminUser(null);
     } finally {
@@ -140,10 +149,16 @@ const UserManagement: React.FC = () => {
     try {
       const response = await adminService.removeUserAdmin(removingAdminUser);
       await fetchUsers(); // Refresh the list
-      alert(response.message || 'Admin privileges have been removed successfully!');
+      dispatch(uiActions.addNotification({
+        message: response.message || 'Admin privileges have been removed successfully!',
+        type: 'success'
+      }));
       setRemovingAdminUser(null);
     } catch (err: unknown) {
-      alert('Failed to remove admin privileges. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to remove admin privileges. Please try again.',
+        type: 'error'
+      }));
       console.error('Error removing admin:', err);
       setRemovingAdminUser(null);
     } finally {
@@ -166,10 +181,16 @@ const UserManagement: React.FC = () => {
     try {
       const response = await adminService.deleteUser(deletingUser);
       await fetchUsers(); // Refresh the list
-      alert(response.message || 'User has been deleted successfully!');
+      dispatch(uiActions.addNotification({
+        message: response.message || 'User has been deleted successfully!',
+        type: 'success'
+      }));
       setDeletingUser(null);
     } catch (err: unknown) {
-      alert('Failed to delete user. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to delete user. Please try again.',
+        type: 'error'
+      }));
       console.error('Error deleting user:', err);
       setDeletingUser(null);
     } finally {

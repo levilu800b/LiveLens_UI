@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, User, UserPlus, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { googleAuthService } from '../../services/googleAuth';
 import unifiedAuth from '../../utils/unifiedAuth';
 
@@ -80,6 +81,12 @@ const SignupPage: React.FC = () => {
         email: formData.email,
         password: formData.password,
       });
+
+      // Show success toast
+      dispatch(uiActions.addNotification({
+        message: 'Account created successfully! Please check your email to verify your account.',
+        type: 'success'
+      }));
 
       // Navigate to verification page
       navigate('/verify-email', { 

@@ -1,5 +1,7 @@
 // src/pages/Admin/CommentManagement.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Search, 
   Eye, 
@@ -22,6 +24,7 @@ import Pagination from '../../components/Common/Pagination';
 import commentService, { type ModerationComment, type CommentModerationStats } from '../../services/commentService';
 
 const CommentManagement: React.FC = () => {
+  const dispatch = useDispatch();
   const [comments, setComments] = useState<ModerationComment[]>([]);
   const [stats, setStats] = useState<CommentModerationStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,7 +106,10 @@ const CommentManagement: React.FC = () => {
     const idsToProcess = commentIds || selectedComments;
     
     if (idsToProcess.length === 0) {
-      alert('Please select comments to moderate');
+      dispatch(uiActions.addNotification({
+        message: 'Please select comments to moderate',
+        type: 'warning'
+      }));
       return;
     }
 
@@ -122,14 +128,20 @@ const CommentManagement: React.FC = () => {
         reason: reason || undefined
       });
 
-      alert(result.message);
+      dispatch(uiActions.addNotification({
+        message: result.message,
+        type: 'success'
+      }));
       
       setSelectedComments([]);
       fetchComments();
       fetchStats();
     } catch (err) {
       console.error(`Error ${action}ing comments:`, err);
-      alert(`Failed to ${action} comments. Please try again.`);
+      dispatch(uiActions.addNotification({
+        message: `Failed to ${action} comments. Please try again.`,
+        type: 'error'
+      }));
     }
   };
 
@@ -140,13 +152,19 @@ const CommentManagement: React.FC = () => {
   const confirmAutoModerate = async () => {
     try {
       const result = await commentService.autoModerateComments();
-      alert(result.message);
+      dispatch(uiActions.addNotification({
+        message: result.message,
+        type: 'success'
+      }));
       fetchComments();
       fetchStats();
       setAutoModerateModal(false);
     } catch (err) {
       console.error('Error auto-moderating:', err);
-      alert('Failed to auto-moderate comments. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to auto-moderate comments. Please try again.',
+        type: 'error'
+      }));
       setAutoModerateModal(false);
     }
   };
@@ -216,14 +234,20 @@ const CommentManagement: React.FC = () => {
 
     try {
       const result = await commentService.hardDeleteComment(hardDeleteModal, hardDeleteReason.trim());
-      alert(result.message);
+      dispatch(uiActions.addNotification({
+        message: result.message,
+        type: 'success'
+      }));
       fetchComments();
       fetchStats();
       setHardDeleteModal(null);
       setHardDeleteReason('');
     } catch (err) {
       console.error('Error permanently deleting comment:', err);
-      alert('Failed to permanently delete comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to permanently delete comment. Please try again.',
+        type: 'error'
+      }));
       setHardDeleteModal(null);
       setHardDeleteReason('');
     }

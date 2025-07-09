@@ -1,11 +1,14 @@
 // src/pages/Auth/ForgotPasswordPage.tsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Mail, Loader2, ArrowLeft, Check } from 'lucide-react';
+import { uiActions } from '../../store/reducers/uiReducers';
 import unifiedAuth from '../../utils/unifiedAuth';
 
 
 const ForgotPasswordPage = () => {
+  const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -21,6 +24,12 @@ const ForgotPasswordPage = () => {
   try {
     // Make real API call to request password reset
     await unifiedAuth.requestPasswordReset(email);
+    
+    // Show success toast
+    dispatch(uiActions.addNotification({
+      message: 'Password reset instructions sent to your email!',
+      type: 'success'
+    }));
     
     setIsSubmitted(true);
     // Navigate to reset password page after a delay

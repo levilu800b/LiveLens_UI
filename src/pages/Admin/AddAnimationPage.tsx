@@ -1,6 +1,8 @@
 // src/pages/Admin/AddAnimationPage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Save, 
   Upload, 
@@ -62,6 +64,7 @@ interface AnimationFormData {
 
 const AddAnimationPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AnimationFormData>({
@@ -363,7 +366,10 @@ const AddAnimationPage: React.FC = () => {
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
-      alert(`Animation "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        message: `Animation "${formData.title}" has been ${actionText} successfully!`,
+        type: 'success'
+      }));
 
       // Navigate back to content management
       navigate('/admin/content');

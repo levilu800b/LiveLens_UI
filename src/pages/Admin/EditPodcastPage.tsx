@@ -1,6 +1,8 @@
 // src/pages/Admin/EditPodcastPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   X, 
   Plus,
@@ -82,6 +84,7 @@ interface PodcastFormData {
 
 const EditPodcastPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { id } = useParams<{ id: string }>();
   
   const [podcast, setPodcast] = useState<ExtendedPodcast | null>(null);
@@ -288,7 +291,10 @@ const EditPodcastPage: React.FC = () => {
       const actionText = action === 'publish' ? 'published' : 'saved';
       const episodeTypeText = episodeTypeOptions.find(opt => opt.value === formData.episode_type)?.label || 'Episode';
       
-      alert(`${episodeTypeText} "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        message: `${episodeTypeText} "${formData.title}" has been ${actionText} successfully!`,
+        type: 'success'
+      }));
 
       // Navigate back to content management page
       navigate('/admin/content');
@@ -316,7 +322,10 @@ const EditPodcastPage: React.FC = () => {
       await podcastService.deletePodcast(id);
       
       // Show success message
-      alert(`Podcast episode "${formData.title}" has been deleted successfully.`);
+      dispatch(uiActions.addNotification({
+        message: `Podcast episode "${formData.title}" has been deleted successfully.`,
+        type: 'success'
+      }));
       
       // Navigate back to content management page
       navigate('/admin/content');

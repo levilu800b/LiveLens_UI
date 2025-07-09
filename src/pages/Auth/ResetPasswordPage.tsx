@@ -1,10 +1,13 @@
 // src/pages/Auth/ResetPasswordPage.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Lock, Loader2, ArrowLeft, Key } from 'lucide-react';
+import { uiActions } from '../../store/reducers/uiReducers';
 import unifiedAuth from '../../utils/unifiedAuth';
 
 const ResetPasswordPage = () => {
+  const dispatch = useDispatch();
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [passwords, setPasswords] = useState({
     newPassword: '',
@@ -127,6 +130,12 @@ const ResetPasswordPage = () => {
       passwords.newPassword,
       passwords.confirmPassword
     );
+
+    // Show success toast
+    dispatch(uiActions.addNotification({
+      message: 'Password reset successful! You can now sign in with your new password.',
+      type: 'success'
+    }));
 
     // Navigate to login with success message
     navigate('/login', { 

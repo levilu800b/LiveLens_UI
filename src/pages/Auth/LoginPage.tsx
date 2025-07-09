@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, LogIn, Chrome } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { googleAuthService } from '../../services/googleAuth';
 import unifiedAuth from '../../utils/unifiedAuth';
 
@@ -60,6 +61,13 @@ const LoginPage: React.FC = () => {
       
       // Update Redux store
       dispatch(userActions.setUserInfo(response.user));
+      
+      // Show success toast
+      dispatch(uiActions.addNotification({
+        message: `Welcome back, ${response.user.first_name || response.user.email}!`,
+        type: 'success'
+      }));
+      
       navigate(from, { replace: true });
     } catch (error: any) {
       console.error('Login error:', error);
@@ -90,6 +98,13 @@ const LoginPage: React.FC = () => {
       
       // Update Redux store
       dispatch(userActions.setUserInfo(response.user));
+      
+      // Show success toast
+      dispatch(uiActions.addNotification({
+        message: `Welcome back, ${response.user.first_name || response.user.email}!`,
+        type: 'success'
+      }));
+      
       navigate(from, { replace: true });
       
     } catch (error: any) {

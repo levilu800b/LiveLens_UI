@@ -1,6 +1,7 @@
 // src/pages/Admin/ContentManagement.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { 
   Search, 
   Filter, 
@@ -22,9 +23,11 @@ import BulkActionsBar from '../../components/Admin/BulkActionsBar';
 import ExportButton from '../../components/Admin/ExportButton';
 import Pagination from '../../components/Common/Pagination';
 import { commonBulkActions } from '../../constants/bulkActions';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 const ContentManagement: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [content, setContent] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +112,10 @@ const ContentManagement: React.FC = () => {
       // Add more bulk actions as needed
     } catch (err) {
       console.error('Bulk action error:', err);
-      alert('Failed to complete bulk action. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to complete bulk action. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
@@ -125,7 +131,10 @@ const ContentManagement: React.FC = () => {
       await fetchContent(); // Refresh the list
       setDeletingContent(null);
     } catch (err) {
-      alert('Failed to delete content. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to delete content. Please try again.',
+        type: 'error'
+      }));
       console.error('Error deleting content:', err);
       setDeletingContent(null);
     }
@@ -153,7 +162,10 @@ const ContentManagement: React.FC = () => {
         navigate(`/admin/edit-sneak-peek/${contentId}`);
         break;
       default:
-        alert('Edit functionality not available for this content type');
+        dispatch(uiActions.addNotification({
+          message: 'Edit functionality not available for this content type',
+          type: 'warning'
+        }));
     }
   };
 

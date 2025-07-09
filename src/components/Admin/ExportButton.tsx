@@ -1,6 +1,8 @@
 // src/components/Admin/ExportButton.tsx
 import React, { useState } from 'react';
 import { Download, FileSpreadsheet, FileText, AlertCircle } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 
 interface ExportButtonProps {
   data: Record<string, unknown>[];
@@ -13,6 +15,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({
   filename, 
   headers
 }) => {
+  const dispatch = useDispatch();
   const [isExporting, setIsExporting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -21,7 +24,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       setIsExporting(true);
       
       if (!data || data.length === 0) {
-        alert('No data to export');
+        dispatch(uiActions.addNotification({
+          message: 'No data to export',
+          type: 'warning'
+        }));
         return;
       }
 
@@ -55,7 +61,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Export error:', error);
-      alert('Failed to export data. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to export data. Please try again.',
+        type: 'error'
+      }));
     } finally {
       setIsExporting(false);
       setShowDropdown(false);
@@ -67,7 +76,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       setIsExporting(true);
       
       if (!data || data.length === 0) {
-        alert('No data to export');
+        dispatch(uiActions.addNotification({
+          message: 'No data to export',
+          type: 'warning'
+        }));
         return;
       }
 
@@ -83,7 +95,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Export error:', error);
-      alert('Failed to export data. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to export data. Please try again.',
+        type: 'error'
+      }));
     } finally {
       setIsExporting(false);
       setShowDropdown(false);

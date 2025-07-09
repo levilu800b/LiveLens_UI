@@ -28,7 +28,8 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import mediaService from '../../services/mediaService';
 import commentService from '../../services/commentService';
 import MainLayout from '../../components/MainLayout/MainLayout';
@@ -89,6 +90,7 @@ const VideoPlayerPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
+  const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const commentsLoadedRef = useRef<string | null>(null);
   
@@ -736,7 +738,10 @@ We hope you find this feature useful and accessible.`;
       } : null);
     } catch (err) {
       console.error('Error liking media:', err);
-      alert('Failed to like media. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to like media. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
@@ -759,7 +764,10 @@ We hope you find this feature useful and accessible.`;
       } : null);
     } catch (err) {
       console.error('Error bookmarking media:', err);
-      alert('Failed to bookmark media. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to bookmark media. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
@@ -776,7 +784,10 @@ We hope you find this feature useful and accessible.`;
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      dispatch(uiActions.addNotification({
+        message: 'Link copied to clipboard!',
+        type: 'success'
+      }));
     }
   };
 
@@ -787,13 +798,19 @@ We hope you find this feature useful and accessible.`;
     }
 
     if (!userInfo) {
-      alert('Please log in to submit comments.');
+      dispatch(uiActions.addNotification({
+        message: 'Please log in to submit comments.',
+        type: 'warning'
+      }));
       return;
     }
 
     // Check authentication status using unifiedAuth
     if (!unifiedAuth.isAuthenticated()) {
-      alert('Your session has expired. Please log in again to submit comments.');
+      dispatch(uiActions.addNotification({
+        message: 'Your session has expired. Please log in again to submit comments.',
+        type: 'warning'
+      }));
       navigate('/login');
       return;
     }
@@ -847,7 +864,10 @@ We hope you find this feature useful and accessible.`;
                 localStorage.setItem('refresh_token', data.refresh);
               }
               
-              alert('Your session was refreshed. Please try submitting your comment again.');
+              dispatch(uiActions.addNotification({
+                message: 'Your session was refreshed. Please try submitting your comment again.',
+                type: 'info'
+              }));
               return;
             }
           }
@@ -855,10 +875,16 @@ We hope you find this feature useful and accessible.`;
           // Token refresh failed, fall through to login redirect
         }
         
-        alert('Your session has expired. Please log in again to submit comments.');
+        dispatch(uiActions.addNotification({
+          message: 'Your session has expired. Please log in again to submit comments.',
+          type: 'warning'
+        }));
         navigate('/login');
       } else {
-        alert(`Failed to submit comment: ${error.message || 'Unknown error'}. Please try again.`);
+        dispatch(uiActions.addNotification({
+          message: `Failed to submit comment: ${error.message || 'Unknown error'}. Please try again.`,
+          type: 'error'
+        }));
       }
     }
   };
@@ -869,13 +895,19 @@ We hope you find this feature useful and accessible.`;
     }
 
     if (!userInfo) {
-      alert('Please log in to submit replies.');
+      dispatch(uiActions.addNotification({
+        message: 'Please log in to submit replies.',
+        type: 'warning'
+      }));
       return;
     }
 
     // Check authentication status using unifiedAuth
     if (!unifiedAuth.isAuthenticated()) {
-      alert('Your session has expired. Please log in again to submit replies.');
+      dispatch(uiActions.addNotification({
+        message: 'Your session has expired. Please log in again to submit replies.',
+        type: 'warning'
+      }));
       navigate('/login');
       return;
     }
@@ -935,7 +967,10 @@ We hope you find this feature useful and accessible.`;
                 localStorage.setItem('refresh_token', data.refresh);
               }
               
-              alert('Your session was refreshed. Please try submitting your reply again.');
+              dispatch(uiActions.addNotification({
+                message: 'Your session was refreshed. Please try submitting your reply again.',
+                type: 'info'
+              }));
               return;
             }
           }
@@ -943,10 +978,16 @@ We hope you find this feature useful and accessible.`;
           console.error('Token refresh failed:', refreshError);
         }
         
-        alert('Your session has expired. Please log in again to submit replies.');
+        dispatch(uiActions.addNotification({
+          message: 'Your session has expired. Please log in again to submit replies.',
+          type: 'warning'
+        }));
         navigate('/login');
       } else {
-        alert(`Failed to submit reply: ${error.message || 'Unknown error'}. Please try again.`);
+        dispatch(uiActions.addNotification({
+          message: `Failed to submit reply: ${error.message || 'Unknown error'}. Please try again.`,
+          type: 'error'
+        }));
       }
     }
   };
@@ -987,13 +1028,19 @@ We hope you find this feature useful and accessible.`;
       
     } catch (err) {
       console.error('Error liking comment:', err);
-      alert('Failed to like comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to like comment. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
   const editComment = async (commentId: string, newText: string) => {
     if (!newText.trim()) {
-      alert('Comment cannot be empty');
+      dispatch(uiActions.addNotification({
+        message: 'Comment cannot be empty',
+        type: 'warning'
+      }));
       return;
     }
 
@@ -1026,7 +1073,10 @@ We hope you find this feature useful and accessible.`;
       
     } catch (err) {
       console.error('Error editing comment:', err);
-      alert('Failed to edit comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to edit comment. Please try again.',
+        type: 'error'
+      }));
     }
   };
 
@@ -1086,7 +1136,10 @@ We hope you find this feature useful and accessible.`;
       
     } catch (err) {
       console.error('Error deleting comment:', err);
-      alert('Failed to delete comment. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to delete comment. Please try again.',
+        type: 'error'
+      }));
     }
   };
 

@@ -1,5 +1,7 @@
 // src/components/Common/RichTextEditor.tsx
 import React, { useRef, useCallback, useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Bold, 
   Italic, 
@@ -37,6 +39,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onImageUpload,
   readOnly = false
 }) => {
+  const dispatch = useDispatch();
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -290,7 +293,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         break;
       case 'copyUrl':
         navigator.clipboard.writeText(img.src);
-        alert('Image URL copied to clipboard!');
+        dispatch(uiActions.addNotification({
+          message: 'Image URL copied to clipboard!',
+          type: 'success'
+        }));
         break;
     }
     
@@ -300,7 +306,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (editorRef.current && action !== 'copyUrl') {
       onChange(editorRef.current.innerHTML);
     }
-  }, [contextMenuImage, onChange]);
+  }, [contextMenuImage, onChange, dispatch]);
 
   const closeImageMenu = useCallback(() => {
     setIsImageMenuOpen(false);
@@ -442,7 +448,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       
     } catch (error) {
       console.error('Failed to upload image:', error);
-      alert('Failed to upload image. Please try again.');
+      dispatch(uiActions.addNotification({
+        message: 'Failed to upload image. Please try again.',
+        type: 'error'
+      }));
     }
   };
 

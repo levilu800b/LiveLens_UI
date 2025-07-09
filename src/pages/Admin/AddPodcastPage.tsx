@@ -1,6 +1,8 @@
 // src/pages/Admin/AddPodcastPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { uiActions } from '../../store/reducers/uiReducers';
 import { 
   Save, 
   Upload, 
@@ -48,6 +50,7 @@ interface PodcastFormData {
 
 const AddPodcastPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [podcastSeries, setPodcastSeries] = useState<PodcastSeries[]>([]);
@@ -377,7 +380,10 @@ const AddPodcastPage: React.FC = () => {
       const actionText = action === 'publish' ? 'published' : action === 'schedule' ? 'scheduled' : 'saved as draft';
       const episodeTypeText = episodeTypeOptions.find(opt => opt.value === formData.episode_type)?.label || 'Episode';
       
-      alert(`${episodeTypeText} "${formData.title}" has been ${actionText} successfully!`);
+      dispatch(uiActions.addNotification({
+        message: `${episodeTypeText} "${formData.title}" has been ${actionText} successfully!`,
+        type: 'success'
+      }));
 
       // Navigate based on episode type and action
       if (action === 'publish') {
