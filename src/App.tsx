@@ -32,6 +32,7 @@ import SettingsPage from './pages/User/SettingsPage';
 
 import StoryReaderPage from './pages/Stories/StoryReaderPage';
 import VideoPlayerPage from './pages/Media/VideoPlayerPage';
+import PodcastPlayerPage from './pages/Podcasts/PodcastPlayerPage';
 
 // Import the implemented admin content creation pages
 import AddStoryPage from './pages/Admin/AddStoryPage';
@@ -118,6 +119,7 @@ function App() {
         {/* Content Routes */}
         <Route path="/story/:id" element={<StoryReaderPage />} />
         <Route path="/watch/:type/:id" element={<VideoPlayerPage />} />
+        <Route path="/podcast/:id" element={<PodcastPlayerPage />} />
         
         {/* Protected User Routes - These are now fully implemented! */}
         <Route path="/profile" element={

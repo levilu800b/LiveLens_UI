@@ -214,6 +214,27 @@ class CommentService {
     });
   }
 
+  // Get comments for a specific podcast
+  async getPodcastComments(
+    podcastId: string, 
+    page = 1, 
+    pageSize = 20, 
+    signal?: AbortSignal
+  ): Promise<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Comment[];
+  }> {
+    return this.getComments({
+      content_type: 'podcast',
+      object_id: podcastId,
+      page,
+      page_size: pageSize,
+      ordering: '-created_at',
+    }, signal);
+  }
+
   // Update comment
   async updateComment(id: string, text: string): Promise<Comment> {
     return this.makeRequest(`/${id}/`, {
