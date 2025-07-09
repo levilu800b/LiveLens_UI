@@ -34,6 +34,11 @@ const UserManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
+  
+  // Modal states
+  const [makingAdminUser, setMakingAdminUser] = useState<string | null>(null);
+  const [removingAdminUser, setRemovingAdminUser] = useState<string | null>(null);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
 
   // Create debounced search function
   const debouncedSearch = useMemo(
@@ -99,60 +104,78 @@ const UserManagement: React.FC = () => {
   };
 
   const handleMakeAdmin = async (userId: string) => {
-    if (!confirm('Are you sure you want to grant admin privileges to this user?')) return;
+    setMakingAdminUser(userId);
+  };
 
-    setLoadingActions(prev => ({ ...prev, [userId]: 'making-admin' }));
+  const confirmMakeAdmin = async () => {
+    if (!makingAdminUser) return;
+
+    setLoadingActions(prev => ({ ...prev, [makingAdminUser]: 'making-admin' }));
     try {
-      const response = await adminService.makeUserAdmin(userId);
+      const response = await adminService.makeUserAdmin(makingAdminUser);
       await fetchUsers(); // Refresh the list
       alert(response.message || 'User has been made an admin successfully!');
+      setMakingAdminUser(null);
     } catch (err: unknown) {
       alert('Failed to make user admin. Please try again.');
       console.error('Error making user admin:', err);
+      setMakingAdminUser(null);
     } finally {
       setLoadingActions(prev => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [userId]: _, ...rest } = prev;
+        const { [makingAdminUser]: _, ...rest } = prev;
         return rest;
       });
     }
   };
 
   const handleRemoveAdmin = async (userId: string) => {
-    if (!confirm('Are you sure you want to remove admin privileges from this user?')) return;
+    setRemovingAdminUser(userId);
+  };
 
-    setLoadingActions(prev => ({ ...prev, [userId]: 'removing-admin' }));
+  const confirmRemoveAdmin = async () => {
+    if (!removingAdminUser) return;
+
+    setLoadingActions(prev => ({ ...prev, [removingAdminUser]: 'removing-admin' }));
     try {
-      const response = await adminService.removeUserAdmin(userId);
+      const response = await adminService.removeUserAdmin(removingAdminUser);
       await fetchUsers(); // Refresh the list
       alert(response.message || 'Admin privileges have been removed successfully!');
+      setRemovingAdminUser(null);
     } catch (err: unknown) {
       alert('Failed to remove admin privileges. Please try again.');
       console.error('Error removing admin:', err);
+      setRemovingAdminUser(null);
     } finally {
       setLoadingActions(prev => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [userId]: _, ...rest } = prev;
+        const { [removingAdminUser]: _, ...rest } = prev;
         return rest;
       });
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) return;
+    setDeletingUser(userId);
+  };
 
-    setLoadingActions(prev => ({ ...prev, [userId]: 'deleting' }));
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return;
+
+    setLoadingActions(prev => ({ ...prev, [deletingUser]: 'deleting' }));
     try {
-      const response = await adminService.deleteUser(userId);
+      const response = await adminService.deleteUser(deletingUser);
       await fetchUsers(); // Refresh the list
       alert(response.message || 'User has been deleted successfully!');
+      setDeletingUser(null);
     } catch (err: unknown) {
       alert('Failed to delete user. Please try again.');
       console.error('Error deleting user:', err);
+      setDeletingUser(null);
     } finally {
       setLoadingActions(prev => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [userId]: _, ...rest } = prev;
+        const { [deletingUser]: _, ...rest } = prev;
         return rest;
       });
     }
@@ -497,6 +520,84 @@ const UserManagement: React.FC = () => {
         )}
         </div>
       </div>
+
+      {/* Make Admin Modal */}
+      {makingAdminUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Grant Admin Privileges</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to grant admin privileges to this user? This will give them full administrative access.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmMakeAdmin}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Grant Admin
+              </button>
+              <button
+                onClick={() => setMakingAdminUser(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Admin Modal */}
+      {removingAdminUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Remove Admin Privileges</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to remove admin privileges from this user? They will lose all administrative access.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmRemoveAdmin}
+                className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Remove Admin
+              </button>
+              <button
+                onClick={() => setRemovingAdminUser(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Delete User</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to permanently delete this user? This action cannot be undone and will remove all their data.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmDeleteUser}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete User
+              </button>
+              <button
+                onClick={() => setDeletingUser(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

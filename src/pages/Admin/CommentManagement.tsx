@@ -37,6 +37,14 @@ const CommentManagement: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  
+  // Modal states for confirmation dialogs
+  const [autoModerateModal, setAutoModerateModal] = useState(false);
+  const [hideCommentModal, setHideCommentModal] = useState<string | null>(null);
+  const [flagCommentModal, setFlagCommentModal] = useState<string | null>(null);
+  const [softDeleteModal, setSoftDeleteModal] = useState<string | null>(null);
+  const [hardDeleteModal, setHardDeleteModal] = useState<string | null>(null);
+  const [hardDeleteReason, setHardDeleteReason] = useState('');
 
   const fetchComments = useCallback(async () => {
     try {
@@ -126,41 +134,98 @@ const CommentManagement: React.FC = () => {
   };
 
   const handleAutoModerate = async () => {
-    if (!confirm('This will automatically flag potentially problematic comments. Continue?')) {
-      return;
-    }
+    setAutoModerateModal(true);
+  };
 
+  const confirmAutoModerate = async () => {
     try {
       const result = await commentService.autoModerateComments();
       alert(result.message);
       fetchComments();
       fetchStats();
+      setAutoModerateModal(false);
     } catch (err) {
       console.error('Error auto-moderating:', err);
       alert('Failed to auto-moderate comments. Please try again.');
+      setAutoModerateModal(false);
     }
   };
 
   const handleIndividualAction = async (commentId: string, action: string) => {
+    // Use modals for destructive actions
+    if (action === 'hide') {
+      setHideCommentModal(commentId);
+      return;
+    }
+    if (action === 'flag') {
+      setFlagCommentModal(commentId);
+      return;
+    }
+    if (action === 'delete') {
+      setSoftDeleteModal(commentId);
+      return;
+    }
+    
+    // For non-destructive actions, proceed directly
     await handleBulkAction(action, [commentId]);
   };
 
-  const handleHardDelete = async (commentId: string) => {
-    if (!confirm('This will PERMANENTLY delete the comment. This action cannot be undone. Continue?')) {
-      return;
+  const confirmHideComment = async () => {
+    if (!hideCommentModal) return;
+    
+    try {
+      await handleBulkAction('hide', [hideCommentModal]);
+      setHideCommentModal(null);
+    } catch (err) {
+      console.error('Error hiding comment:', err);
+      setHideCommentModal(null);
     }
+  };
 
-    const reason = prompt('Enter reason for permanent deletion:');
-    if (!reason) return;
+  const confirmFlagComment = async () => {
+    if (!flagCommentModal) return;
+    
+    try {
+      await handleBulkAction('flag', [flagCommentModal]);
+      setFlagCommentModal(null);
+    } catch (err) {
+      console.error('Error flagging comment:', err);
+      setFlagCommentModal(null);
+    }
+  };
+
+  const confirmSoftDelete = async () => {
+    if (!softDeleteModal) return;
+    
+    try {
+      await handleBulkAction('delete', [softDeleteModal]);
+      setSoftDeleteModal(null);
+    } catch (err) {
+      console.error('Error soft deleting comment:', err);
+      setSoftDeleteModal(null);
+    }
+  };
+
+  const handleHardDelete = async (commentId: string) => {
+    setHardDeleteModal(commentId);
+    setHardDeleteReason('');
+  };
+
+  const confirmHardDelete = async () => {
+    if (!hardDeleteModal || !hardDeleteReason.trim()) return;
 
     try {
-      const result = await commentService.hardDeleteComment(commentId, reason);
+      const result = await commentService.hardDeleteComment(hardDeleteModal, hardDeleteReason.trim());
       alert(result.message);
       fetchComments();
       fetchStats();
+      setHardDeleteModal(null);
+      setHardDeleteReason('');
     } catch (err) {
       console.error('Error permanently deleting comment:', err);
       alert('Failed to permanently delete comment. Please try again.');
+      setHardDeleteModal(null);
+      setHardDeleteReason('');
     }
   };
 
@@ -740,6 +805,153 @@ const CommentManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Auto Moderate Modal */}
+      {autoModerateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Auto-Moderate Comments</h3>
+            <p className="text-gray-600 mb-6">
+              This will automatically flag potentially problematic comments based on our moderation algorithms. Do you want to continue?
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmAutoModerate}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Auto-Moderate
+              </button>
+              <button
+                onClick={() => setAutoModerateModal(false)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hide Comment Modal */}
+      {hideCommentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Hide Comment</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to hide this comment? It will no longer be visible to users, but can be restored later.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmHideComment}
+                className="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Hide Comment
+              </button>
+              <button
+                onClick={() => setHideCommentModal(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flag Comment Modal */}
+      {flagCommentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Flag Comment</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to flag this comment as problematic? This will mark it for further review and potential action.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmFlagComment}
+                className="flex-1 bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors"
+              >
+                Flag Comment
+              </button>
+              <button
+                onClick={() => setFlagCommentModal(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Soft Delete Modal */}
+      {softDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Delete Comment</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this comment? This will soft delete the comment, which can be restored if needed.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmSoftDelete}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Comment
+              </button>
+              <button
+                onClick={() => setSoftDeleteModal(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hard Delete Modal */}
+      {hardDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Permanently Delete Comment</h3>
+            <p className="text-gray-600 mb-4">
+              This will PERMANENTLY delete the comment. This action cannot be undone and will completely remove the comment from the database.
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for permanent deletion (required):
+              </label>
+              <textarea
+                value={hardDeleteReason}
+                onChange={(e) => setHardDeleteReason(e.target.value)}
+                placeholder="Enter the reason for permanent deletion..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                rows={3}
+                required
+              />
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmHardDelete}
+                disabled={!hardDeleteReason.trim()}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Permanently Delete
+              </button>
+              <button
+                onClick={() => {
+                  setHardDeleteModal(null);
+                  setHardDeleteReason('');
+                }}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

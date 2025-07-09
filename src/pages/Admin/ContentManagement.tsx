@@ -38,6 +38,7 @@ const ContentManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
+  const [deletingContent, setDeletingContent] = useState<{ contentType: string; contentId: string } | null>(null);
 
   const fetchContent = useCallback(async () => {
     try {
@@ -113,14 +114,20 @@ const ContentManagement: React.FC = () => {
   };
 
   const handleDeleteContent = async (contentType: string, contentId: string) => {
-    if (!confirm('Are you sure you want to delete this content?')) return;
+    setDeletingContent({ contentType, contentId });
+  };
+
+  const confirmDeleteContent = async () => {
+    if (!deletingContent) return;
 
     try {
-      await adminService.deleteContent(contentType, contentId);
+      await adminService.deleteContent(deletingContent.contentType, deletingContent.contentId);
       await fetchContent(); // Refresh the list
+      setDeletingContent(null);
     } catch (err) {
       alert('Failed to delete content. Please try again.');
       console.error('Error deleting content:', err);
+      setDeletingContent(null);
     }
   };
 
@@ -550,6 +557,32 @@ const ContentManagement: React.FC = () => {
         )}
         </div>
       </div>
+
+      {/* Delete Content Modal */}
+      {deletingContent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Delete Content</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this content? This action cannot be undone.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={confirmDeleteContent}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setDeletingContent(null)}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };
