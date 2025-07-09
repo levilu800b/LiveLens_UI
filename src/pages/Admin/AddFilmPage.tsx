@@ -23,9 +23,7 @@ interface FilmFormData {
   poster?: File | null;
   banner?: File | null;
   video_file?: File | null;
-  trailer_file?: File | null;
   duration: number;
-  trailer_duration: number;
   video_quality: string;
   status: 'draft' | 'published';
   release_year?: number;
@@ -53,7 +51,6 @@ const AddFilmPage: React.FC = () => {
     category: 'drama',
     tags: [],
     duration: 90,
-    trailer_duration: 2,
     video_quality: '1080p',
     status: 'draft',
     language: 'English',
@@ -117,7 +114,7 @@ const AddFilmPage: React.FC = () => {
     }));
   };
 
-  const handleFileChange = (field: 'thumbnail' | 'poster' | 'banner' | 'video_file' | 'trailer_file', file: File | null) => {
+  const handleFileChange = (field: 'thumbnail' | 'poster' | 'banner' | 'video_file', file: File | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: file
@@ -184,7 +181,6 @@ const AddFilmPage: React.FC = () => {
       submitData.append('short_description', formData.short_description.trim() || formData.description.substring(0, 200));
       submitData.append('category', formData.category);
       submitData.append('duration', formData.duration.toString());
-      submitData.append('trailer_duration', formData.trailer_duration.toString());
       submitData.append('video_quality', formData.video_quality);
       submitData.append('status', action === 'publish' ? 'published' : 'draft');
       submitData.append('language', formData.language);
@@ -227,17 +223,13 @@ const AddFilmPage: React.FC = () => {
       if (formData.video_file) {
         submitData.append('video_file', formData.video_file);
       }
-      if (formData.trailer_file) {
-        submitData.append('trailer_file', formData.trailer_file);
-      }
 
       // Debug: Log the FormData contents
       console.log('Submitting FormData with files:', {
         hasThumb: !!formData.thumbnail,
         hasPoster: !!formData.poster,
         hasBanner: !!formData.banner,
-        hasVideo: !!formData.video_file,
-        hasTrailer: !!formData.trailer_file
+        hasVideo: !!formData.video_file
       });
 
       await mediaService.createFilm(submitData);
@@ -398,19 +390,6 @@ const AddFilmPage: React.FC = () => {
                     min="1"
                     value={formData.duration}
                     onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 90)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trailer Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.trailer_duration}
-                    onChange={(e) => handleInputChange('trailer_duration', parseInt(e.target.value) || 2)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
                   />
                 </div>
@@ -658,18 +637,6 @@ const AddFilmPage: React.FC = () => {
                     type="file"
                     accept="video/*"
                     onChange={(e) => handleFileChange('video_file', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trailer File (MP4, AVI, MOV)
-                  </label>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={(e) => handleFileChange('trailer_file', e.target.files?.[0] || null)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>

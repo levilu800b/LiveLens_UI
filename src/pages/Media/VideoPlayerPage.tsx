@@ -95,7 +95,6 @@ const VideoPlayerPage: React.FC = () => {
   const [media, setMedia] = useState<Film | Content | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isTrailer, setIsTrailer] = useState(false);
   
   // Video player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -226,12 +225,9 @@ const VideoPlayerPage: React.FC = () => {
           // Don't set any subtitle as default for demo
         }
         
-        // Determine if this is a trailer based on URL params
-        const urlParams = new URLSearchParams(location.search);
-        const isTrailerParam = urlParams.get('trailer') === 'true';
-        setIsTrailer(isTrailerParam);
+        // Remove trailer URL parameter references
         
-        // Reset video state when switching between trailer and full video
+        // Reset video state when switching between different media
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
           setCurrentTime(0);
@@ -316,12 +312,7 @@ const VideoPlayerPage: React.FC = () => {
   // Get video URL
   const getVideoUrl = (): string | undefined => {
     if (!media) return undefined;
-    
-    if (isTrailer) {
-      return getFullMediaUrl(media.trailer_file);
-    } else {
-      return getFullMediaUrl(media.video_file);
-    }
+    return getFullMediaUrl(media.video_file);
   };
 
   // Video event handlers
@@ -1116,10 +1107,6 @@ We hope you find this feature useful and accessible.`;
     setEditText('');
   };
 
-  const toggleDescription = () => {
-    setShowDescription(prev => !prev);
-  };
-
   // Load media data on mount and when type/id change
   useEffect(() => {
     const fetchData = async () => {
@@ -1168,7 +1155,7 @@ We hope you find this feature useful and accessible.`;
         }
         
       } catch (err) {
-        setError(err.message || 'Failed to load media');
+        setError(err instanceof Error ? err.message : 'Failed to load media');
       } finally {
         setLoading(false);
       }
@@ -1298,7 +1285,7 @@ We hope you find this feature useful and accessible.`;
               <div className="text-center">
                 <Play className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-400">
-                  {isTrailer ? 'Trailer not available' : 'Video not available'}
+                  Video not available
                 </p>
               </div>
             </div>
@@ -1322,7 +1309,7 @@ We hope you find this feature useful and accessible.`;
                 
                 <div className="flex items-center space-x-4">
                   <span className="text-white text-sm">
-                    {isTrailer ? 'Trailer' : 'Full Video'}
+                    Full Video
                   </span>
                   
                   {/* Quality Selector */}
@@ -1582,11 +1569,6 @@ We hope you find this feature useful and accessible.`;
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      {isTrailer && (
-                        <span className="bg-red-600 text-white px-2 py-1 rounded text-sm font-medium">
-                          TRAILER
-                        </span>
-                      )}
                       <span className="bg-gray-700 text-gray-300 px-2 py-1 rounded text-sm">
                         {media.category.toUpperCase()}
                       </span>
@@ -1606,7 +1588,7 @@ We hope you find this feature useful and accessible.`;
                       </div>
                       <div className="flex items-center space-x-1">
                         <Clock className="h-4 w-4" />
-                        <span>{isTrailer ? media.trailer_duration_formatted : media.duration_formatted}</span>
+                        <span>{media.duration_formatted}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Eye className="h-4 w-4" />
@@ -1681,24 +1663,6 @@ We hope you find this feature useful and accessible.`;
                     >
                       <Share2 className="h-4 w-4" />
                     </button>
-
-                    {!isTrailer && media.trailer_file && (
-                      <button
-                        onClick={() => navigate(`/watch/${type}/${id}?trailer=true`)}
-                        className="px-4 py-2 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        Watch Trailer
-                      </button>
-                    )}
-
-                    {isTrailer && (
-                      <button
-                        onClick={() => navigate(`/watch/${type}/${id}`)}
-                        className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
-                      >
-                        Watch Full {type === 'film' ? 'Film' : 'Video'}
-                      </button>
-                    )}
                   </div>
                 </div>
 

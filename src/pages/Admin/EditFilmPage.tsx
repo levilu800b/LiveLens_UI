@@ -22,9 +22,7 @@ interface FilmFormData {
   poster?: File | null;
   banner?: File | null;
   video_file?: File | null;
-  trailer_file?: File | null;
   duration: number;
-  trailer_duration: number;
   video_quality: string;
   status: 'draft' | 'published' | 'archived';
   release_year?: number;
@@ -57,7 +55,6 @@ const EditFilmPage: React.FC = () => {
     category: 'action',
     tags: [],
     duration: 0,
-    trailer_duration: 0,
     video_quality: '1080p',
     status: 'draft',
     language: 'English',
@@ -136,7 +133,6 @@ const EditFilmPage: React.FC = () => {
           category: filmData.category,
           tags: filmData.tags,
           duration: filmData.duration,
-          trailer_duration: filmData.trailer_duration,
           video_quality: filmData.video_quality,
           status: filmData.status,
           release_year: filmData.release_year,
@@ -217,7 +213,7 @@ const EditFilmPage: React.FC = () => {
     try {
       // Check if there are any files to upload
       const hasFiles = formData.thumbnail || formData.poster || formData.banner || 
-                      formData.video_file || formData.trailer_file;
+                      formData.video_file;
 
       if (hasFiles) {
         // Use FormData for file uploads
@@ -229,7 +225,6 @@ const EditFilmPage: React.FC = () => {
         submitFormData.append('short_description', formData.short_description);
         submitFormData.append('category', formData.category);
         submitFormData.append('duration', formData.duration.toString());
-        submitFormData.append('trailer_duration', formData.trailer_duration.toString());
         submitFormData.append('video_quality', formData.video_quality);
         submitFormData.append('status', formData.status);
         submitFormData.append('language', formData.language);
@@ -274,9 +269,6 @@ const EditFilmPage: React.FC = () => {
         if (formData.video_file) {
           submitFormData.append('video_file', formData.video_file);
         }
-        if (formData.trailer_file) {
-          submitFormData.append('trailer_file', formData.trailer_file);
-        }
 
         await mediaService.updateFilm(id, submitFormData);
       } else {
@@ -288,7 +280,6 @@ const EditFilmPage: React.FC = () => {
           category: formData.category,
           tags: formData.tags,
           duration: formData.duration,
-          trailer_duration: formData.trailer_duration,
           video_quality: formData.video_quality,
           status: formData.status,
           release_year: formData.release_year,
@@ -581,22 +572,6 @@ const EditFilmPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trailer File
-                </label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => handleFileChange('trailer_file', e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {film?.trailer_file && (
-                  <div className="mt-2 text-sm text-gray-600">
-                    Current trailer file exists ({film.trailer_duration_formatted})
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
@@ -612,19 +587,6 @@ const EditFilmPage: React.FC = () => {
                   type="number"
                   value={formData.duration}
                   onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trailer Duration (minutes)
-                </label>
-                <input
-                  type="number"
-                  value={formData.trailer_duration}
-                  onChange={(e) => handleInputChange('trailer_duration', parseInt(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
                 />

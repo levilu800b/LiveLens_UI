@@ -13,7 +13,6 @@ interface ContentCardProps {
   tags: string[];
   views?: number;
   likes?: number;
-  isTrailerAvailable?: boolean;
   size?: 'small' | 'medium' | 'large';
   featured?: boolean;
   // New props for podcast episode info
@@ -42,7 +41,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
   tags,
   views = 0,
   likes = 0,
-  isTrailerAvailable = true,
   size = 'medium',
   featured = false,
   season,
@@ -53,20 +51,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
-
-
-
-  const handleTrailerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!userInfo) {
-      navigate('/login');
-      return;
-    }
-    
-    if (type === 'film' || type === 'content') {
-      navigate(`/watch/${type}/${id}?trailer=true`);
-    }
-  };
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -234,24 +218,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
               Start Reading
             </button>
           ) : (
-            <>
-              {isTrailerAvailable && (
-                <button
-                  onClick={handleTrailerClick}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  Trailer
-                </button>
-              )}
-              <button
-                onClick={handlePlayClick}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Play Now
-              </button>
-            </>
+            <button
+              onClick={handlePlayClick}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Play Now
+            </button>
           )}
         </div>
       </div>

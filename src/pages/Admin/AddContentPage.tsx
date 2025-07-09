@@ -24,9 +24,7 @@ interface ContentFormData {
   poster?: File | null;
   banner?: File | null;
   video_file?: File | null;
-  trailer_file?: File | null;
   duration: number;
-  trailer_duration: number;
   video_quality: string;
   status: 'draft' | 'published';
   release_year?: number;
@@ -53,7 +51,6 @@ const AddContentPage: React.FC = () => {
     content_type: 'tutorial', // This is the content type
     tags: [],
     duration: 15,
-    trailer_duration: 2,
     video_quality: '1080p',
     status: 'draft',
     language: 'English',
@@ -101,7 +98,6 @@ const AddContentPage: React.FC = () => {
     { value: 'news', label: 'News' },
     { value: 'sports', label: 'Sports' },
     { value: 'music_video', label: 'Music Video' },
-    { value: 'trailer', label: 'Trailer' },
     { value: 'commercial', label: 'Commercial' },
     { value: 'short_film', label: 'Short Film' },
     { value: 'documentary', label: 'Documentary' },
@@ -132,7 +128,7 @@ const AddContentPage: React.FC = () => {
     }));
   };
 
-  const handleFileChange = (field: 'thumbnail' | 'poster' | 'banner' | 'video_file' | 'trailer_file', file: File | null) => {
+  const handleFileChange = (field: 'thumbnail' | 'poster' | 'banner' | 'video_file', file: File | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: file
@@ -189,7 +185,6 @@ const AddContentPage: React.FC = () => {
       submitData.append('category', formData.category);
       submitData.append('content_type', formData.content_type);
       submitData.append('duration', formData.duration.toString());
-      submitData.append('trailer_duration', formData.trailer_duration.toString());
       submitData.append('video_quality', formData.video_quality);
       submitData.append('status', action === 'publish' ? 'published' : 'draft');
       submitData.append('language', formData.language);
@@ -232,17 +227,13 @@ const AddContentPage: React.FC = () => {
       if (formData.video_file) {
         submitData.append('video_file', formData.video_file);
       }
-      if (formData.trailer_file) {
-        submitData.append('trailer_file', formData.trailer_file);
-      }
 
       // Debug: Log the FormData contents
       console.log('Submitting FormData with files:', {
         hasThumb: !!formData.thumbnail,
         hasPoster: !!formData.poster,
         hasBanner: !!formData.banner,
-        hasVideo: !!formData.video_file,
-        hasTrailer: !!formData.trailer_file
+        hasVideo: !!formData.video_file
       });
 
       await mediaService.createContent(submitData);
@@ -614,30 +605,6 @@ const AddContentPage: React.FC = () => {
                     onChange={(e) => handleFileChange('video_file', e.target.files?.[0] || null)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trailer File (MP4, AVI, MOV)
-                  </label>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={(e) => handleFileChange('trailer_file', e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base"
-                  />
-                  <div className="mt-1">
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Trailer Duration (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.trailer_duration}
-                      onChange={(e) => handleInputChange('trailer_duration', parseInt(e.target.value) || 2)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
                 </div>
 
                 <div>

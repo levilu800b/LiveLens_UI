@@ -28,7 +28,7 @@ interface PodcastFormData {
   series: string;
   episode_number: number;
   season_number: number;
-  episode_type: 'full' | 'trailer' | 'bonus' | 'interview' | 'recap' | 'special';
+  episode_type: 'full' | 'bonus' | 'interview' | 'recap' | 'special';
   audio_file?: File | null;
   video_file?: File | null;
   transcript_file?: File | null;
@@ -86,7 +86,6 @@ const AddPodcastPage: React.FC = () => {
 
   const episodeTypeOptions = [
     { value: 'full', label: 'Full Episode', description: 'Complete podcast episode' },
-    { value: 'trailer', label: 'Trailer/Preview', description: 'Short preview or teaser' },
     { value: 'bonus', label: 'Bonus Content', description: 'Additional content for subscribers' },
     { value: 'interview', label: 'Interview', description: 'Guest interview episode' },
     { value: 'recap', label: 'Recap/Summary', description: 'Summary of previous content' },
@@ -384,15 +383,12 @@ const AddPodcastPage: React.FC = () => {
       if (action === 'publish') {
         // If published, navigate to the appropriate public page based on episode type
         switch (formData.episode_type) {
-          case 'trailer':
-            navigate('/sneak-peeks'); // Trailers go to sneak peeks section
-            break;
           case 'full':
           case 'interview':
           case 'special':
           case 'bonus':
           case 'recap':
-            navigate('/podcasts'); // All other types go to main podcasts page
+            navigate('/podcasts'); // All types go to main podcasts page
             break;
           default:
             navigate('/podcasts');
@@ -576,7 +572,6 @@ const AddPodcastPage: React.FC = () => {
                 </select>
                 <p className="mt-1 text-sm text-gray-500">
                   {episodeTypeOptions.find(opt => opt.value === formData.episode_type)?.description || 'Select an episode type'}
-                  {formData.episode_type === 'trailer' && ' (Will appear in Sneak Peeks section)'}
                 </p>
               </div>
             </div>

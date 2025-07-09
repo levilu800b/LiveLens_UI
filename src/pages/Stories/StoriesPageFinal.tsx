@@ -243,7 +243,6 @@ const StoriesPage: React.FC = () => {
                     tags={story.tags}
                     views={story.read_count}
                     likes={story.like_count}
-                    isTrailerAvailable={false}
                   />
                 ))}
               </div>

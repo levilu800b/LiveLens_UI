@@ -56,7 +56,6 @@ export interface Film {
   poster?: string;
   banner?: string;
   video_file?: string;
-  trailer_file?: string;
   author: Author;
   status: 'draft' | 'published' | 'archived';
   is_featured: boolean;
@@ -70,8 +69,6 @@ export interface Film {
   rating_count: number;
   duration: number;
   duration_formatted: string;
-  trailer_duration: number;
-  trailer_duration_formatted: string;
   video_quality: string;
   file_size: number;
   file_size_formatted: string;
@@ -113,7 +110,6 @@ export interface Content {
   poster?: string;
   banner?: string;
   video_file?: string;
-  trailer_file?: string;
   author: Author;
   status: 'draft' | 'published' | 'archived';
   is_featured: boolean;
@@ -127,8 +123,6 @@ export interface Content {
   rating_count: number;
   duration: number;
   duration_formatted: string;
-  trailer_duration: number;
-  trailer_duration_formatted: string;
   video_quality: string;
   file_size: number;
   file_size_formatted: string;
@@ -330,14 +324,6 @@ class MediaService {
     return apiRequest('/films/categories/');
   }
 
-  async watchFilmTrailer(id: string): Promise<{
-    trailer_url: string;
-    trailer_duration: number;
-    trailer_duration_formatted: string;
-  }> {
-    return apiRequest(`/films/${id}/watch_trailer/`);
-  }
-
   async playFilm(id: string): Promise<{
     video_url: string;
     duration: number;
@@ -441,14 +427,6 @@ class MediaService {
 
   async getContentCategories(): Promise<{ value: string; label: string }[]> {
     return apiRequest('/content/categories/');
-  }
-
-  async watchContentTrailer(id: string): Promise<{
-    trailer_url: string;
-    trailer_duration: number;
-    trailer_duration_formatted: string;
-  }> {
-    return apiRequest(`/content/${id}/watch_trailer/`);
   }
 
   async playContent(id: string): Promise<{
