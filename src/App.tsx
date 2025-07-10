@@ -44,6 +44,7 @@ import EditContentPage from './pages/Admin/EditContentPage';
 import AddPodcastPage from './pages/Admin/AddPodcastPage';
 import EditPodcastPage from './pages/Admin/EditPodcastPage';
 import AddAnimationPage from './pages/Admin/AddAnimationPage';
+import EditAnimationPage from './pages/Admin/EditAnimationPage';
 import AddSneakPeekPage from './pages/Admin/AddSneakPeekPage';
 import AddLiveVideoPage from './pages/Admin/AddLiveVideoPage';
 
@@ -217,6 +218,11 @@ function App() {
         <Route path="/admin/add-animation" element={
           <AdminRoute>
             <AddAnimationPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/edit-animation/:id" element={
+          <AdminRoute>
+            <EditAnimationPage />
           </AdminRoute>
         } />
         <Route path="/admin/add-sneak-peek" element={

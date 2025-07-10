@@ -17,6 +17,7 @@ import {
   Users
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
+import animationService from '../../services/animationService';
 
 interface AnimationFormData {
   title: string;
@@ -29,12 +30,10 @@ interface AnimationFormData {
   poster?: File | null;
   banner?: File | null;
   video_file?: File | null;
-  trailer_file?: File | null;
   project_file?: File | null;
   storyboard?: File | null;
   concept_art?: File | null;
   duration: number;
-  trailer_duration: number;
   video_quality: '360p' | '480p' | '720p' | '1080p' | '1440p' | '2160p' | '4320p';
   frame_rate: '12' | '24' | '25' | '30' | '60';
   resolution_width: number;
@@ -75,7 +74,6 @@ const AddAnimationPage: React.FC = () => {
     animation_type: '2d',
     tags: [],
     duration: 0,
-    trailer_duration: 0,
     video_quality: '1080p',
     frame_rate: '24',
     resolution_width: 1920,
@@ -261,9 +259,6 @@ const AddAnimationPage: React.FC = () => {
       if (!formData.description.trim()) {
         throw new Error('Description is required');
       }
-      if (!formData.video_file && !formData.trailer_file) {
-        throw new Error('At least one video file (main or trailer) is required');
-      }
       if (formData.is_series && !formData.series_name.trim()) {
         throw new Error('Series name is required for series animations');
       }
@@ -281,7 +276,6 @@ const AddAnimationPage: React.FC = () => {
       submitData.append('animation_type', formData.animation_type);
       submitData.append('tags', JSON.stringify(formData.tags));
       submitData.append('duration', formData.duration.toString());
-      submitData.append('trailer_duration', formData.trailer_duration.toString());
       submitData.append('video_quality', formData.video_quality);
       submitData.append('frame_rate', formData.frame_rate);
       submitData.append('resolution_width', formData.resolution_width.toString());
@@ -327,9 +321,6 @@ const AddAnimationPage: React.FC = () => {
       if (formData.video_file) {
         submitData.append('video_file', formData.video_file);
       }
-      if (formData.trailer_file) {
-        submitData.append('trailer_file', formData.trailer_file);
-      }
       if (formData.thumbnail) {
         submitData.append('thumbnail', formData.thumbnail);
       }
@@ -349,20 +340,7 @@ const AddAnimationPage: React.FC = () => {
         submitData.append('concept_art', formData.concept_art);
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/animations/animations/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.detail || 'Failed to create animation');
-      }
-
-      await response.json();
+      await animationService.createAnimation(submitData);
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
@@ -617,26 +595,6 @@ const AddAnimationPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trailer Duration (seconds)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      name="trailer_duration"
-                      value={formData.trailer_duration}
-                      onChange={handleInputChange}
-                      min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="Trailer duration in seconds"
-                    />
-                    <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 min-w-fit">
-                      {formatDuration(formData.trailer_duration)}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Video Quality
                   </label>
                   <select
@@ -800,46 +758,6 @@ const AddAnimationPage: React.FC = () => {
                           <input
                             type="file"
                             name="video_file"
-                            onChange={handleFileChange}
-                            accept="video/*"
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Trailer File */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trailer File
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                    {formData.trailer_file ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Play className="w-5 h-5 text-blue-600" />
-                          <span className="text-sm text-gray-600 truncate">
-                            {formData.trailer_file.name}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFile('trailer_file')}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <label className="cursor-pointer">
-                          <span className="text-blue-600 hover:text-blue-700">Upload trailer</span>
-                          <input
-                            type="file"
-                            name="trailer_file"
                             onChange={handleFileChange}
                             accept="video/*"
                             className="hidden"
