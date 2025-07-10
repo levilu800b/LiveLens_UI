@@ -103,7 +103,7 @@ const AnimationPlayerPage: React.FC = () => {
   const [isFullscreen] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showControls, setShowControls] = useState(true);
-  const [quality] = useState('auto');
+  const [quality, setQuality] = useState('1080p'); // Default quality
   
   // Comments state
   const [comments, setComments] = useState<Comment[]>([]);
@@ -135,6 +135,10 @@ const AnimationPlayerPage: React.FC = () => {
         setAnimation(animationData);
         setError(null);
         
+        // Set quality based on animation's video quality
+        const videoQuality = animationData.video_quality || '1080p';
+        setQuality(videoQuality);
+        
         // Track initial view (only once when animation loads)
         if (userInfo) {
           try {
@@ -142,7 +146,7 @@ const AnimationPlayerPage: React.FC = () => {
               device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
               watch_duration: 0,
               completion_percentage: 0,
-              quality_watched: 'auto'
+              quality_watched: videoQuality
             });
           } catch (viewErr) {
             // Don't block loading if view tracking fails
