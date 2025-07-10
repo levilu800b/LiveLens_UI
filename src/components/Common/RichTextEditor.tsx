@@ -204,22 +204,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       const img = target as HTMLImageElement;
       const currentWidth = parseInt(img.style.width.replace('px', '')) || 300;
       
-      // Create a simple resize interface
-      const newWidth = prompt(
-        `Enter new width (in pixels):\n\nCurrent width: ${currentWidth}px\nSuggested sizes:\n- Small: 200px\n- Medium: 400px\n- Large: 600px\n- Full width: 800px`, 
-        currentWidth.toString()
-      );
-      
-      if (newWidth && !isNaN(Number(newWidth))) {
-        const width = Math.min(Math.max(Number(newWidth), 50), 1000); // Limit between 50px and 1000px
-        img.style.width = `${width}px`;
-        img.style.height = 'auto';
-        if (editorRef.current) {
-          onChange(editorRef.current.innerHTML);
-        }
-      }
+      // Use the existing modal instead of prompt
+      setContextMenuImage(img);
+      setResizeWidth(currentWidth.toString());
+      setIsResizeModalOpen(true);
     }
-  }, [onChange]);
+  }, []);
 
   const handleImageKeyDown = useCallback((e: KeyboardEvent) => {
     if (selectedImage && e.key === 'Delete') {

@@ -21,6 +21,7 @@ import AdminLayout from '../../components/Admin/AdminLayout';
 import BulkActionsBar from '../../components/Admin/BulkActionsBar';
 import ExportButton from '../../components/Admin/ExportButton';
 import Pagination from '../../components/Common/Pagination';
+import InputModal from '../../components/Common/InputModal';
 import commentService, { type ModerationComment, type CommentModerationStats } from '../../services/commentService';
 
 const CommentManagement: React.FC = () => {
@@ -48,6 +49,13 @@ const CommentManagement: React.FC = () => {
   const [softDeleteModal, setSoftDeleteModal] = useState<string | null>(null);
   const [hardDeleteModal, setHardDeleteModal] = useState<string | null>(null);
   const [hardDeleteReason, setHardDeleteReason] = useState('');
+  
+  // Bulk action modal states
+  const [bulkActionModal, setBulkActionModal] = useState<{
+    action: string;
+    commentIds: string[];
+    reason?: string;
+  } | null>(null);
 
   const fetchComments = useCallback(async () => {
     try {
@@ -113,19 +121,21 @@ const CommentManagement: React.FC = () => {
       return;
     }
 
+    // For actions that require a reason, show the modal
+    if (action === 'delete' || action === 'hide') {
+      setBulkActionModal({
+        action,
+        commentIds: idsToProcess
+      });
+      dispatch(uiActions.openModal('bulk-action-reason'));
+      return;
+    }
+
+    // For other actions, proceed directly
     try {
-      const reason = action === 'delete' || action === 'hide' 
-        ? prompt(`Enter reason for ${action}ing these comments:`) 
-        : '';
-
-      if ((action === 'delete' || action === 'hide') && !reason) {
-        return; // User cancelled
-      }
-
       const result = await commentService.bulkModerateComments({
         comment_ids: idsToProcess,
-        action: action as 'approve' | 'hide' | 'delete' | 'flag' | 'unflag',
-        reason: reason || undefined
+        action: action as 'approve' | 'hide' | 'delete' | 'flag' | 'unflag'
       });
 
       dispatch(uiActions.addNotification({
@@ -250,6 +260,37 @@ const CommentManagement: React.FC = () => {
       }));
       setHardDeleteModal(null);
       setHardDeleteReason('');
+    }
+  };
+
+  const confirmBulkAction = async (reason: string) => {
+    if (!bulkActionModal) return;
+
+    try {
+      const result = await commentService.bulkModerateComments({
+        comment_ids: bulkActionModal.commentIds,
+        action: bulkActionModal.action as 'approve' | 'hide' | 'delete' | 'flag' | 'unflag',
+        reason: reason || undefined
+      });
+
+      dispatch(uiActions.addNotification({
+        message: result.message,
+        type: 'success'
+      }));
+      
+      setSelectedComments([]);
+      fetchComments();
+      fetchStats();
+      setBulkActionModal(null);
+      dispatch(uiActions.closeModal('bulk-action-reason'));
+    } catch (err) {
+      console.error(`Error ${bulkActionModal.action}ing comments:`, err);
+      dispatch(uiActions.addNotification({
+        message: `Failed to ${bulkActionModal.action} comments. Please try again.`,
+        type: 'error'
+      }));
+      setBulkActionModal(null);
+      dispatch(uiActions.closeModal('bulk-action-reason'));
     }
   };
 
@@ -975,6 +1016,24 @@ const CommentManagement: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Bulk Action Modal (for actions requiring reason) */}
+      {bulkActionModal && (
+        <InputModal
+          modalId="bulk-action-reason"
+          title={`${bulkActionModal.action.charAt(0).toUpperCase() + bulkActionModal.action.slice(1)} Comments`}
+          message={`Enter reason for ${bulkActionModal.action}ing ${bulkActionModal.commentIds.length} comment(s):`}
+          placeholder={`Reason for ${bulkActionModal.action}...`}
+          confirmText={bulkActionModal.action.charAt(0).toUpperCase() + bulkActionModal.action.slice(1)}
+          isRequired={true}
+          inputType="textarea"
+          onConfirm={confirmBulkAction}
+          onCancel={() => {
+            setBulkActionModal(null);
+            dispatch(uiActions.closeModal('bulk-action-reason'));
+          }}
+        />
       )}
     </AdminLayout>
   );

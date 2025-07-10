@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { uiActions } from '../../store/reducers/uiReducers';
+import ConfirmModal from '../Common/ConfirmModal';
 
 interface BulkAction {
   id: string;
@@ -32,18 +33,22 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
 }) => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<BulkAction | null>(null);
 
   const handleBulkAction = async (action: BulkAction) => {
     if (selectedItems.length === 0) return;
 
     if (action.requiresConfirmation || action.destructive) {
-      const message = action.destructive 
-        ? `Are you sure you want to ${action.label.toLowerCase()} ${selectedItems.length} item(s)? This action cannot be undone.`
-        : `Are you sure you want to ${action.label.toLowerCase()} ${selectedItems.length} item(s)?`;
-      
-      if (!confirm(message)) return;
+      setConfirmAction(action);
+      dispatch(uiActions.openModal('bulk-action-confirm'));
+      return;
     }
 
+    // Execute non-destructive actions directly
+    await executeBulkAction(action);
+  };
+
+  const executeBulkAction = async (action: BulkAction) => {
     try {
       setIsLoading(action.id);
       await onBulkAction(action.id, selectedItems);
@@ -57,6 +62,19 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
     } finally {
       setIsLoading(null);
     }
+  };
+
+  const handleConfirmAction = async () => {
+    if (confirmAction) {
+      await executeBulkAction(confirmAction);
+      setConfirmAction(null);
+      dispatch(uiActions.closeModal('bulk-action-confirm'));
+    }
+  };
+
+  const handleCancelAction = () => {
+    setConfirmAction(null);
+    dispatch(uiActions.closeModal('bulk-action-confirm'));
   };
 
   if (selectedItems.length === 0) {
@@ -121,6 +139,23 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <ConfirmModal
+          modalId="bulk-action-confirm"
+          title={`Confirm ${confirmAction.label}`}
+          message={
+            confirmAction.destructive 
+              ? `Are you sure you want to ${confirmAction.label.toLowerCase()} ${selectedItems.length} item(s)? This action cannot be undone.`
+              : `Are you sure you want to ${confirmAction.label.toLowerCase()} ${selectedItems.length} item(s)?`
+          }
+          confirmText={confirmAction.label}
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelAction}
+          isDestructive={confirmAction.destructive}
+        />
+      )}
     </div>
   );
 };

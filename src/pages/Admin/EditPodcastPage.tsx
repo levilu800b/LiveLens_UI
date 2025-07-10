@@ -12,6 +12,7 @@ import {
   Trash2
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
+import ConfirmModal from '../../components/Common/ConfirmModal';
 import podcastService from '../../services/podcastService';
 import type { ContentItem } from '../../types';
 
@@ -93,6 +94,7 @@ const EditPodcastPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [series, setSeries] = useState<PodcastSeries[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [formData, setFormData] = useState<PodcastFormData>({
     title: '',
@@ -309,14 +311,17 @@ const EditPodcastPage: React.FC = () => {
   const handleDelete = async () => {
     if (!id) return;
     
-    const confirmDelete = confirm(
-      `Are you sure you want to delete "${formData.title}"? This action cannot be undone.`
-    );
-    
-    if (!confirmDelete) return;
+    setShowDeleteModal(true);
+    dispatch(uiActions.openModal('delete-podcast-confirm'));
+  };
+
+  const confirmDelete = async () => {
+    if (!id) return;
     
     setSaving(true);
     setError(null);
+    setShowDeleteModal(false);
+    dispatch(uiActions.closeModal('delete-podcast-confirm'));
     
     try {
       await podcastService.deletePodcast(id);
@@ -808,6 +813,22 @@ const EditPodcastPage: React.FC = () => {
         </form>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <ConfirmModal
+          modalId="delete-podcast-confirm"
+          title="Delete Podcast Episode"
+          message={`Are you sure you want to delete "${formData.title}"? This action cannot be undone.`}
+          confirmText="Delete"
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setShowDeleteModal(false);
+            dispatch(uiActions.closeModal('delete-podcast-confirm'));
+          }}
+          isDestructive={true}
+        />
+      )}
     </AdminLayout>
   );
 };
