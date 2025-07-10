@@ -10,6 +10,7 @@ const PodcastsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [podcasts, setPodcasts] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalEpisodes: 0,
@@ -24,12 +25,17 @@ const PodcastsPage = () => {
 
   const loadPodcasts = useCallback(async () => {
     try {
-      setLoading(true);
+      // Set searching state if we have a search term
+      if (searchTerm) {
+        setSearching(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       const params = {
         search: searchTerm || undefined,
-        sortBy: '-created_at', // Re-enable ordering now that backend is fixed
+        sortBy: '-created_at',
         limit: 50,
       };
 
@@ -40,6 +46,7 @@ const PodcastsPage = () => {
       setError('Failed to load podcasts. Please try again.');
     } finally {
       setLoading(false);
+      setSearching(false);
     }
   }, [searchTerm]);
 
@@ -200,6 +207,11 @@ const PodcastsPage = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading podcasts...</p>
             </div>
+          ) : searching ? (
+            <div className="text-center py-12 mt-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Searching...</p>
+            </div>
           ) : error ? (
             <div className="text-center py-12 mt-8">
               <p className="text-red-600 mb-4">{error}</p>
@@ -211,35 +223,56 @@ const PodcastsPage = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-              {filteredPodcasts.map(podcast => {
-                const podcastWithExtras = podcast as ContentItem & {
-                  season?: number;
-                  episode?: number;
-                  isTrending?: boolean;
-                  releaseDate?: string;
-                };
-                
-                return (
-                  <ContentCard
-                    key={podcast.id}
-                    {...podcast}
-                    thumbnail={podcast.thumbnail || undefined}
-                    duration={`${podcast.duration}m`}
-                    season={podcastWithExtras.season}
-                    episode={podcastWithExtras.episode}
-                  />
-                );
-              })}
-            </div>
+            <>
+              {/* Search Results Info */}
+              {searchTerm && (
+                <div className="mt-8 mb-4">
+                  <p className="text-gray-600 text-sm">
+                    {filteredPodcasts.length > 0 
+                      ? `Found ${filteredPodcasts.length} podcast${filteredPodcasts.length !== 1 ? 's' : ''} for "${searchTerm}"`
+                      : `No podcasts found for "${searchTerm}"`
+                    }
+                  </p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+                {filteredPodcasts.map(podcast => {
+                  const podcastWithExtras = podcast as ContentItem & {
+                    season?: number;
+                    episode?: number;
+                    isTrending?: boolean;
+                    releaseDate?: string;
+                  };
+                  
+                  return (
+                    <ContentCard
+                      key={podcast.id}
+                      {...podcast}
+                      thumbnail={podcast.thumbnail || undefined}
+                      duration={`${podcast.duration}m`}
+                      season={podcastWithExtras.season}
+                      episode={podcastWithExtras.episode}
+                    />
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* Empty State */}
-          {filteredPodcasts.length === 0 && (
+          {!loading && !searching && filteredPodcasts.length === 0 && !error && (
             <div className="text-center py-12 mt-8">
               <Headphones className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No podcasts found</h3>
-              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {searchTerm ? 'No podcasts found' : 'No podcasts available'}
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm 
+                  ? 'Try adjusting your search terms or browse all podcasts.'
+                  : 'Check back later for new podcast episodes.'
+                }
+              </p>
             </div>
           )}
         </div>
