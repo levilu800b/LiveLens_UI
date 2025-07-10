@@ -304,7 +304,7 @@ const ContentManagement: React.FC = () => {
                   <option value="">All Types</option>
                   <option value="stories">Stories</option>
                   <option value="films">Films</option>
-                  <option value="contents">Contents</option>
+                  <option value="content">Contents</option>
                   <option value="podcasts">Podcasts</option>
                   <option value="animations">Animations</option>
                   <option value="sneak_peeks">Sneak Peeks</option>
