@@ -196,12 +196,12 @@ const PodcastsPage = () => {
 
           {/* Podcasts Grid */}
           {loading ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 mt-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading podcasts...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 mt-8">
               <p className="text-red-600 mb-4">{error}</p>
               <button 
                 onClick={loadPodcasts}
@@ -211,7 +211,7 @@ const PodcastsPage = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
               {filteredPodcasts.map(podcast => {
                 const podcastWithExtras = podcast as ContentItem & {
                   season?: number;
@@ -236,7 +236,7 @@ const PodcastsPage = () => {
 
           {/* Empty State */}
           {filteredPodcasts.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 mt-8">
               <Headphones className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No podcasts found</h3>
               <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
