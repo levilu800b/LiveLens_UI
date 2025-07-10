@@ -62,15 +62,15 @@ const AddStoryPage: React.FC = () => {
   const categoryOptions = [
     { value: 'fiction', label: 'Fiction' },
     { value: 'non_fiction', label: 'Non-Fiction' },
-    { value: 'mystery', label: 'Mystery' },
+    { value: 'tech', label: 'Technology' },
+    { value: 'lifestyle', label: 'Lifestyle' },
+    { value: 'adventure', label: 'Adventure' },
     { value: 'romance', label: 'Romance' },
-    { value: 'science_fiction', label: 'Science Fiction' },
+    { value: 'mystery', label: 'Mystery' },
     { value: 'fantasy', label: 'Fantasy' },
-    { value: 'thriller', label: 'Thriller' },
-    { value: 'horror', label: 'Horror' },
+    { value: 'sci_fi', label: 'Science Fiction' },
     { value: 'biography', label: 'Biography' },
-    { value: 'history', label: 'History' },
-    { value: 'technology', label: 'Technology' },
+    { value: 'educational', label: 'Educational' },
     { value: 'other', label: 'Other' }
   ];
 
