@@ -3,6 +3,7 @@ import { Film, Award, Calendar } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import MediaFilter, { type FilterOptions } from '../../components/Common/MediaFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import Pagination from '../../components/Common/Pagination';
 import mediaService, { type Film as FilmType } from '../../services/mediaService';
 
 interface FilmItem {
@@ -28,6 +29,12 @@ const FilmsPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
   // Data states
   const [films, setFilms] = useState<FilmType[]>([]);
   const [featuredFilms, setFeaturedFilms] = useState<FilmType[]>([]);
@@ -36,7 +43,8 @@ const FilmsPage = () => {
   // Load films data
   useEffect(() => {
     loadFilmsData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, itemsPerPage]);
 
   const loadFilmsData = async () => {
     try {
@@ -45,12 +53,18 @@ const FilmsPage = () => {
 
       // Load films and featured films in parallel
       const [filmsResponse, featuredResponse] = await Promise.all([
-        mediaService.getFilms({ page_size: 50, status: 'published' }),
+        mediaService.getFilms({ 
+          page: currentPage, 
+          page_size: itemsPerPage, 
+          status: 'published' 
+        }),
         mediaService.getFeaturedFilms().catch(() => [])
       ]);
 
       setFilms(filmsResponse.results);
       setFeaturedFilms(featuredResponse);
+      setTotalCount(filmsResponse.count);
+      setTotalPages(Math.ceil(filmsResponse.count / itemsPerPage));
 
       // Extract unique tags
       const allTags = new Set<string>();
@@ -177,6 +191,17 @@ const FilmsPage = () => {
       month: 'long', 
       day: 'numeric' 
     });
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
   };
 
   if (loading && films.length === 0) {
@@ -345,6 +370,23 @@ const FilmsPage = () => {
               <Film className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No films found</h3>
               <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-12">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[6, 12, 24, 48]}
+                showPageSizeSelector={true}
+                showItemsInfo={true}
+              />
             </div>
           )}
         </div>

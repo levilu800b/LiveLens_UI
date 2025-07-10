@@ -3,6 +3,7 @@ import { Headphones, Mic, TrendingUp, Users, Volume2 } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SearchFilter from '../../components/Common/SearchFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import Pagination from '../../components/Common/Pagination';
 import podcastService from '../../services/podcastService';
 import type { ContentItem } from '../../types';
 
@@ -12,6 +13,13 @@ const PodcastsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
   const [stats, setStats] = useState({
     totalEpisodes: 0,
     totalListeners: 0,
@@ -36,11 +44,14 @@ const PodcastsPage = () => {
       const params = {
         search: searchTerm || undefined,
         sortBy: '-created_at',
-        limit: 50,
+        page: currentPage,
+        page_size: itemsPerPage,
       };
 
       const response = await podcastService.getPodcasts(params);
       setPodcasts(response.results);
+      setTotalCount(response.count || 0);
+      setTotalPages(Math.ceil((response.count || 0) / itemsPerPage));
     } catch (err) {
       console.error('Error loading podcasts:', err);
       setError('Failed to load podcasts. Please try again.');
@@ -48,7 +59,7 @@ const PodcastsPage = () => {
       setLoading(false);
       setSearching(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, currentPage, itemsPerPage]);
 
   // Load podcasts when filters change
   useEffect(() => {
@@ -70,7 +81,24 @@ const PodcastsPage = () => {
   };
 
   const getFilteredPodcasts = () => {
-    return podcasts; // Filtering is now done server-side
+    // Since we now do server-side pagination and search, just return the podcasts
+    return podcasts;
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
+  const handleSearch = (search: string) => {
+    setSearchTerm(search);
+    setCurrentPage(1); // Reset to first page on new search
   };
 
   const filteredPodcasts = getFilteredPodcasts();
@@ -197,7 +225,7 @@ const PodcastsPage = () => {
 
           {/* Search and Filters */}
           <SearchFilter
-            onSearch={setSearchTerm}
+            onSearch={handleSearch}
             placeholder="Search podcasts..."
           />
 
@@ -257,6 +285,23 @@ const PodcastsPage = () => {
                   );
                 })}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalCount}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[6, 12, 24, 48]}
+                    showPageSizeSelector={true}
+                    showItemsInfo={true}
+                  />
+                </div>
+              )}
             </>
           )}
 

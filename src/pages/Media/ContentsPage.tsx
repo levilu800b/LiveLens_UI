@@ -3,6 +3,7 @@ import { BookOpen, TrendingUp, Users, Clock } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import MediaFilter, { type FilterOptions } from '../../components/Common/MediaFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import Pagination from '../../components/Common/Pagination';
 import mediaService, { type Content as ContentType } from '../../services/mediaService';
 
 interface ContentItem {
@@ -27,6 +28,12 @@ const ContentsPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
   // Data states
   const [contents, setContents] = useState<ContentType[]>([]);
   const [featuredContents, setFeaturedContents] = useState<ContentType[]>([]);
@@ -35,7 +42,8 @@ const ContentsPage = () => {
   // Load contents data
   useEffect(() => {
     loadContentsData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, itemsPerPage]);
 
   const loadContentsData = async () => {
     try {
@@ -44,12 +52,18 @@ const ContentsPage = () => {
 
       // Load contents and featured contents in parallel
       const [contentsResponse, featuredResponse] = await Promise.all([
-        mediaService.getContent({ page_size: 50, status: 'published' }),
+        mediaService.getContent({ 
+          page: currentPage, 
+          page_size: itemsPerPage, 
+          status: 'published' 
+        }),
         mediaService.getFeaturedContent().catch(() => [])
       ]);
 
       setContents(contentsResponse.results);
       setFeaturedContents(featuredResponse);
+      setTotalCount(contentsResponse.count);
+      setTotalPages(Math.ceil(contentsResponse.count / itemsPerPage));
 
       // Extract unique tags
       const allTags = new Set<string>();
@@ -147,6 +161,17 @@ const ContentsPage = () => {
     setSelectedTags(filters.tags);
     setSortBy(filters.sortBy);
   }, []);
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
 
   // Calculate stats from real data
   const totalViews = contents.reduce((sum, content) => sum + content.view_count, 0);
@@ -330,6 +355,23 @@ const ContentsPage = () => {
               <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No content found</h3>
               <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-12">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[6, 12, 24, 48]}
+                showPageSizeSelector={true}
+                showItemsInfo={true}
+              />
             </div>
           )}
         </div>

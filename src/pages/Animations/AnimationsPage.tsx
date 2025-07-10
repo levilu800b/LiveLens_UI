@@ -3,6 +3,7 @@ import { Palette, Sparkles, Users, Clock, Award } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SearchFilter from '../../components/Common/SearchFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import Pagination from '../../components/Common/Pagination';
 import animationService, { type Animation } from '../../services/animationService';
 
 const styles = ['All', '2D', '3D', 'Mixed'];
@@ -17,6 +18,13 @@ const AnimationsPage = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedStyle, setSelectedStyle] = useState('All');
   const [selectedComplexity, setSelectedComplexity] = useState('All');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
   const [stats, setStats] = useState({ total: 0, totalViews: 0 });
 
   // Fetch animations on component mount
@@ -25,8 +33,14 @@ const AnimationsPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await animationService.getAnimations();
+        const response = await animationService.getAnimations({
+          page: currentPage,
+          page_size: itemsPerPage,
+          status: 'published'
+        });
         setAnimations(response.results || []);
+        setTotalCount(response.count || 0);
+        setTotalPages(Math.ceil((response.count || 0) / itemsPerPage));
         
         // Get stats
         const statsResponse = await animationService.getAnimationStats();
@@ -43,7 +57,7 @@ const AnimationsPage = () => {
     };
 
     fetchAnimations();
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   // Get available tags from loaded animations
   const availableTags = Array.from(new Set(animations.flatMap((item: Animation) => item.tags || [])));
@@ -104,6 +118,17 @@ const AnimationsPage = () => {
 
     return filteredAnimations;
   }, [animations, searchTerm, selectedTags, sortBy, selectedStyle]);
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
 
   const filteredAnimations = getFilteredAnimations();
   const featuredAnimation = animations.find((animation: Animation) => animation.is_trending) || animations[0];
@@ -399,6 +424,19 @@ const AnimationsPage = () => {
                 complexity={animation.category}
               />
             ))}
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-8">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={[12, 24, 48]}
+            />
           </div>
 
           {/* Empty State */}
