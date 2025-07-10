@@ -146,6 +146,14 @@ const PodcastPlayerPage: React.FC = () => {
   const [showDescription, setShowDescription] = useState(false);
   const [controlsTimeout, setControlsTimeout] = useState<number | null>(null);
 
+  // Authentication check - redirect to login if not authenticated
+  useEffect(() => {
+    if (!userInfo) {
+      navigate('/login');
+      return;
+    }
+  }, [userInfo, navigate]);
+
   // Load podcast data
   useEffect(() => {
     const loadPodcast = async () => {
@@ -526,6 +534,29 @@ const PodcastPlayerPage: React.FC = () => {
             }
           };
         }
+        
+        // Also check replies
+        if (comment.replies) {
+          return {
+            ...comment,
+            replies: comment.replies.map(reply => {
+              if (reply.id === commentId) {
+                const isLiked = reply.user_interaction?.liked || false;
+                return {
+                  ...reply,
+                  like_count: isLiked ? reply.like_count - 1 : reply.like_count + 1,
+                  user_interaction: {
+                    ...reply.user_interaction,
+                    liked: !isLiked,
+                    disliked: false
+                  }
+                };
+              }
+              return reply;
+            })
+          };
+        }
+        
         return comment;
       }));
     } catch (error) {

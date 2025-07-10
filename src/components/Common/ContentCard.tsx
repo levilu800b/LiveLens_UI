@@ -63,6 +63,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
       navigate(`/story/${id}`);
     } else if (type === 'podcast') {
       navigate(`/podcast/${id}`);
+    } else if (type === 'animation') {
+      navigate(`/animation/${id}`);
     } else {
       navigate(`/watch/${type}/${id}`);
     }

@@ -136,6 +136,14 @@ const VideoPlayerPage: React.FC = () => {
   const [currentSubtitleText, setCurrentSubtitleText] = useState<string>('');
   const [subtitleCues, setSubtitleCues] = useState<Array<{start: number, end: number, text: string}>>([]);
 
+  // Authentication check - redirect to login if not authenticated
+  useEffect(() => {
+    if (!userInfo) {
+      navigate('/login');
+      return;
+    }
+  }, [userInfo, navigate]);
+
   // Load media data
   useEffect(() => {
     const loadMedia = async () => {
@@ -1267,7 +1275,7 @@ We hope you find this feature useful and accessible.`;
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-black">
+      {/* <div className="min-h-screen bg-black"></div> */}
         {/* Video Player */}
         <div className="relative w-full h-screen max-h-[70vh] bg-black" onMouseMove={handleMouseMove}>
           {videoUrl ? (
@@ -2302,35 +2310,34 @@ We hope you find this feature useful and accessible.`;
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Delete Comment Modal */}
-      {deletingComment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-white mb-4">Delete Comment</h3>
-            <p className="text-gray-300 mb-6">
-              Are you sure you want to delete this comment? This action cannot be undone.
-            </p>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => handleDeleteComment(deletingComment)}
-                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setDeletingComment(null)}
-                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
+        {/* Delete Comment Modal */}
+        {deletingComment && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-bold text-white mb-4">Delete Comment</h3>
+              <p className="text-gray-300 mb-6">
+                Are you sure you want to delete this comment? This action cannot be undone.
+              </p>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => handleDeleteComment(deletingComment)}
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setDeletingComment(null)}
+                  className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </MainLayout>
-  );
+        )}
+      </MainLayout>
+    );
 };
 
 export default VideoPlayerPage;

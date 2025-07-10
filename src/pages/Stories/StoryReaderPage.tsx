@@ -253,6 +253,14 @@ const StoryReaderPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, story]);
 
+  // Authentication check - redirect to login if not authenticated
+  useEffect(() => {
+    if (!userInfo) {
+      navigate('/login');
+      return;
+    }
+  }, [userInfo, navigate]);
+
   const handleLike = async () => {
     if (!story || !userInfo) {
       navigate('/login');
