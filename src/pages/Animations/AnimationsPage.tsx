@@ -149,9 +149,6 @@ const AnimationsPage = () => {
 
   // Debug logging for search functionality
   useEffect(() => {
-    console.log('Search term changed:', searchTerm);
-    console.log('Available animations:', animations.length);
-    console.log('Filtered animations:', filteredAnimations.length);
   }, [searchTerm, animations, filteredAnimations]);
 
   if (loading) {
