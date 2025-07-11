@@ -107,44 +107,59 @@ export interface AnimationViewData {
 }
 
 // ===== HELPER FUNCTIONS =====
-const getAuthHeaders = () => {
-  const token = unifiedAuth.getAccessToken();
+const apiRequest = async (endpoint: string, options: RequestInit = {}, requireAuth: boolean = false) => {
+  // Create headers object
+  const headers: Record<string, string> = {};
   
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-};
-
-const getFormHeaders = () => {
+  // Add auth headers if available
   const token = unifiedAuth.getAccessToken();
-  
-  return {
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const headers = options.body instanceof FormData 
-    ? getFormHeaders() 
-    : getAuthHeaders();
+  // Only add Content-Type if it's not FormData (browser will set the correct boundary)
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers,
     ...options,
+    headers,
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    
-    if (response.status === 401) {
-      console.error('🚫 Authentication failed');
-      unifiedAuth.clearTokens();
-      window.location.href = '/login';
-      throw new Error('Your session has expired. Please log in again.');
+    let errorData: Record<string, unknown> = {};
+    try {
+      errorData = await response.json();
+    } catch {
+      // If we can't parse JSON, try to get text
+      try {
+        const errorText = await response.text();
+        errorData = { message: errorText, raw_error: errorText };
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
     }
     
-    throw new Error(errorData.message || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    // Handle authentication errors specifically
+    if (response.status === 401) {
+      console.error('Authentication failed:', {
+        endpoint: `${API_BASE_URL}${endpoint}`,
+        status: response.status,
+        error: errorData,
+        requireAuth,
+        hasToken: !!unifiedAuth.getAccessToken()
+      });
+      
+      // Only redirect to login if this endpoint requires authentication
+      if (requireAuth && typeof window !== 'undefined') {
+        unifiedAuth.clearTokens();
+        window.location.href = '/login';
+        throw new Error('Your session has expired. Please log in again.');
+      }
+    }
+    
+    throw new Error((errorData.message as string) || (errorData.detail as string) || `HTTP ${response.status}: ${response.statusText}`);
   }
 
   return response.json();
@@ -166,19 +181,19 @@ class AnimationService {
     });
 
     const queryString = params.toString();
-    return apiRequest(`/animations/animations/${queryString ? `?${queryString}` : ''}`);
+    return apiRequest(`/animations/animations/${queryString ? `?${queryString}` : ''}`, {}, false);
   }
 
   async getAnimation(id: string): Promise<Animation> {
-    return apiRequest(`/animations/animations/${id}/`);
+    return apiRequest(`/animations/animations/${id}/`, {}, false);
   }
 
   async getFeaturedAnimations(): Promise<Animation[]> {
-    return apiRequest('/animations/animations/featured/');
+    return apiRequest('/animations/animations/featured/', {}, false);
   }
 
   async getTrendingAnimations(): Promise<Animation[]> {
-    return apiRequest('/animations/animations/trending/');
+    return apiRequest('/animations/animations/trending/', {}, false);
   }
 
   async getAnimationStats(): Promise<{
@@ -187,7 +202,7 @@ class AnimationService {
     total_likes: number;
     total_bookmarks: number;
   }> {
-    return apiRequest('/animations/stats/');
+    return apiRequest('/animations/stats/', {}, false);
   }
 
   async interactWithAnimation(animationId: string, action: string, data: Record<string, unknown> = {}): Promise<{ status: string; message: string }> {
@@ -197,38 +212,38 @@ class AnimationService {
         interaction_type: action,
         ...data,
       }),
-    });
+    }, true);
   }
 
   async trackAnimationView(animationId: string, viewData: AnimationViewData): Promise<void> {
     return apiRequest(`/animations/track-view/${animationId}/`, {
       method: 'POST',
       body: JSON.stringify(viewData),
-    });
+    }, false);
   }
 
   async getAnimationPlayUrl(animationId: string): Promise<{ video_url: string }> {
-    return apiRequest(`/animations/animations/${animationId}/play_now/`);
+    return apiRequest(`/animations/animations/${animationId}/play_now/`, {}, false);
   }
 
   async updateAnimation(id: string, formData: FormData): Promise<Animation> {
     return apiRequest(`/animations/animations/${id}/`, {
       method: 'PATCH',
       body: formData,
-    });
+    }, true);
   }
 
   async createAnimation(formData: FormData): Promise<Animation> {
     return apiRequest('/animations/animations/', {
       method: 'POST',
       body: formData,
-    });
+    }, true);
   }
 
   async deleteAnimation(id: string): Promise<void> {
     return apiRequest(`/animations/animations/${id}/`, {
       method: 'DELETE',
-    });
+    }, true);
   }
 }
 

@@ -42,15 +42,29 @@ const AnimationsPage = () => {
         setTotalCount(response.count || 0);
         setTotalPages(Math.ceil((response.count || 0) / itemsPerPage));
         
-        // Get stats
-        const statsResponse = await animationService.getAnimationStats();
-        setStats({
-          total: statsResponse.total_animations || response.results?.length || 0,
-          totalViews: statsResponse.total_views || 0
-        });
+        // Get stats (optional, if it fails we'll use fallback values)
+        try {
+          const statsResponse = await animationService.getAnimationStats();
+          setStats({
+            total: statsResponse.total_animations || response.results?.length || 0,
+            totalViews: statsResponse.total_views || 0
+          });
+        } catch (statsError) {
+          console.warn('Could not load animation stats:', statsError);
+          setStats({
+            total: response.results?.length || 0,
+            totalViews: 0
+          });
+        }
       } catch (err) {
         console.error('Error fetching animations:', err);
-        setError('Failed to load animations. Please try again later.');
+        // Check if it's an authentication error and show appropriate message
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes('Authentication') || errorMessage.includes('credentials')) {
+          setError('Unable to load animations. This content may require authentication.');
+        } else {
+          setError('Failed to load animations. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
