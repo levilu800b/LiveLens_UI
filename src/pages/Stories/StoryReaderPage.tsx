@@ -77,6 +77,7 @@ const StoryReaderPage: React.FC = () => {
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
+  const [coverImageError, setCoverImageError] = useState(false);
   
   // Reading progress tracking
   const [startTime] = useState<number>(Date.now());
@@ -704,12 +705,13 @@ const StoryReaderPage: React.FC = () => {
               )}
               
               {/* Cover Image */}
-              {story.cover_image && (
+              {story.cover_image && !coverImageError && (
                 <div className="mb-6">
                   <img
                     src={story.cover_image}
                     alt={story.title}
                     className="w-full h-auto rounded-lg shadow-lg"
+                    onError={() => setCoverImageError(true)}
                   />
                 </div>
               )}

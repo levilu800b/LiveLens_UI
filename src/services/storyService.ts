@@ -384,37 +384,67 @@ class StoryService {
 
   // Update story
   async updateStory(id: string, data: Partial<CreateStoryData>): Promise<Story> {
-    // Use JSON instead of FormData for updates to avoid Content-Type issues
-    const updatePayload: Record<string, unknown> = {};
+    // Check if file uploads are present
+    const hasFiles = data.thumbnail || data.cover_image;
     
-    // Add basic fields
-    if (data.title) updatePayload.title = data.title;
-    if (data.description) updatePayload.description = data.description;
-    if (data.content) updatePayload.content = data.content;
-    if (data.category) updatePayload.category = data.category;
-    if (data.tags) updatePayload.tags = data.tags; // Send as array, not JSON string
-    if (data.status) updatePayload.status = data.status;
-    
-    if (data.is_featured !== undefined) {
-      updatePayload.is_featured = data.is_featured;
-    }
-    if (data.is_trending !== undefined) {
-      updatePayload.is_trending = data.is_trending;
-    }
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+      
+      // Add basic fields
+      if (data.title) formData.append('title', data.title);
+      if (data.description) formData.append('description', data.description);
+      if (data.content) formData.append('content', data.content);
+      if (data.category) formData.append('category', data.category);
+      if (data.tags) formData.append('tags', JSON.stringify(data.tags));
+      if (data.status) formData.append('status', data.status);
+      
+      if (data.is_featured !== undefined) {
+        formData.append('is_featured', data.is_featured.toString());
+      }
+      if (data.is_trending !== undefined) {
+        formData.append('is_trending', data.is_trending.toString());
+      }
+      
+      // Add file uploads
+      if (data.thumbnail) {
+        formData.append('thumbnail', data.thumbnail);
+      }
+      if (data.cover_image) {
+        formData.append('cover_image', data.cover_image);
+      }
 
-    // For now, don't handle file uploads in updates (thumbnail, cover_image)
-    // These can be handled separately if needed
-    if (data.thumbnail || data.cover_image) {
-      console.warn('File uploads not supported in story updates yet. Files will be ignored.');
-    }
+      return this.makeRequest(`/stories/stories/${id}/`, {
+        method: 'PATCH',
+        body: formData,
+      });
+    } else {
+      // Use JSON for updates without files
+      const updatePayload: Record<string, unknown> = {};
+      
+      // Add basic fields
+      if (data.title) updatePayload.title = data.title;
+      if (data.description) updatePayload.description = data.description;
+      if (data.content) updatePayload.content = data.content;
+      if (data.category) updatePayload.category = data.category;
+      if (data.tags) updatePayload.tags = data.tags; // Send as array, not JSON string
+      if (data.status) updatePayload.status = data.status;
+      
+      if (data.is_featured !== undefined) {
+        updatePayload.is_featured = data.is_featured;
+      }
+      if (data.is_trending !== undefined) {
+        updatePayload.is_trending = data.is_trending;
+      }
 
-    return this.makeRequest(`/stories/stories/${id}/`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updatePayload),
-    });
+      return this.makeRequest(`/stories/stories/${id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatePayload),
+      });
+    }
   }
 
   // Delete story

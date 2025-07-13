@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, BookOpen, Heart, Eye, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -51,6 +51,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
+  const [imageError, setImageError] = useState(false);
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -92,16 +93,17 @@ const ContentCard: React.FC<ContentCardProps> = ({
     >
       {/* Thumbnail */}
       <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden flex-shrink-0 bg-gradient-to-br from-slate-700 to-slate-900">
-        {thumbnail ? (
+        {thumbnail && !imageError ? (
           <img 
             src={thumbnail} 
             alt={title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center text-white/60">
-              <div className="text-4xl mb-2">🎧</div>
+              <div className="text-4xl mb-2">📖</div>
               <div className="text-sm">No Image</div>
             </div>
           </div>

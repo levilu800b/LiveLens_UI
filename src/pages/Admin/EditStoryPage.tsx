@@ -168,10 +168,12 @@ const EditStoryPage: React.FC = () => {
         content: formData.content.trim()
       };
 
-      // Note: File uploads (cover_image, thumbnail) are not supported in updates yet
-      // These would need to be handled separately with a different endpoint
-      if (formData.cover_image || formData.thumbnail) {
-        console.warn('File uploads are not supported in story updates. Files will be ignored.');
+      // Include file uploads if present
+      if (formData.thumbnail) {
+        updateData.thumbnail = formData.thumbnail;
+      }
+      if (formData.cover_image) {
+        updateData.cover_image = formData.cover_image;
       }
 
       await storyService.updateStory(id, updateData);
