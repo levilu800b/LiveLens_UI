@@ -108,15 +108,36 @@ export interface AnimationViewData {
 
 // ===== HELPER FUNCTIONS =====
 const apiRequest = async (endpoint: string, options: RequestInit = {}, requireAuth: boolean = false) => {
-  // Create headers object
-  const headers: Record<string, string> = {};
-  
-  // Add auth headers if available
-  const token = unifiedAuth.getAccessToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  // If authentication is required, use the unified auth request method
+  if (requireAuth) {
+    // Ensure Content-Type is set for JSON requests when using unifiedAuth
+    const headers: Record<string, string> = {};
+    
+    // Only add Content-Type if it's not FormData (browser will set the correct boundary)
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    // Merge headers with any existing headers
+    const requestOptions = {
+      ...options,
+      headers: {
+        ...headers,
+        ...options.headers,
+      }
+    };
+    
+    try {
+      return await unifiedAuth.request(`${API_BASE_URL}${endpoint}`, requestOptions);
+    } catch (error) {
+      console.error('Authentication required request failed:', error);
+      throw error;
+    }
   }
 
+  // For non-authenticated requests, use simple fetch
+  const headers: Record<string, string> = {};
+  
   // Only add Content-Type if it's not FormData (browser will set the correct boundary)
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
@@ -138,24 +159,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}, requireAu
         errorData = { message: errorText, raw_error: errorText };
       } catch {
         errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
-      }
-    }
-    
-    // Handle authentication errors specifically
-    if (response.status === 401) {
-      console.error('Authentication failed:', {
-        endpoint: `${API_BASE_URL}${endpoint}`,
-        status: response.status,
-        error: errorData,
-        requireAuth,
-        hasToken: !!unifiedAuth.getAccessToken()
-      });
-      
-      // Only redirect to login if this endpoint requires authentication
-      if (requireAuth && typeof window !== 'undefined') {
-        unifiedAuth.clearTokens();
-        window.location.href = '/login';
-        throw new Error('Your session has expired. Please log in again.');
       }
     }
     
@@ -196,40 +199,26 @@ class AnimationService {
     return apiRequest('/animations/animations/trending/', {}, false);
   }
 
-  // Enhanced getAnimationStats method that checks user permissions first
+  // Enhanced getAnimationStats method that uses public stats endpoint
 async getAnimationStats(): Promise<{
   total_animations: number;
   total_views: number;
   total_likes: number;
   total_bookmarks: number;
 }> {
-  // Check if user is authenticated and is admin before making the request
-  const token = unifiedAuth.getAccessToken();
-  const user = unifiedAuth.user.getUser();
-  
-  // Only call the stats endpoint if user is admin to avoid 401 errors
-  if (token && user?.isAdmin) {
-    try {
-      return apiRequest('/animations/stats/', {}, false);
-    } catch (error) {
-      // If it fails even for admin, return empty stats
-      console.warn('Admin stats request failed:', error);
-      return {
-        total_animations: 0,
-        total_views: 0,
-        total_likes: 0,
-        total_bookmarks: 0
-      };
-    }
+  // Use the public stats endpoint that doesn't require authentication
+  try {
+    return apiRequest('/animations/public-stats/', {}, false);
+  } catch (error) {
+    console.warn('Public stats request failed:', error);
+    // Return fallback values if the request fails
+    return {
+      total_animations: 0,
+      total_views: 0,
+      total_likes: 0,
+      total_bookmarks: 0
+    };
   }
-  
-  // For non-admin users, return empty stats (will be handled by AnimationsPage fallback)
-  return {
-    total_animations: 0,
-    total_views: 0,
-    total_likes: 0,
-    total_bookmarks: 0
-  };
 }
 
   async interactWithAnimation(animationId: string, action: string, data: Record<string, unknown> = {}): Promise<{ status: string; message: string }> {
