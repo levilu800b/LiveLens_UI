@@ -126,7 +126,8 @@ const PodcastPlayerPage: React.FC = () => {
   const [hasVideo, setHasVideo] = useState(false);
   
   // Progress tracking
-  const [lastProgressUpdate, setLastProgressUpdate] = useState<number>(0);
+  const lastProgressUpdateRef = useRef<number>(0);
+  const lastTrackTimeRef = useRef<number>(0); // Track the last time we sent progress
   const progressUpdateInterval = useRef<number | null>(null);
   
   // Comments state
@@ -266,11 +267,14 @@ const PodcastPlayerPage: React.FC = () => {
     if (mediaElement) {
       setCurrentTime(mediaElement.currentTime);
       
-      // Track progress every 30 seconds
+      // Track progress every 30 seconds, but prevent multiple calls for the same second
+      const currentSecond = Math.floor(mediaElement.currentTime);
       const now = Date.now();
-      if (now - lastProgressUpdate > 30000) {
+      
+      if (now - lastProgressUpdateRef.current > 30000 && currentSecond !== lastTrackTimeRef.current) {
+        lastTrackTimeRef.current = currentSecond;
         trackProgress(mediaElement.currentTime);
-        setLastProgressUpdate(now);
+        lastProgressUpdateRef.current = now;
       }
     }
   };
@@ -285,13 +289,18 @@ const PodcastPlayerPage: React.FC = () => {
 
   // Progress tracking
   const trackProgress = async (currentTime: number) => {
-    if (!podcast || !duration) return;
+    if (!podcast || !duration || currentTime < 0) return;
     
     try {
-      const progress = Math.min(currentTime / duration, 1);
-      await podcastService.trackProgress(podcast.id, progress, currentTime);
+      const progress = Math.min((currentTime / duration) * 100, 100); // Convert to percentage (0-100)
+      
+      // Only track if we have valid data
+      if (progress >= 0 && progress <= 100) {
+        await podcastService.trackProgress(podcast.id, progress, currentTime);
+      }
     } catch (error) {
       console.error('Error tracking progress:', error);
+      // Don't throw error to prevent breaking audio/video playback
     }
   };
 
@@ -606,7 +615,7 @@ const PodcastPlayerPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-hide controls for video
   useEffect(() => {
@@ -645,7 +654,7 @@ const PodcastPlayerPage: React.FC = () => {
         clearTimeout(controlsTimeout);
       }
     };
-  }, [isPlaying, hasVideo, controlsTimeout]);
+  }, [isPlaying, hasVideo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cleanup
   useEffect(() => {

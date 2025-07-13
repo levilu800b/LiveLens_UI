@@ -80,6 +80,10 @@ const AnimationPlayerPage: React.FC = () => {
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const commentsLoadedRef = useRef<string | null>(null);
+  const currentTimeRef = useRef<number>(0);
+  const durationRef = useRef<number>(0);
+  const qualityRef = useRef<string>('1080p');
+  const lastTrackTimeRef = useRef<number>(0); // Track last time we sent progress
 
   // Authentication check
   useEffect(() => {
@@ -138,6 +142,7 @@ const AnimationPlayerPage: React.FC = () => {
         // Set quality based on animation's video quality
         const videoQuality = animationData.video_quality || '1080p';
         setQuality(videoQuality);
+        qualityRef.current = videoQuality; // Update ref
         
         // Track initial view (only once when animation loads)
         if (userInfo) {
@@ -215,23 +220,30 @@ const AnimationPlayerPage: React.FC = () => {
 
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
+    const newTime = videoRef.current.currentTime;
+    setCurrentTime(newTime);
+    currentTimeRef.current = newTime; // Update ref
     
-    // Track progress every 30 seconds
-    if (userInfo && animation && Math.floor(videoRef.current.currentTime) % 30 === 0) {
+    // Track progress every 30 seconds, but prevent multiple calls for the same second
+    const currentSecond = Math.floor(newTime);
+    if (userInfo && animation && currentSecond % 30 === 0 && currentSecond !== lastTrackTimeRef.current) {
+      lastTrackTimeRef.current = currentSecond;
       trackWatchProgress();
     }
   };
 
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;
-    setDuration(videoRef.current.duration);
+    const newDuration = videoRef.current.duration;
+    setDuration(newDuration);
+    durationRef.current = newDuration; // Update ref
   };
 
   const handleSeek = (time: number) => {
     if (!videoRef.current) return;
     videoRef.current.currentTime = time;
     setCurrentTime(time);
+    currentTimeRef.current = time; // Update ref
   };
 
   const handleVolumeChange = (newVolume: number) => {
@@ -285,23 +297,27 @@ const AnimationPlayerPage: React.FC = () => {
 
     try {
       const watchDuration = Math.floor((Date.now() - startTime) / 1000);
-      const completionPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+      const completionPercentage = durationRef.current > 0 ? (currentTimeRef.current / durationRef.current) * 100 : 0;
       
-      await animationService.interactWithAnimation(animation.id, 'watch', {
-        watch_progress: completionPercentage,
-        watch_time: currentTime
-      });
+      // Only track if we have valid data
+      if (completionPercentage >= 0 && completionPercentage <= 100) {
+        await animationService.interactWithAnimation(animation.id, 'watch', {
+          watch_progress: completionPercentage,
+          watch_time: currentTimeRef.current
+        });
 
-      await animationService.trackAnimationView(animation.id, {
-        device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        watch_duration: watchDuration,
-        completion_percentage: completionPercentage,
-        quality_watched: quality
-      });
+        await animationService.trackAnimationView(animation.id, {
+          device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+          watch_duration: watchDuration,
+          completion_percentage: completionPercentage,
+          quality_watched: qualityRef.current
+        });
+      }
     } catch (err) {
       console.error('Error tracking watch progress:', err);
+      // Don't throw error to prevent breaking video playback
     }
-  }, [animation, userInfo, startTime, duration, currentTime, quality]);
+  }, [animation, userInfo, startTime]); // Removed currentTime, duration, quality from dependencies
 
   // Interaction handlers
   const handleLike = async () => {
@@ -587,7 +603,7 @@ const AnimationPlayerPage: React.FC = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [userInfo, animation, trackWatchProgress]);
+  }, [userInfo, animation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

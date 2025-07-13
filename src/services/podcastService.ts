@@ -98,11 +98,15 @@ const getAuthHeaders = () => {
 
 // Helper function for API requests
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const headers = getAuthHeaders();
+  const headers = {
+    ...getAuthHeaders(),
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
   
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers,
     ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -379,14 +383,14 @@ export const podcastService = {
   },
 
   // Track listening progress
-  async trackProgress(id: string, progress: number, duration?: number): Promise<void> {
+  async trackProgress(id: string, progress: number, currentTime?: number): Promise<void> {
     try {
       await apiRequest(`/podcasts/episodes/${id}/interact/`, {
         method: 'POST',
         body: JSON.stringify({ 
           interaction_type: 'listen',
           listen_progress: progress,
-          ...(duration && { listen_time: duration })
+          ...(currentTime && { listen_time: Math.floor(currentTime) })
         }),
       });
     } catch (error) {
