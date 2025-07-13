@@ -47,7 +47,11 @@ import EditPodcastPage from './pages/Admin/EditPodcastPage';
 import AddAnimationPage from './pages/Admin/AddAnimationPage';
 import EditAnimationPage from './pages/Admin/EditAnimationPage';
 import AddSneakPeekPage from './pages/Admin/AddSneakPeekPage';
+import EditSneakPeekPage from './pages/Admin/EditSneakPeekPage';
 import AddLiveVideoPage from './pages/Admin/AddLiveVideoPage';
+
+// Import sneak peek player page
+import SneakPeekPlayerPage from './pages/SneakPeeks/SneakPeekPlayerPage';
 
 // Placeholder components for admin pages not yet implemented
 
@@ -123,6 +127,11 @@ function App() {
         <Route path="/watch/:type/:id" element={<VideoPlayerPage />} />
         <Route path="/podcast/:id" element={<PodcastPlayerPage />} />
         <Route path="/animation/:id" element={<AnimationPlayerPage />} />
+        <Route path="/sneak-peek/:slug" element={
+          <ProtectedRoute>
+            <SneakPeekPlayerPage />
+          </ProtectedRoute>
+        } />
         
         {/* Protected User Routes - These are now fully implemented! */}
         <Route path="/profile" element={
@@ -230,6 +239,11 @@ function App() {
         <Route path="/admin/add-sneak-peek" element={
           <AdminRoute>
             <AddSneakPeekPage />
+          </AdminRoute>
+        } />
+        <Route path="/admin/edit-sneak-peek/:slug" element={
+          <AdminRoute>
+            <EditSneakPeekPage />
           </AdminRoute>
         } />
         <Route path="/admin/add-live-video" element={

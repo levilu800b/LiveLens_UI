@@ -106,10 +106,16 @@ class CommentService {
   private getAuthHeaders() {
     const token = unifiedAuth.getAccessToken();
     
-    return {
-      'Authorization': token ? `Bearer ${token}` : '',
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
+    
+    // Only include Authorization header if we have a valid token
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
   }
 
   private async makeRequest<T>(
@@ -128,6 +134,36 @@ class CommentService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // If we get a 401 (Unauthorized) and we have a token, it might be invalid
+      if (response.status === 401 && unifiedAuth.getAccessToken()) {
+        console.warn('Invalid token detected, clearing tokens and retrying without auth');
+        unifiedAuth.clearTokens();
+        
+        // Retry the request without authentication for read operations
+        if (options.method === 'GET' || !options.method) {
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers: {
+              'Content-Type': 'application/json',
+              ...options.headers,
+            },
+          });
+          
+          if (retryResponse.ok) {
+            if (retryResponse.status === 204 || retryResponse.headers.get('content-length') === '0') {
+              return {} as T;
+            }
+            
+            const contentType = retryResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              return await retryResponse.json();
+            }
+            return {} as T;
+          }
+        }
+      }
+      
       console.error('CommentService API Error:', {
         endpoint: url,
         status: response.status,

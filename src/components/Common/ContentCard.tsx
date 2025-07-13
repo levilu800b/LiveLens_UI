@@ -55,17 +55,32 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!userInfo) {
-      navigate('/login');
-      return;
-    }
     
     if (type === 'story') {
+      if (!userInfo) {
+        navigate('/login');
+        return;
+      }
       navigate(`/story/${id}`);
     } else if (type === 'podcast') {
+      if (!userInfo) {
+        navigate('/login');
+        return;
+      }
       navigate(`/podcast/${id}`);
     } else if (type === 'animation') {
+      if (!userInfo) {
+        navigate('/login');
+        return;
+      }
       navigate(`/animation/${id}`);
+    } else if (type === 'sneak-peek') {
+      // Require authentication for sneak peeks
+      if (!userInfo) {
+        navigate('/login');
+        return;
+      }
+      navigate(`/sneak-peek/${id}`);
     } else {
       navigate(`/watch/${type}/${id}`);
     }

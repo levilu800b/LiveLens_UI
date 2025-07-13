@@ -1,200 +1,134 @@
-import { useState } from 'react';
-import { Eye, Camera, Users, Clock, Star, Film, Clapperboard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, Camera, Clock, Star, Film, Clapperboard } from 'lucide-react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SearchFilter from '../../components/Common/SearchFilter';
 import ContentCard from '../../components/Common/ContentCard';
+import Pagination from '../../components/Common/Pagination';
+import sneakPeekService, { type SneakPeek } from '../../services/sneakPeekService';
 
-// Mock data for sneak peeks - replace with actual API calls
-const mockSneakPeeks = [
-  {
-    id: '1',
-    title: 'Making of Digital Dreamscape',
-    description: 'Go behind the scenes of our most ambitious 3D animation project. See the creative process, technical challenges, and artistic decisions that brought this digital world to life.',
-    thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=600&fit=crop',
-    duration: '8m 45s',
-    type: 'sneak-peek' as const,
-    tags: ['Animation', 'Behind-the-Scenes', '3D', 'Creative Process'],
-    views: 89000,
-    likes: 7200,
-    isFeatured: true,
-    releaseDate: '2024-11-22',
-    category: 'Animation',
-    crew: 'Animation Team'
-  },
-  {
-    id: '2',
-    title: 'Podcast Studio Setup',
-    description: 'Take a tour of our state-of-the-art podcast recording studio. Learn about the equipment, acoustics, and setup that makes our audio content sound professional.',
-    thumbnail: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400&h=600&fit=crop',
-    duration: '5m 30s',
-    type: 'sneak-peek' as const,
-    tags: ['Podcast', 'Studio', 'Audio', 'Equipment'],
-    views: 65000,
-    likes: 4800,
-    releaseDate: '2024-11-20',
-    category: 'Production',
-    crew: 'Audio Team'
-  },
-  {
-    id: '3',
-    title: 'Character Design Process',
-    description: 'Watch our artists create memorable characters from initial sketches to final designs. See the iteration process and creative decisions behind beloved characters.',
-    thumbnail: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=600&fit=crop',
-    duration: '12m 15s',
-    type: 'sneak-peek' as const,
-    tags: ['Character Design', 'Art', 'Creative', 'Process'],
-    views: 124000,
-    likes: 9800,
-    isFeatured: true,
-    releaseDate: '2024-11-18',
-    category: 'Design',
-    crew: 'Design Team'
-  },
-  {
-    id: '4',
-    title: 'Voice Acting Sessions',
-    description: 'Step into the recording booth with our talented voice actors. Experience the magic of bringing characters to life through voice and emotion.',
-    thumbnail: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=400&h=600&fit=crop',
-    duration: '7m 20s',
-    type: 'sneak-peek' as const,
-    tags: ['Voice Acting', 'Recording', 'Performance', 'Audio'],
-    views: 78000,
-    likes: 6100,
-    releaseDate: '2024-11-16',
-    category: 'Performance',
-    crew: 'Voice Cast'
-  },
-  {
-    id: '5',
-    title: 'Story Development Workshop',
-    description: 'Join our writers in brainstorming sessions where stories come to life. See how ideas evolve from concepts to compelling narratives.',
-    thumbnail: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=600&fit=crop',
-    duration: '10m 05s',
-    type: 'sneak-peek' as const,
-    tags: ['Writing', 'Story', 'Development', 'Creative'],
-    views: 56000,
-    likes: 4200,
-    releaseDate: '2024-11-14',
-    category: 'Writing',
-    crew: 'Writing Team'
-  },
-  {
-    id: '6',
-    title: 'Motion Capture Magic',
-    description: 'Discover how we capture realistic movements for our 3D animations. From suit setup to data processing, see the technology in action.',
-    thumbnail: 'https://images.unsplash.com/photo-1551731409-43eb3e517a1a?w=400&h=600&fit=crop',
-    duration: '9m 30s',
-    type: 'sneak-peek' as const,
-    tags: ['Motion Capture', 'Technology', '3D', 'Animation'],
-    views: 95000,
-    likes: 7600,
-    releaseDate: '2024-11-12',
-    category: 'Technology',
-    crew: 'Tech Team'
-  },
-  {
-    id: '7',
-    title: 'Set Design Timelapse',
-    description: 'Watch virtual sets come to life in fast-forward. See the meticulous detail that goes into creating immersive digital environments.',
-    thumbnail: 'https://images.unsplash.com/photo-1515378791036-0648a814c963?w=400&h=600&fit=crop',
-    duration: '4m 45s',
-    type: 'sneak-peek' as const,
-    tags: ['Set Design', 'Environment', 'Digital', 'Timelapse'],
-    views: 73000,
-    likes: 5400,
-    releaseDate: '2024-11-10',
-    category: 'Design',
-    crew: 'Environment Team'
-  },
-  {
-    id: '8',
-    title: 'Team Collaboration',
-    description: 'See how our diverse creative teams work together to bring projects from concept to completion. Experience our collaborative culture.',
-    thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=600&fit=crop',
-    duration: '6m 15s',
-    type: 'sneak-peek' as const,
-    tags: ['Teamwork', 'Collaboration', 'Culture', 'Process'],
-    views: 42000,
-    likes: 3200,
-    releaseDate: '2024-11-08',
-    category: 'Culture',
-    crew: 'Full Team'
-  }
-];
+// Helper function to build full media URLs
+const buildMediaUrl = (path: string | undefined): string => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+  return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+};
 
-const categories = ['All', 'Animation', 'Production', 'Design', 'Performance', 'Writing', 'Technology', 'Culture'];
+// Helper function to get safe thumbnail URL
+const getSafeThumbnailUrl = (thumbnail: string | undefined): string | undefined => {
+  const url = buildMediaUrl(thumbnail);
+  return url || undefined; // Return undefined instead of empty string to prevent empty src
+};
 
 const SneakPeeksPage = () => {
+  const navigate = useNavigate();
+  
+  // State management
+  const [sneakPeeks, setSneakPeeks] = useState<SneakPeek[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortBy, setSortBy] = useState('newest');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const availableTags = Array.from(new Set(mockSneakPeeks.flatMap(item => item.tags)));
+  // Refresh mechanism
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // API data loading
+  useEffect(() => {
+    const loadSneakPeeks = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await sneakPeekService.getSneakPeeks({
+          page: currentPage,
+          page_size: pageSize,
+          category: selectedCategory !== 'All' ? selectedCategory : undefined,
+          search: searchTerm || undefined,
+          ordering: sortBy === 'newest' ? '-created_at' :
+                   sortBy === 'oldest' ? 'created_at' :
+                   sortBy === 'most-viewed' ? '-view_count' :
+                   sortBy === 'most-liked' ? '-like_count' :
+                   sortBy === 'alphabetical' ? 'title' :
+                   sortBy === 'featured' ? '-featured_at' : '-created_at',
+          _refresh: refreshKey || undefined // Force refresh when refreshKey changes
+        });
+        
+        setSneakPeeks(response.sneakPeeks);
+        setTotalCount(response.total);
+      } catch (err) {
+        console.error('Error loading sneak peeks:', err);
+        setError('Failed to load sneak peeks');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSneakPeeks();
+  }, [currentPage, pageSize, selectedCategory, searchTerm, sortBy, refreshKey]);
+
+  // Listen for storage events to trigger refresh when data is updated elsewhere
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'sneakPeekDataUpdated') {
+        setRefreshKey(Date.now());
+        localStorage.removeItem('sneakPeekDataUpdated');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check for updates on focus
+    const handleFocus = () => {
+      const lastUpdate = localStorage.getItem('sneakPeekDataUpdated');
+      if (lastUpdate) {
+        setRefreshKey(Date.now());
+        localStorage.removeItem('sneakPeekDataUpdated');
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const getFilteredSneakPeeks = () => {
-    let sneakPeeks = [...mockSneakPeeks];
-
-    // Apply category filter
-    if (selectedCategory !== 'All') {
-      sneakPeeks = sneakPeeks.filter(item => item.category === selectedCategory);
-    }
-
-    // Apply search filter
-    if (searchTerm) {
-      sneakPeeks = sneakPeeks.filter(item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        item.crew.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply tag filter
-    if (selectedTags.length > 0) {
-      sneakPeeks = sneakPeeks.filter(item =>
-        selectedTags.some(tag => item.tags.includes(tag))
-      );
-    }
-
-    // Apply sorting
-    switch (sortBy) {
-      case 'most-liked':
-        sneakPeeks.sort((a, b) => b.likes - a.likes);
-        break;
-      case 'most-viewed':
-        sneakPeeks.sort((a, b) => b.views - a.views);
-        break;
-      case 'alphabetical':
-        sneakPeeks.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case 'featured':
-        sneakPeeks.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-        break;
-      case 'oldest':
-        sneakPeeks.sort((a, b) => new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime());
-        break;
-      default:
-        // newest first
-        sneakPeeks.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
-        break;
-    }
-
+    // Since filtering is now done server-side, just return the sneakPeeks
     return sneakPeeks;
   };
 
   const filteredSneakPeeks = getFilteredSneakPeeks();
-  const featuredSneakPeek = mockSneakPeeks.find(peek => peek.isFeatured) || mockSneakPeeks[0];
+  const featuredSneakPeek = sneakPeeks.find(peek => peek.featuredAt) || sneakPeeks[0];
 
-  const totalSneakPeeks = mockSneakPeeks.length;
-  const totalViews = mockSneakPeeks.reduce((sum, peek) => sum + peek.views, 0);
-  const avgDuration = Math.round(
-    mockSneakPeeks.reduce((sum, peek) => {
-      const minutes = peek.duration.includes('m') ? parseInt(peek.duration.split('m')[0]) : 0;
-      const seconds = peek.duration.includes('s') ? parseInt(peek.duration.split('m')[1]?.replace('s', '') || '0') : 0;
+  const totalSneakPeeks = totalCount;
+  const totalViews = sneakPeeks.reduce((sum, peek) => sum + peek.views, 0);
+  const avgDuration = sneakPeeks.length > 0 ? Math.round(
+    sneakPeeks.reduce((sum, peek) => {
+      const duration = peek.duration || 0;
+      const minutes = Math.floor(duration / 60);
+      const seconds = duration % 60;
       return sum + minutes + (seconds / 60);
-    }, 0) / mockSneakPeeks.length
-  );
+    }, 0) / sneakPeeks.length
+  ) : 0;
+
+  const formatDuration = (duration?: number) => {
+    if (!duration) return '0:00';
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const categories = ['All', 'Animation', 'Production', 'Design', 'Technology', 'Performance', 'Writing', 'Culture'];
 
   return (
     <MainLayout>
@@ -259,16 +193,28 @@ const SneakPeeksPage = () => {
               {/* Featured Sneak Peek */}
               {featuredSneakPeek && (
                 <div className="relative">
-                  <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl">
+                  <div 
+                    className="relative z-10 rounded-3xl overflow-hidden shadow-2xl cursor-pointer transform transition-transform hover:scale-105"
+                    onClick={() => navigate(`/sneak-peek/${featuredSneakPeek.slug || featuredSneakPeek.id}`)}
+                  >
                     <div className="aspect-[4/5] bg-gradient-to-br from-slate-800 to-slate-900 relative">
-                      <img 
-                        src={featuredSneakPeek.thumbnail} 
-                        alt={featuredSneakPeek.title}
-                        className="w-full h-full object-cover"
-                      />
+                      {getSafeThumbnailUrl(featuredSneakPeek.thumbnail) ? (
+                        <img 
+                          src={getSafeThumbnailUrl(featuredSneakPeek.thumbnail)} 
+                          alt={featuredSneakPeek.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/60">
+                          <div className="text-center">
+                            <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                            <div className="text-sm">No Thumbnail</div>
+                          </div>
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
                       
-                      {featuredSneakPeek.isFeatured && (
+                      {featuredSneakPeek.featuredAt && (
                         <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center">
                           <Star className="w-4 h-4 mr-1" />
                           Featured
@@ -286,16 +232,13 @@ const SneakPeeksPage = () => {
                           <div className="flex items-center space-x-4">
                             <span className="flex items-center">
                               <Clock className="w-4 h-4 mr-1" />
-                              {featuredSneakPeek.duration}
+                              {formatDuration(featuredSneakPeek.duration)}
                             </span>
                             <span className="flex items-center">
-                              <Users className="w-4 h-4 mr-1" />
+                              <Eye className="w-4 h-4 mr-1" />
                               {(featuredSneakPeek.views / 1000).toFixed(0)}K views
                             </span>
                           </div>
-                        </div>
-                        <div className="mt-2 text-xs text-gray-300">
-                          By {featuredSneakPeek.crew}
                         </div>
                       </div>
                     </div>
@@ -336,24 +279,37 @@ const SneakPeeksPage = () => {
             </div>
           </div>
 
-          {/* Search and Filters */}
-          <SearchFilter
-            onSearch={setSearchTerm}
-            onFilter={(filters) => {
-              setSelectedTags(filters.tags);
-              setSortBy(filters.sortBy);
-            }}
-            contentType="sneak-peek"
-            placeholder="Search behind-the-scenes content..."
-          />
+          {/* Search and Sort */}
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="flex-1">
+              <SearchFilter
+                onSearch={setSearchTerm}
+                placeholder="Search behind-the-scenes content..."
+              />
+            </div>
+            <div className="md:w-48">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="most-viewed">Most Viewed</option>
+                <option value="most-liked">Most Liked</option>
+                <option value="alphabetical">A-Z</option>
+                <option value="featured">Featured</option>
+              </select>
+            </div>
+          </div>
 
           {/* Stats Row */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
               <div className="text-2xl font-bold text-indigo-600 mb-2">
-                {filteredSneakPeeks.length}
+                {totalSneakPeeks}
               </div>
-              <div className="text-gray-600">Available Videos</div>
+              <div className="text-gray-600">Total Videos</div>
             </div>
             <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
               <div className="text-2xl font-bold text-green-600 mb-2">
@@ -363,7 +319,7 @@ const SneakPeeksPage = () => {
             </div>
             <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
               <div className="text-2xl font-bold text-purple-600 mb-2">
-                {mockSneakPeeks.filter(peek => peek.isFeatured).length}
+                {sneakPeeks.filter(peek => peek.featuredAt).length}
               </div>
               <div className="text-gray-600">Featured</div>
             </div>
@@ -375,18 +331,67 @@ const SneakPeeksPage = () => {
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading sneak peeks...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <div className="text-red-500 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Error Loading Content</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
           {/* Sneak Peeks Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredSneakPeeks.map(sneakPeek => (
-              <ContentCard
-                key={sneakPeek.id}
-                {...sneakPeek}
-                category={sneakPeek.category}
-                isTrailerAvailable={false}
-                onLike={(id) => {}}
+          {!loading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredSneakPeeks.map(sneakPeek => (
+                <ContentCard
+                  key={sneakPeek.id}
+                  id={sneakPeek.slug || sneakPeek.id}
+                  title={sneakPeek.title}
+                  description={sneakPeek.description}
+                  thumbnail={getSafeThumbnailUrl(sneakPeek.thumbnail)}
+                  duration={formatDuration(sneakPeek.duration)}
+                  type="sneak-peek"
+                  tags={sneakPeek.tags || []}
+                  views={sneakPeek.views}
+                  likes={sneakPeek.likes}
+                  category={sneakPeek.category}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && !error && totalCount > pageSize && (
+            <div className="mt-8">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(totalCount / pageSize)}
+                totalItems={totalCount}
+                itemsPerPage={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
               />
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* Empty State */}
           {filteredSneakPeeks.length === 0 && (
