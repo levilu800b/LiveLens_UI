@@ -116,7 +116,6 @@ const ProfilePage: React.FC = () => {
       setAvatarPreview(null);
       
     } catch (error: any) {
-      console.error('❌ Profile update error:', error);
       
       // If authentication error, redirect to login
       if (error.message.includes('authentication') || 

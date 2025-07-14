@@ -33,8 +33,6 @@ class UploadService {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Upload failed:', response.statusText, errorText);
         throw new Error(`Upload failed: ${response.statusText}`);
       }
 
@@ -42,14 +40,11 @@ class UploadService {
       
       // Validate the response structure
       if (!data.url) {
-        console.error('❌ No URL in response:', data);
         throw new Error('No URL returned from server');
       }
       
       return data.url;
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      
+    } catch {
       // Fallback to base64 encoding if upload fails
       return new Promise((resolve) => {
         const reader = new FileReader();

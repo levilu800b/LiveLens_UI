@@ -239,14 +239,6 @@ const PodcastPlayerPage: React.FC = () => {
     };
   }, [id, podcast, userInfo, loadComments]);
 
-  // Force refresh comments function
-  const forceRefreshComments = async () => {
-    commentsLoadedRef.current = null; // Reset the ref to force reload
-    if (podcast) {
-      await loadComments();
-    }
-  };
-
   // Media event handlers
   const handleLoadedMetadata = () => {
     const mediaElement = hasVideo ? videoRef.current : audioRef.current;
@@ -1025,14 +1017,6 @@ const PodcastPlayerPage: React.FC = () => {
                     <MessageCircle className="w-5 h-5 mr-2" />
                     Comments ({commentCount})
                   </h3>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={forceRefreshComments}
-                      className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors text-sm"
-                    >
-                      Refresh
-                    </button>
-                  </div>
                 </div>
 
                 {/* Add Comment */}

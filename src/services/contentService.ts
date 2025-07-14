@@ -172,7 +172,6 @@ export const contentService = {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } catch (error) {
-      console.error('❌ Error fetching user library:', error);
       throw error;
     }
   },
@@ -211,7 +210,6 @@ export const contentService = {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } catch (error) {
-      console.error('❌ Error fetching user favorites:', error);
       throw error;
     }
   },
@@ -237,7 +235,6 @@ export const contentService = {
         method: 'POST',
       });
     } catch (error) {
-      console.error('❌ Error favoriting content:', error);
       throw error;
     }
   },
@@ -263,7 +260,6 @@ export const contentService = {
         method: 'POST',
       });
     } catch (error) {
-      console.error('❌ Error bookmarking content:', error);
       throw error;
     }
   },
@@ -290,7 +286,6 @@ export const contentService = {
         body: JSON.stringify({ progress }),
       });
     } catch (error) {
-      console.error('❌ Error tracking progress:', error);
       throw error;
     }
   }

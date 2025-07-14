@@ -80,12 +80,10 @@ export const updateUserProfile = async (formData: {
             return retryData;
           } else {
             const retryErrorData = await retryResponse.json().catch(() => ({}));
-            console.error('❌ Retry failed:', retryErrorData);
             throw new Error(retryErrorData.error || retryErrorData.message || 'Profile update failed after token refresh');
           }
         }
       } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError);
         throw new Error('Your session has expired. Please login again.');
       }
       
@@ -95,7 +93,6 @@ export const updateUserProfile = async (formData: {
     // Handle other HTTP errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Profile update failed:', errorData);
       
       // Provide specific error messages
       if (response.status === 400) {
@@ -156,7 +153,6 @@ export const updateUserProfile = async (formData: {
     return responseData;
 
   } catch (error: any) {
-    console.error('❌ Profile update error:', error);
     
     // Re-throw with better error messages
     if (error.message.includes('fetch')) {

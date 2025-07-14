@@ -224,14 +224,6 @@ const AddFilmPage: React.FC = () => {
         submitData.append('video_file', formData.video_file);
       }
 
-      // Debug: Log the FormData contents
-      console.log('Submitting FormData with files:', {
-        hasThumb: !!formData.thumbnail,
-        hasPoster: !!formData.poster,
-        hasBanner: !!formData.banner,
-        hasVideo: !!formData.video_file
-      });
-
       await mediaService.createFilm(submitData);
       
       // Show success message

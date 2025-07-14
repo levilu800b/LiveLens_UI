@@ -137,7 +137,6 @@ class CommentService {
       
       // If we get a 401 (Unauthorized) and we have a token, it might be invalid
       if (response.status === 401 && unifiedAuth.getAccessToken()) {
-        console.warn('Invalid token detected, clearing tokens and retrying without auth');
         unifiedAuth.clearTokens();
         
         // Retry the request without authentication for read operations
@@ -164,11 +163,6 @@ class CommentService {
         }
       }
       
-      console.error('CommentService API Error:', {
-        endpoint: url,
-        status: response.status,
-        error: errorData
-      });
       throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
     }
 

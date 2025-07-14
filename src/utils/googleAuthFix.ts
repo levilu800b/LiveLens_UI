@@ -73,7 +73,6 @@ export const handleGoogleSignup = async (dispatch: any, navigate: any) => {
     return data;
     
   } catch (error: any) {
-    console.error('❌ Google signup error:', error);
     throw error;
   }
 };
@@ -101,7 +100,6 @@ export const handleGoogleLogin = async (dispatch: any, navigate: any) => {
     return response;
     
   } catch (error: any) {
-    console.error('❌ Google login error:', error);
     
     // If user not found, suggest signup
     if (error.message.includes('not found') || error.message.includes('Please sign up')) {

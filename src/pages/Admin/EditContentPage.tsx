@@ -287,14 +287,10 @@ const EditContentPage: React.FC = () => {
         await mediaService.updateContent(id, updateData);
       }
 
-      // Simple success message - you can implement notifications later
-      console.log('Content updated successfully!');
+      // Success - navigate back
       navigate('/admin/content');
     } catch (err) {
-      console.error('Error updating content:', err);
       setError(err instanceof Error ? err.message : 'Failed to update content');
-      // Simple error message - you can implement notifications later
-      console.error('Failed to update content');
     } finally {
       setSaving(false);
     }

@@ -185,32 +185,11 @@ class StoryService {
       
       // Handle authentication errors specifically
       if (response.status === 401) {
-        console.error('Authentication failed:', {
-          endpoint: url,
-          status: response.status,
-          error: errorData,
-          hasToken: !!token,
-          tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token'
-        });
-        
         // Try to refresh token or redirect to login
         if (typeof window !== 'undefined') {
           window.location.href = '/admin';
         }
       }
-      
-      // Enhanced error logging for debugging
-      console.error('API Error Details:', {
-        endpoint: url,
-        method: options.method || 'GET',
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData,
-        requestHeaders: headers,
-        hasFormData: options.body instanceof FormData,
-        formDataKeys: options.body instanceof FormData ? 
-          Array.from((options.body as FormData).keys()) : 'N/A'
-      });
       
       // Create a detailed error message
       let errorMessage = (errorData.detail as string) || (errorData.message as string) || `HTTP ${response.status}: ${response.statusText}`;

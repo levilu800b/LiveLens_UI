@@ -113,7 +113,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     const errorData = await response.json().catch(() => ({}));
     
     if (response.status === 401) {
-      console.error('🚫 Authentication failed');
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('account');
@@ -248,7 +247,6 @@ export const podcastService = {
         count: data.count || 0,
       };
     } catch (error) {
-      console.error('❌ Error fetching podcasts:', error);
       throw error;
     }
   },
@@ -259,7 +257,6 @@ export const podcastService = {
       const data = await apiRequest('/podcasts/episodes/featured/');
       return data.map(transformPodcast);
     } catch (error) {
-      console.error('❌ Error fetching featured podcasts:', error);
       throw error;
     }
   },
@@ -270,7 +267,6 @@ export const podcastService = {
       const data = await apiRequest('/podcasts/episodes/trending/');
       return data.map(transformPodcast);
     } catch (error) {
-      console.error('❌ Error fetching trending podcasts:', error);
       throw error;
     }
   },
@@ -281,7 +277,6 @@ export const podcastService = {
       const data = await apiRequest('/podcasts/episodes/recent/');
       return data.map(transformPodcast);
     } catch (error) {
-      console.error('❌ Error fetching recent podcasts:', error);
       throw error;
     }
   },
@@ -292,7 +287,6 @@ export const podcastService = {
       const data = await apiRequest(`/podcasts/episodes/${id}/`);
       return transformPodcast(data);
     } catch (error) {
-      console.error('❌ Error fetching podcast:', error);
       throw error;
     }
   },
@@ -324,7 +318,6 @@ export const podcastService = {
         count: data.count || 0,
       };
     } catch (error) {
-      console.error('❌ Error fetching podcast series:', error);
       throw error;
     }
   },
@@ -335,7 +328,6 @@ export const podcastService = {
       const data = await apiRequest(`/podcasts/series/${id}/`);
       return transformSeries(data);
     } catch (error) {
-      console.error('❌ Error fetching series:', error);
       throw error;
     }
   },
@@ -348,7 +340,6 @@ export const podcastService = {
         body: JSON.stringify({ interaction_type: 'like' }),
       });
     } catch (error) {
-      console.error('❌ Error liking podcast:', error);
       throw error;
     }
   },
@@ -361,7 +352,6 @@ export const podcastService = {
         body: JSON.stringify({ interaction_type: 'bookmark' }),
       });
     } catch (error) {
-      console.error('❌ Error bookmarking podcast:', error);
       throw error;
     }
   },
@@ -377,7 +367,6 @@ export const podcastService = {
         }),
       });
     } catch (error) {
-      console.error('❌ Error rating podcast:', error);
       throw error;
     }
   },
@@ -394,7 +383,6 @@ export const podcastService = {
         }),
       });
     } catch (error) {
-      console.error('❌ Error tracking progress:', error);
       throw error;
     }
   },
@@ -405,7 +393,6 @@ export const podcastService = {
       const data = await apiRequest('/podcasts/series/categories/');
       return data;
     } catch (error) {
-      console.error('❌ Error fetching categories:', error);
       throw error;
     }
   },
@@ -416,7 +403,6 @@ export const podcastService = {
       const data = await apiRequest('/podcasts/stats/');
       return data;
     } catch (error) {
-      console.error('❌ Error fetching stats:', error);
       throw error;
     }
   },
@@ -429,7 +415,6 @@ export const podcastService = {
         body: JSON.stringify({ interaction_type: 'subscribe' }),
       });
     } catch (error) {
-      console.error('❌ Error subscribing to series:', error);
       throw error;
     }
   },
@@ -440,7 +425,6 @@ export const podcastService = {
       const data = await apiRequest('/podcasts/library/');
       return data.results?.map(transformPodcast) || [];
     } catch (error) {
-      console.error('❌ Error fetching podcast library:', error);
       throw error;
     }
   },
@@ -465,7 +449,6 @@ export const podcastService = {
         const errorData = await response.json().catch(() => ({}));
         
         if (response.status === 401) {
-          console.error('🚫 Authentication failed');
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('account');
@@ -478,7 +461,6 @@ export const podcastService = {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error creating podcast episode:', error);
       throw error;
     }
   },
@@ -503,7 +485,6 @@ export const podcastService = {
         const errorData = await response.json().catch(() => ({}));
         
         if (response.status === 401) {
-          console.error('🚫 Authentication failed');
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('account');
@@ -516,7 +497,6 @@ export const podcastService = {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error creating podcast series:', error);
       throw error;
     }
   },
@@ -543,7 +523,6 @@ export const podcastService = {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error getting next episode number:', error);
       throw error;
     }
   },
@@ -570,7 +549,6 @@ export const podcastService = {
           const errorData = await response.json().catch(() => ({}));
           
           if (response.status === 401) {
-            console.error('🚫 Authentication failed');
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('account');
@@ -590,7 +568,6 @@ export const podcastService = {
         });
       }
     } catch (error) {
-      console.error('❌ Error updating podcast episode:', error);
       throw error;
     }
   },
@@ -602,7 +579,6 @@ export const podcastService = {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error('❌ Error deleting podcast episode:', error);
       throw error;
     }
   },

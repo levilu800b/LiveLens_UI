@@ -258,7 +258,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     const errorData = await response.json().catch(() => ({}));
     
     if (response.status === 401) {
-      console.error('🚫 Authentication failed');
       unifiedAuth.clearTokens();
       window.location.href = '/login';
       throw new Error('Your session has expired. Please log in again.');
