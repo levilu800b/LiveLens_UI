@@ -351,7 +351,7 @@ const CommentManagement: React.FC = () => {
               <ExportButton 
                 data={comments.map(comment => ({
                   id: comment.id,
-                  username: comment.user.username,
+                  username: comment.user?.username || 'Anonymous',
                   text: comment.text,
                   status: comment.status,
                   risk_score: comment.risk_score,
@@ -451,6 +451,7 @@ const CommentManagement: React.FC = () => {
                 <option value="podcast">Podcasts</option>
                 <option value="animation">Animations</option>
                 <option value="sneakpeek">Sneak Peeks</option>
+                <option value="livevideo">Live Video</option>
               </select>
             </div>
             <div className="flex items-end">
@@ -526,10 +527,10 @@ const CommentManagement: React.FC = () => {
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
                           <div className="flex items-center">
-                            {comment.user.avatar_url ? (
+                            {comment.user?.avatar_url ? (
                               <img 
                                 src={comment.user.avatar_url} 
-                                alt={comment.user.username}
+                                alt={comment.user.username || 'Anonymous'}
                                 className="h-8 w-8 rounded-full"
                               />
                             ) : (
@@ -539,8 +540,8 @@ const CommentManagement: React.FC = () => {
                             )}
                             <div className="ml-2">
                               <p className="text-sm font-medium text-gray-900">
-                                {comment.user.username}
-                                {comment.user.is_admin && (
+                                {comment.user?.username || 'Anonymous'}
+                                {comment.user?.is_admin && (
                                   <span className="ml-1 text-xs text-blue-600">Admin</span>
                                 )}
                               </p>
@@ -738,10 +739,10 @@ const CommentManagement: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            {comment.user.avatar_url ? (
+                            {comment.user?.avatar_url ? (
                               <img 
                                 src={comment.user.avatar_url} 
-                                alt={comment.user.username}
+                                alt={comment.user.username || 'Anonymous'}
                                 className="h-8 w-8 rounded-full"
                               />
                             ) : (
@@ -751,13 +752,13 @@ const CommentManagement: React.FC = () => {
                             )}
                             <div className="ml-3">
                               <p className="text-sm font-medium text-gray-900">
-                                {comment.user.username}
-                                {comment.user.is_admin && (
+                                {comment.user?.username || 'Anonymous'}
+                                {comment.user?.is_admin && (
                                   <span className="ml-1 text-xs text-blue-600">Admin</span>
                                 )}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {comment.user.first_name} {comment.user.last_name}
+                                {comment.user?.first_name || ''} {comment.user?.last_name || ''}
                               </p>
                             </div>
                           </div>

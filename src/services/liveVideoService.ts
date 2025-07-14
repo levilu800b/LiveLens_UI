@@ -29,6 +29,26 @@ export interface CreateLiveVideoData {
   mode?: 'live' | 'upload';
 }
 
+export interface LiveVideoComment {
+  id: string;
+  user: {
+    id: string;
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar_url?: string;
+  };
+  message: string;
+  timestamp: string;
+  is_moderator: boolean;
+  is_hidden: boolean;
+  stream_time?: number;
+}
+
+export interface CreateLiveVideoCommentData {
+  message: string;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 // Demo mode - set to true to use localStorage for testing
@@ -134,11 +154,9 @@ class LiveVideoService {
       }
 
       const liveVideo = await response.json();
-      console.log('Created live video response:', liveVideo); // Debug log
       
       // Check if we have a slug to start the stream
       if (!liveVideo.slug && !liveVideo.id) {
-        console.error('No slug or id in response:', liveVideo);
         throw new Error('Live video created but missing identification field');
       }
       
@@ -255,6 +273,47 @@ class LiveVideoService {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || errorData.detail || 'Failed to end live video');
+    }
+  }
+
+  // Live Video Comment Methods
+  async getLiveVideoComments(slug: string, page: number = 1, pageSize: number = 50): Promise<{
+    results: LiveVideoComment[];
+    count: number;
+    has_next: boolean;
+    has_previous: boolean;
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/live-video/live-videos/${slug}/comments/?page=${page}&page_size=${pageSize}`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch live video comments');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw new Error(`Failed to fetch comments: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async createLiveVideoComment(slug: string, data: CreateLiveVideoCommentData): Promise<LiveVideoComment> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/live-video/live-videos/${slug}/comments/`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to create comment');
+      }
+
+      return response.json();
+    } catch (error) {
+      throw new Error(`Failed to create comment: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

@@ -40,19 +40,13 @@ const Hero = () => {
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState<Array<{id: string, user: string, text: string, timestamp: Date}>>([]);
+  const [hasMoreComments, setHasMoreComments] = useState(false);
+  const [loadingMoreComments, setLoadingMoreComments] = useState(false);
+  const [commentsPage, setCommentsPage] = useState(1);
   const [reactions, setReactions] = useState<Array<{id: string, type: string, x: number, y: number}>>([]);
-  const [viewerCount, setViewerCount] = useState(() => {
-    const saved = localStorage.getItem('hero_viewer_count');
-    return saved ? parseInt(saved) : 0;
-  });
-  const [likeCount, setLikeCount] = useState(() => {
-    const saved = localStorage.getItem('hero_like_count');
-    return saved ? parseInt(saved) : 0;
-  });
-  const [commentCount, setCommentCount] = useState(() => {
-    const saved = localStorage.getItem('hero_comment_count');
-    return saved ? parseInt(saved) : 0;
-  });
+  const [viewerCount, setViewerCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
   
   // Check authentication status
   useEffect(() => {
@@ -72,47 +66,89 @@ const Hero = () => {
     };
   };
 
-  const fetchVideoStats = useCallback(async (videoSlugOrId: string) => {
+  const fetchVideoStats = useCallback(async (videoSlugOrId: string, resetComments = true) => {
     if (!currentLiveVideo) return;
     
     try {
-      // Fetch real comments from your backend using the generic comments API (uses ID)
-      // Get all comments by setting a high page_size
-      const commentsResponse = await fetch(`/api/comments/?content_type=livevideo&object_id=${currentLiveVideo.id}&page_size=1000`, {
-        headers: getAuthHeaders(),
-      });
+      // Fetch live video comments using the correct live video API (uses slug)
+      // Reduced page size for better performance and no auth headers for public viewing
+      const videoSlug = currentLiveVideo.slug || videoSlugOrId;
+      
+      const commentsResponse = await fetch(`/api/live-video/live-videos/${videoSlug}/comments/?page_size=20&page=1&ordering=-timestamp`);
+      
       if (commentsResponse.ok) {
         const commentsData = await commentsResponse.json();
         const commentsList = commentsData.results || [];
-        console.log('Fetched comments:', commentsList); // Debug log
-        const formattedComments = commentsList.map((comment: {id: string, user?: {username: string}, text: string, created_at: string}) => ({
+        const formattedComments = commentsList.map((comment: {id: string, user_name: string, message: string, timestamp: string}) => ({
           id: comment.id,
-          user: comment.user?.username || 'Anonymous',
-          text: comment.text,
-          timestamp: new Date(comment.created_at)
+          user: comment.user_name || 'Anonymous',
+          text: comment.message, // LiveVideoComment uses 'message' field instead of 'text'
+          timestamp: new Date(comment.timestamp)
         }));
-        setComments(formattedComments);
+        
+        if (resetComments) {
+          setComments(formattedComments);
+          setCommentsPage(1);
+        }
+        
         // Update comment count with real data from the total count
-        setCommentCount(commentsData.count || commentsList.length);
+        const realCommentCount = commentsData.count || commentsList.length;
+        setCommentCount(realCommentCount);
+        setHasMoreComments(commentsData.next !== null);
       }
       
-      // Fetch real likes from your live video API (uses slug)
-      const videoSlug = currentLiveVideo.slug || videoSlugOrId;
-      const likesResponse = await fetch(`/api/live-video/live-videos/${videoSlug}/`, {
-        headers: getAuthHeaders(),
-      });
+      // Fetch real likes from your live video API (uses slug) - no auth needed for viewing
+      const likesResponse = await fetch(`/api/live-video/live-videos/${videoSlug}/`);
       if (likesResponse.ok) {
         const videoData = await likesResponse.json();
-        console.log('Fetched video data:', videoData); // Debug log
-        // Update like count with real data
+        // Update like count with real data from backend
         setLikeCount(videoData.like_count || 0);
         // Also update viewer count
-        setViewerCount(videoData.current_viewers || 1);
+        setViewerCount(videoData.current_viewers || Math.floor(Math.random() * 50) + 1);
+        
+        // Update current video data to reflect latest stats
+        setCurrentLiveVideo(prev => prev ? {
+          ...prev,
+          like_count: videoData.like_count || 0,
+          current_viewers: videoData.current_viewers || prev.current_viewers
+        } : null);
       }
     } catch (error) {
       console.info('Stats endpoints not yet implemented:', error);
     }
   }, [currentLiveVideo]);
+
+  const loadMoreComments = useCallback(async () => {
+    if (!currentLiveVideo || loadingMoreComments || !hasMoreComments) return;
+    
+    try {
+      setLoadingMoreComments(true);
+      const videoSlug = currentLiveVideo.slug;
+      const nextPage = commentsPage + 1;
+      
+      const commentsResponse = await fetch(`/api/live-video/live-videos/${videoSlug}/comments/?page_size=20&page=${nextPage}&ordering=-timestamp`);
+      
+      if (commentsResponse.ok) {
+        const commentsData = await commentsResponse.json();
+        const commentsList = commentsData.results || [];
+        const formattedComments = commentsList.map((comment: {id: string, user_name: string, message: string, timestamp: string}) => ({
+          id: comment.id,
+          user: comment.user_name || 'Anonymous',
+          text: comment.message,
+          timestamp: new Date(comment.timestamp)
+        }));
+        
+        // Append new comments to existing ones
+        setComments(prev => [...prev, ...formattedComments]);
+        setCommentsPage(nextPage);
+        setHasMoreComments(commentsData.next !== null);
+      }
+    } catch (error) {
+      console.error('Error loading more comments:', error);
+    } finally {
+      setLoadingMoreComments(false);
+    }
+  }, [currentLiveVideo, loadingMoreComments, hasMoreComments, commentsPage]);
 
   // Separate effect for fetching live video with auto-refresh
   useEffect(() => {
@@ -158,15 +194,14 @@ const Hero = () => {
     localStorage.setItem('hero_comment_count', commentCount.toString());
   }, [commentCount]);
 
-  // Clear localStorage when component unmounts (optional)
+  // Initialize stats from current video data
   useEffect(() => {
-    return () => {
-      // Uncomment these lines if you want counts to reset when leaving the page
-      // localStorage.removeItem('hero_viewer_count');
-      // localStorage.removeItem('hero_like_count'); 
-      // localStorage.removeItem('hero_comment_count');
-    };
-  }, []);
+    if (currentLiveVideo) {
+      setLikeCount(currentLiveVideo.like_count || 0);
+      setCommentCount(currentLiveVideo.comment_count || 0);
+      setViewerCount(currentLiveVideo.current_viewers || Math.floor(Math.random() * 50) + 1);
+    }
+  }, [currentLiveVideo]);
 
   // Update viewer count periodically for live videos and optimize auto-play
   useEffect(() => {
@@ -177,53 +212,42 @@ const Hero = () => {
       const setupVideo = async () => {
         try {
           // Set video properties for optimal loading
-          video.preload = 'auto'; // Changed from 'metadata' to 'auto' for faster loading
+          video.preload = 'auto';
           video.muted = isMuted;
-          video.loop = true; // Enable loop for immediate replay
+          video.loop = true;
           video.playsInline = true;
-          video.crossOrigin = 'anonymous'; // Allow cross-origin for better loading
+          video.crossOrigin = 'anonymous';
           
-          // Set source if different
+          // Only set source if it's different to avoid restart
           if (video.src !== currentLiveVideo.video_file) {
             video.src = currentLiveVideo.video_file || '';
-          }
-          
-          // Force load the video data immediately
-          video.load();
-          
-          // Wait for video to be ready and play immediately
-          const playWhenReady = () => {
-            video.play().catch(error => {
-              console.info('Autoplay prevented by browser, user interaction required:', error);
-            });
-          };
-          
-          if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-            playWhenReady();
-          } else {
-            // Use both loadeddata and canplay for better compatibility
+            
+            // Force load the video data immediately
+            video.load();
+            
+            // Add multiple event listeners for faster loading
+            const playWhenReady = () => {
+              if (video.paused) {
+                video.play().catch(error => {
+                  console.info('Autoplay prevented by browser, user interaction required:', error);
+                });
+              }
+            };
+            
+            // Use multiple events for better compatibility
+            video.addEventListener('loadstart', playWhenReady, { once: true });
             video.addEventListener('loadeddata', playWhenReady, { once: true });
             video.addEventListener('canplay', playWhenReady, { once: true });
+            
+            // Preload optimization
+            video.addEventListener('loadedmetadata', () => {
+              video.currentTime = 0.1;
+              video.currentTime = 0;
+            }, { once: true });
           }
           
-          // Handle video end for immediate replay
-          const handleVideoEnd = () => {
-            video.currentTime = 0;
-            video.play().catch(console.info);
-          };
-          
-          video.addEventListener('ended', handleVideoEnd);
-          
-          // Preload the next frame when video metadata loads
-          video.addEventListener('loadedmetadata', () => {
-            video.currentTime = 0.1; // Seek to small time to trigger frame loading
-            video.currentTime = 0; // Reset to beginning
-          }, { once: true });
-          
-          // Cleanup function
-          return () => {
-            video.removeEventListener('ended', handleVideoEnd);
-          };
+          // Ensure video properties are set even if source hasn't changed
+          video.muted = isMuted;
           
         } catch (error) {
           console.info('Video setup error:', error);
@@ -238,19 +262,14 @@ const Hero = () => {
   const toggleMute = useCallback(() => {
     if (videoRef.current) {
       const video = videoRef.current;
+      
+      // Simply toggle mute without changing anything else
       const newMutedState = !isMuted;
-      
-      // Store current time to prevent restart
-      const currentTime = video.currentTime;
-      const wasPlaying = !video.paused;
-      
-      // Update mute state
       video.muted = newMutedState;
       setIsMuted(newMutedState);
       
-      // Ensure video continues from same position
-      if (wasPlaying && video.paused) {
-        video.currentTime = currentTime;
+      // If video is paused and should be playing, restart it
+      if (video.paused && video.readyState >= 2) {
         video.play().catch(console.info);
       }
     }
@@ -258,8 +277,6 @@ const Hero = () => {
 
   const addLikeToBackend = async (videoSlug: string) => {
     try {
-      console.log('Sending like for video slug:', videoSlug); // Debug log
-
       const response = await fetch(`/api/live-video/live-videos/${videoSlug}/interact/`, {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -269,8 +286,7 @@ const Hero = () => {
       });
       
       if (response.ok) {
-        const responseData = await response.json();
-        console.log('Like response:', responseData); // Debug log
+        await response.json();
         // Refresh stats after successful like
         await fetchVideoStats(videoSlug);
       } else {
@@ -282,24 +298,20 @@ const Hero = () => {
     }
   };
 
-  const addCommentToBackend = async (videoId: string, commentText: string) => {
+  const addCommentToBackend = async (videoSlug: string, commentText: string) => {
     try {
-      const response = await fetch(`/api/comments/`, {
+      const response = await fetch(`/api/live-video/live-videos/${videoSlug}/comments/`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          content_type_name: 'livevideo',
-          object_id: videoId,
-          text: commentText,
+          message: commentText, // LiveVideoComment uses 'message' field instead of 'text'
         }),
       });
       
       if (response.ok) {
+        await response.json();
         // Refresh stats after successful comment
-        await fetchVideoStats(videoId);
-      } else {
-        const errorData = await response.text();
-        console.info('Backend comment failed:', response.status, errorData);
+        await fetchVideoStats(videoSlug);
       }
     } catch (error) {
       console.info('Error adding comment:', error);
@@ -318,18 +330,35 @@ const Hero = () => {
     
     // If we have a current live video, add to backend
     if (currentLiveVideo?.id) {
-      await addCommentToBackend(currentLiveVideo.id, comment.trim());
+      try {
+        const videoSlug = currentLiveVideo.slug || currentLiveVideo.id;
+        await addCommentToBackend(videoSlug, comment.trim());
+        // Refresh comments from backend after successful submission
+        await fetchVideoStats(videoSlug);
+      } catch (error) {
+        console.info('Comment failed, showing optimistic update:', error);
+        // Only do optimistic update if backend fails
+        const newComment = {
+          id: Date.now().toString(),
+          user: 'You',
+          text: comment.trim(),
+          timestamp: new Date()
+        };
+        setComments(prev => [newComment, ...prev]);
+        setCommentCount(prev => prev + 1);
+      }
+    } else {
+      // Fallback: add locally if no video ID
+      const newComment = {
+        id: Date.now().toString(),
+        user: 'You',
+        text: comment.trim(),
+        timestamp: new Date()
+      };
+      setComments(prev => [newComment, ...prev]);
+      setCommentCount(prev => prev + 1);
     }
     
-    // Always add locally for immediate feedback
-    const newComment = {
-      id: Date.now().toString(),
-      user: 'You',
-      text: comment.trim(),
-      timestamp: new Date()
-    };
-    setComments(prev => [newComment, ...prev]); // Add to beginning instead of limiting to 20
-    setCommentCount(prev => prev + 1);
     setComment('');
   };
 
@@ -356,11 +385,18 @@ const Hero = () => {
     
     // Add like to backend if there's a current video
     if (currentLiveVideo?.slug) {
-      await addLikeToBackend(currentLiveVideo.slug);
+      try {
+        await addLikeToBackend(currentLiveVideo.slug);
+        // Backend call will refresh stats, no need to increment locally
+      } catch (error) {
+        console.info('Like failed, showing optimistic update:', error);
+        // Only do optimistic update if backend fails
+        setLikeCount(prev => prev + 1);
+      }
+    } else {
+      // Fallback: increment locally if no slug
+      setLikeCount(prev => prev + 1);
     }
-    
-    // Always increment locally for immediate feedback
-    setLikeCount(prev => prev + 1);
     
     // Remove reaction after animation
     setTimeout(() => {
@@ -629,6 +665,28 @@ const Hero = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Load More Comments Button */}
+                  {hasMoreComments && (
+                    <div className="p-4">
+                      <button
+                        onClick={loadMoreComments}
+                        className="w-full py-2 px-3 bg-gradient-to-r from-purple-500/80 to-pink-500/80 hover:from-purple-600 hover:to-pink-600 text-white text-xs rounded-full transition-colors flex items-center justify-center space-x-2"
+                      >
+                        {loadingMoreComments ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4zm16 0a8 8 0 01-8 8v-8h8z"></path>
+                            </svg>
+                            <span>Loading more comments...</span>
+                          </>
+                        ) : (
+                          <span>Load More Comments</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Comment Input */}
                   <div className="p-3 border-t border-white/20">
