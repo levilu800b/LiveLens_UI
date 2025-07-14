@@ -14,30 +14,7 @@ import {
   Eye
 } from 'lucide-react';
 import AdminLayout from '../../components/Admin/AdminLayout';
-
-interface SneakPeekFormData {
-  title: string;
-  description: string;
-  short_description: string;
-  category: string;
-  tags: string[];
-  video_file?: File | null;
-  thumbnail?: File | null;
-  poster?: File | null;
-  duration: number;
-  video_quality: '480p' | '720p' | '1080p' | '4K';
-  release_date?: string;
-  content_rating: 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17';
-  status: 'draft' | 'published' | 'archived';
-  is_featured: boolean;
-  is_trending: boolean;
-  is_premium: boolean;
-  meta_title: string;
-  meta_description: string;
-  meta_keywords: string;
-  related_content_type: string;
-  related_content_id?: string;
-}
+import sneakPeekService, { type SneakPeekFormData } from '../../services/sneakPeekService';
 
 const AddSneakPeekPage: React.FC = () => {
   const navigate = useNavigate();
@@ -57,6 +34,7 @@ const AddSneakPeekPage: React.FC = () => {
     is_featured: false,
     is_trending: false,
     is_premium: false,
+    is_explicit: false,
     meta_title: '',
     meta_description: '',
     meta_keywords: '',
@@ -178,71 +156,21 @@ const AddSneakPeekPage: React.FC = () => {
       if (!formData.video_file) {
         throw new Error('Video file is required');
       }
-      if (formData.duration > 600) {
+      if ((formData.duration || 0) > 600) {
         throw new Error('Sneak peeks cannot be longer than 10 minutes');
       }
       if (formData.tags.length > 10) {
         throw new Error('Maximum 10 tags allowed');
       }
 
-      const submitData = new FormData();
-      
-      // Basic fields
-      submitData.append('title', formData.title.trim());
-      submitData.append('description', formData.description.trim());
-      submitData.append('short_description', formData.short_description.trim() || formData.description.substring(0, 250));
-      submitData.append('category', formData.category);
-      submitData.append('tags_list', JSON.stringify(formData.tags));
-      submitData.append('duration', formData.duration.toString());
-      submitData.append('video_quality', formData.video_quality);
-      submitData.append('content_rating', formData.content_rating);
-      submitData.append('meta_title', formData.meta_title.trim());
-      submitData.append('meta_description', formData.meta_description.trim());
-      submitData.append('meta_keywords', formData.meta_keywords.trim());
-      submitData.append('related_content_type', formData.related_content_type);
-      
-      // Optional fields
-      if (formData.release_date) {
-        submitData.append('release_date', formData.release_date);
-      }
-      if (formData.related_content_id) {
-        submitData.append('related_content_id', formData.related_content_id);
-      }
-      
-      // Booleans
-      submitData.append('is_featured', formData.is_featured.toString());
-      submitData.append('is_trending', formData.is_trending.toString());
-      submitData.append('is_premium', formData.is_premium.toString());
-      
-      // Status
-      const status = action === 'publish' ? 'published' : 'draft';
-      submitData.append('status', status);
+      // Prepare form data for service
+      const submitData: SneakPeekFormData = {
+        ...formData,
+        status: action === 'publish' ? 'published' : 'draft'
+      };
 
-      // Files
-      if (formData.video_file) {
-        submitData.append('video_file', formData.video_file);
-      }
-      if (formData.thumbnail) {
-        submitData.append('thumbnail', formData.thumbnail);
-      }
-      if (formData.poster) {
-        submitData.append('poster', formData.poster);
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sneak-peeks/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.detail || 'Failed to create sneak peek');
-      }
-
-      await response.json();
+      // Use the service instead of manual API call
+      await sneakPeekService.createSneakPeek(submitData);
       
       // Show success message
       const actionText = action === 'publish' ? 'published' : 'saved as draft';
@@ -396,7 +324,7 @@ const AddSneakPeekPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Play className="w-5 h-5 text-blue-600" />
                           <span className="text-sm text-gray-600 truncate">
-                            {formData.video_file.name}
+                            {formData.video_file instanceof File ? formData.video_file.name : formData.video_file}
                           </span>
                         </div>
                         <button
@@ -437,7 +365,7 @@ const AddSneakPeekPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <ImageIcon className="w-5 h-5 text-blue-600" />
                           <span className="text-sm text-gray-600 truncate">
-                            {formData.thumbnail.name}
+                            {formData.thumbnail instanceof File ? formData.thumbnail.name : formData.thumbnail}
                           </span>
                         </div>
                         <button
@@ -477,7 +405,7 @@ const AddSneakPeekPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <ImageIcon className="w-5 h-5 text-blue-600" />
                           <span className="text-sm text-gray-600 truncate">
-                            {formData.poster.name}
+                            {formData.poster instanceof File ? formData.poster.name : formData.poster}
                           </span>
                         </div>
                         <button
@@ -529,7 +457,7 @@ const AddSneakPeekPage: React.FC = () => {
                       placeholder="Duration in seconds"
                     />
                     <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 min-w-fit">
-                      {formatDuration(formData.duration)}
+                      {formatDuration(formData.duration || 0)}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Max 10 minutes (600 seconds)</p>
@@ -693,7 +621,7 @@ const AddSneakPeekPage: React.FC = () => {
                     placeholder="SEO title (max 60 characters)"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {formData.meta_title.length}/60 characters
+                    {(formData.meta_title || '').length}/60 characters
                   </p>
                 </div>
 
@@ -711,7 +639,7 @@ const AddSneakPeekPage: React.FC = () => {
                     placeholder="SEO description (max 160 characters)"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {formData.meta_description.length}/160 characters
+                    {(formData.meta_description || '').length}/160 characters
                   </p>
                 </div>
 
