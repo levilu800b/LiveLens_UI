@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
 import { userActions } from '../../store/reducers/userReducers';
 import { uiActions } from '../../store/reducers/uiReducers';
+import { authAPI } from '../../services/api';
 
 const VerifyEmailPage = () => {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
@@ -93,9 +94,10 @@ const VerifyEmailPage = () => {
       firstName: response.first_name || 'User',
       lastName: response.last_name || '',
       email: email,
-      isVerified: true,
+      isEmailVerified: true, // ✅ Fixed property name
       isAdmin: response.is_admin ?? false,
-      createdAt: response.created_at ?? new Date().toISOString()
+      createdAt: response.created_at ?? new Date().toISOString(),
+      updatedAt: response.updated_at ?? new Date().toISOString(), // ✅ Added missing field
     };
 
     dispatch(userActions.setUserInfo(userData));
@@ -115,9 +117,10 @@ const VerifyEmailPage = () => {
       }
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Verification error:', error);
-    setError(error.message || 'Invalid verification code. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Invalid verification code. Please try again.';
+    setError(errorMessage);
     setVerificationCode(['', '', '', '', '', '']);
     inputRefs.current[0]?.focus();
   } finally {
@@ -129,13 +132,20 @@ const VerifyEmailPage = () => {
     if (!canResend) return;
 
     try {
-      // TODO: Replace with actual API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setIsLoading(true);
+      
+      // Call the actual resend API
+      await authAPI.resendVerificationCode(email);
 
       setCanResend(false);
       setCountdown(60);
       setError('');
+
+      // Show success message
+      dispatch(uiActions.addNotification({
+        message: 'Verification code resent successfully!',
+        type: 'success'
+      }));
 
       // Restart countdown
       const timer = setInterval(() => {
@@ -148,8 +158,17 @@ const VerifyEmailPage = () => {
           return prev - 1;
         });
       }, 1000);
-    } catch {
-      setError('Failed to resend code. Please try again.');
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification code';
+      setError(errorMessage);
+      
+      dispatch(uiActions.addNotification({
+        message: errorMessage,
+        type: 'error'
+      }));
+    } finally {
+      setIsLoading(false);
     }
   };
 

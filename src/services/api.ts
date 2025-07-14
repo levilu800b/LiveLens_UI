@@ -22,6 +22,8 @@ export const authAPI = {
   signup: unifiedAuth.auth.register, // ✅ Added alias for signup
   logout: unifiedAuth.auth.logout,
   refreshToken: unifiedAuth.auth.refreshToken,
+  verifyEmail: unifiedAuth.auth.verifyEmail, // ✅ Added missing method
+  resendVerificationCode: unifiedAuth.auth.resendVerificationCode, // ✅ Added resend method
 };
 
 export const profileAPI = {

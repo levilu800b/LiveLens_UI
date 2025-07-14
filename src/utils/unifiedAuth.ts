@@ -48,8 +48,18 @@ export const userManager = {
 };
 
 // ===== HTTP CLIENT =====
+const createTimeoutController = (timeoutMs: number = 30000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return { controller, timeoutId };
+};
+
 const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}): Promise<any> => {
   const token = tokenManager.getAccessToken();
+  
+  // Add timeout to all requests
+  const { controller, timeoutId } = createTimeoutController(30000); // 30 seconds timeout
+  options.signal = controller.signal;
   
   if (token && !tokenManager.isTokenExpired(token)) {
     options.headers = {
@@ -58,109 +68,144 @@ const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}):
     };
   }
 
-  const response = await fetch(url, options);
+  try {
+    const response = await fetch(url, options);
+    clearTimeout(timeoutId);
 
-  // Handle token expiration
-  if (response.status === 401) {
-    const refreshToken = tokenManager.getRefreshToken();
-    if (refreshToken) {
-      try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh: refreshToken }),
-        });
-
-        if (refreshResponse.ok) {
-          const data = await refreshResponse.json();
-          tokenManager.setTokens(data.access, refreshToken);
-          
-          // Retry original request with new token
-          options.headers = {
-            ...options.headers,
-            'Authorization': `Bearer ${data.access}`,
-          };
-          return fetch(url, options).then(res => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
+    // Handle token expiration
+    if (response.status === 401) {
+      const refreshToken = tokenManager.getRefreshToken();
+      if (refreshToken) {
+        try {
+          const refreshResponse = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh: refreshToken }),
           });
+
+          if (refreshResponse.ok) {
+            const data = await refreshResponse.json();
+            tokenManager.setTokens(data.access, refreshToken);
+            
+            // Retry original request with new token
+            options.headers = {
+              ...options.headers,
+              'Authorization': `Bearer ${data.access}`,
+            };
+            return fetch(url, options).then(res => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.json();
+            });
+          }
+        } catch (error) {
+          console.error('Token refresh failed:', error);
         }
-      } catch (error) {
-        console.error('Token refresh failed:', error);
       }
+      
+      // Clear invalid tokens and redirect
+      tokenManager.clearTokens();
+      userManager.clearUser();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      throw new Error('Session expired. Please login again.');
     }
     
-    // Clear invalid tokens and redirect
-    tokenManager.clearTokens();
-    userManager.clearUser();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.detail || `HTTP ${response.status}`);
     }
-    throw new Error('Session expired. Please login again.');
-  }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || errorData.detail || `HTTP ${response.status}`);
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout. Please check your connection and try again.');
+    }
+    throw error;
   }
-
-  return response.json();
 };
 
 // ===== AUTH SERVICE =====
 export const authService = {
   // Login
   login: async (email: string, password: string) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Login failed');
-    }
-
-    const data = await response.json();
+    const { controller, timeoutId } = createTimeoutController(15000); // 15 seconds timeout
     
-    // Store tokens and user data
-    if (data.access_token && data.refresh_token) {
-      tokenManager.setTokens(data.access_token, data.refresh_token);
-    }
-    
-    if (data.user) {
-      userManager.setUser(data.user);
-    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      });
 
-    return data;
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+
+      const data = await response.json();
+      
+      // Store tokens and user data
+      if (data.access_token && data.refresh_token) {
+        tokenManager.setTokens(data.access_token, data.refresh_token);
+      }
+      
+      if (data.user) {
+        userManager.setUser(data.user);
+      }
+
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Login timeout. Please check your connection and try again.');
+      }
+      throw error;
+    }
   },
 
   // Google Login
   googleLogin: async (googleData: { email: string; google_id: string }) => {
-    const response = await fetch(`${API_BASE_URL}/auth/google-login/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(googleData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Google login failed');
-    }
-
-    const data = await response.json();
+    const { controller, timeoutId } = createTimeoutController(15000); // 15 seconds timeout
     
-    // Store tokens and user data
-    if (data.access_token && data.refresh_token) {
-      tokenManager.setTokens(data.access_token, data.refresh_token);
-    }
-    
-    if (data.user) {
-      userManager.setUser(data.user);
-    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/google-login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(googleData),
+        signal: controller.signal,
+      });
 
-    return data;
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Google login failed');
+      }
+
+      const data = await response.json();
+      
+      // Store tokens and user data
+      if (data.access_token && data.refresh_token) {
+        tokenManager.setTokens(data.access_token, data.refresh_token);
+      }
+      
+      if (data.user) {
+        userManager.setUser(data.user);
+      }
+
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Google login timeout. Please check your connection and try again.');
+      }
+      throw error;
+    }
   },
 
   // Google Signup - NEW METHOD
@@ -171,29 +216,42 @@ export const authService = {
     google_id: string;
     avatar_url?: string;
   }) => {
-    const response = await fetch(`${API_BASE_URL}/auth/google-signup/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(googleData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Google signup failed');
-    }
-
-    const data = await response.json();
+    const { controller, timeoutId } = createTimeoutController(15000); // 15 seconds timeout
     
-    // Store tokens and user data
-    if (data.access_token && data.refresh_token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/google-signup/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(googleData),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Google signup failed');
+      }
+
+      const data = await response.json();
+      
+      // Store tokens and user data
+      if (data.access_token && data.refresh_token) {
       tokenManager.setTokens(data.access_token, data.refresh_token);
-    }
-    
-    if (data.user) {
-      userManager.setUser(data.user);
-    }
+      }
+      
+      if (data.user) {
+        userManager.setUser(data.user);
+      }
 
-    return data;
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Google signup timeout. Please check your connection and try again.');
+      }
+      throw error;
+    }
   },
 
   // Register
@@ -206,22 +264,35 @@ export const authService = {
     // Generate username from email
     const username = userData.email.split('@')[0];
     
-    const response = await fetch(`${API_BASE_URL}/auth/register/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...userData,
-        username,
-        password_confirm: userData.password
-      }),
-    });
+    const { controller, timeoutId } = createTimeoutController(30000); // 30 seconds timeout
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...userData,
+          username,
+          password_confirm: userData.password
+        }),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Registration failed');
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Registration timeout. Please check your connection and try again.');
+      }
+      throw error;
     }
-
-    return response.json();
   },
 
   // Logout
@@ -265,6 +336,66 @@ export const authService = {
     const data = await response.json();
     tokenManager.setTokens(data.access, refreshToken);
     return data;
+  },
+
+  // Email Verification
+  verifyEmail: async (email: string, code: string) => {
+    const { controller, timeoutId } = createTimeoutController(15000); // 15 seconds timeout
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Email verification failed');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Verification timeout. Please check your connection and try again.');
+      }
+      throw error;
+    }
+  },
+
+  // Resend Verification Code
+  resendVerificationCode: async (email: string) => {
+    const { controller, timeoutId } = createTimeoutController(15000); // 15 seconds timeout
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-verification/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to resend verification code');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Resend timeout. Please check your connection and try again.');
+      }
+      throw error;
+    }
   }
 };
 
