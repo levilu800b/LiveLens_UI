@@ -40,13 +40,14 @@ const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      
       const data = await adminService.getDashboardStats();
       setStats(data);
       // Check if we're using demo data (simple heuristic)
       setIsUsingDemoData(data.total_users === 1250);
-    } catch (err) {
+      
+    } catch {
       setError('Failed to load dashboard data. Please check your connection and try again.');
-      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
@@ -130,8 +131,8 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Demo Mode:</strong> Backend not available. Displaying sample data for demonstration purposes. 
-                Start your Django backend server to see real data.
+                <strong>Demo Mode:</strong> Backend not available or authentication failed. Displaying sample data for demonstration purposes. 
+                Start your Django backend server and ensure you're logged in as an admin to see real data.
               </p>
             </div>
           </div>

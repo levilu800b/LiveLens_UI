@@ -173,10 +173,12 @@ class AdminService {
     const url = `${API_BASE_URL}/admin-dashboard/${endpoint}`;
     
     try {
+      const headers = this.getAuthHeaders();
+      
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...this.getAuthHeaders(),
+          ...headers,
           ...options.headers,
         },
       });
@@ -195,7 +197,8 @@ class AdminService {
               },
             });
             if (retryResponse.ok) {
-              return retryResponse.json();
+              const data = await retryResponse.json();
+              return data;
             }
           }
           throw new Error('Authentication failed');
@@ -203,11 +206,11 @@ class AdminService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
       // If backend is not available, provide demo data for dashboard stats
-      if (endpoint === 'stats/' && (error instanceof Error && error.message?.includes('fetch'))) {
-        console.warn('Backend not available, using demo data for dashboard');
+      if (endpoint === 'stats/' && (error instanceof Error && (error.message?.includes('fetch') || error.message?.includes('Failed to fetch')))) {
         return this.getDemoStats() as T;
       }
       throw error;
