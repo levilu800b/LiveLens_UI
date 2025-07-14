@@ -612,12 +612,12 @@ const Hero = () => {
                     <div className="flex items-center space-x-2">
                       {currentLiveVideo ? (
                         <>
-                          <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                           <span className="text-sm text-white font-medium">Live Now</span>
                         </>
                       ) : (
                         <>
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
                           <span className="text-sm text-white font-medium">Stories Available</span>
                         </>
                       )}
