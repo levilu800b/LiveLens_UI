@@ -4,7 +4,6 @@ import {
   Instagram, 
   Twitter, 
   Facebook, 
-  Youtube, 
   Mail, 
   Phone, 
   MapPin,
@@ -50,7 +49,6 @@ const Footer = () => {
     { icon: Instagram, href: '#', label: 'Instagram' },
     { icon: Twitter, href: '#', label: 'Twitter' },
     { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Youtube, href: '#', label: 'YouTube' },
   ];
 
   const quickLinks = [
@@ -198,15 +196,15 @@ const Footer = () => {
             <div className="space-y-3 mb-6">
               <div className="flex items-center text-gray-300 text-sm">
                 <Mail className="h-4 w-4 mr-2 text-purple-400" />
-                hello@livelens.com
+                info.livelens@gmail.com
               </div>
               <div className="flex items-center text-gray-300 text-sm">
                 <Phone className="h-4 w-4 mr-2 text-purple-400" />
-                +1 (555) 123-4567
+                +44 74 9708 8515
               </div>
               <div className="flex items-center text-gray-300 text-sm">
                 <MapPin className="h-4 w-4 mr-2 text-purple-400" />
-                San Francisco, CA
+                London, UK
               </div>
             </div>
 
@@ -289,7 +287,7 @@ const Footer = () => {
             <div className="flex items-center text-gray-400 text-sm mb-4 md:mb-0">
               <span>© 2025 LiveLens. Made with</span>
               <Heart className="h-4 w-4 mx-1 text-red-500 animate-pulse" />
-              <span>in San Francisco</span>
+              <span>in London</span>
             </div>
             
             <div className="flex flex-wrap items-center space-x-6 text-xs text-gray-400">
