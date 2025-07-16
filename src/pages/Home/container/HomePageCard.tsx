@@ -117,13 +117,13 @@ const ContentTrailerSection: React.FC = () => {
         if (animationsResponse.status === 'fulfilled') console.log('Animations data:', animationsResponse.value);
         if (sneakPeeksResponse.status === 'fulfilled') console.log('SneakPeeks data:', sneakPeeksResponse.value);
 
-        const items: ContentItem[] = [];
+        // Collect all featured items from all sources
+        const allItems: ContentItem[] = [];
 
-        // Process stories (take exactly 1 with thumbnail)
+        // Process stories
         if (storiesResponse.status === 'fulfilled' && storiesResponse.value && storiesResponse.value.length > 0) {
           const stories = storiesResponse.value
             .filter((story: any) => story.thumbnail || story.cover_image) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .slice(0, 1)
             .map((story: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
               id: story.id,
               type: 'story' as const,
@@ -133,14 +133,13 @@ const ContentTrailerSection: React.FC = () => {
               category: story.category || 'Story',
               thumbnail: story.thumbnail || story.cover_image,
             }));
-          items.push(...stories);
+          allItems.push(...stories);
         }
 
-        // Process podcasts (take exactly 1 with thumbnail)
+        // Process podcasts
         if (podcastsResponse.status === 'fulfilled' && podcastsResponse.value && podcastsResponse.value.length > 0) {
           const podcasts = podcastsResponse.value
             .filter((podcast: any) => podcast.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .slice(0, 1)
             .map((podcast: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
               id: podcast.id,
               type: 'podcast' as const,
@@ -150,14 +149,13 @@ const ContentTrailerSection: React.FC = () => {
               category: podcast.category || 'Podcast',
               thumbnail: podcast.thumbnail,
             }));
-          items.push(...podcasts);
+          allItems.push(...podcasts);
         }
 
-        // Process films (take exactly 1 with thumbnail)
+        // Process films
         if (filmsResponse.status === 'fulfilled' && filmsResponse.value && filmsResponse.value.length > 0) {
           const films = filmsResponse.value
             .filter((film: any) => film.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .slice(0, 1)
             .map((film: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
               id: film.id,
               type: 'film' as const,
@@ -167,14 +165,13 @@ const ContentTrailerSection: React.FC = () => {
               category: film.category || 'Film',
               thumbnail: film.thumbnail,
             }));
-          items.push(...films);
+          allItems.push(...films);
         }
 
-        // Process content (take exactly 1 with thumbnail)
+        // Process content
         if (contentResponse.status === 'fulfilled' && contentResponse.value && contentResponse.value.length > 0) {
           const content = contentResponse.value
             .filter((item: any) => item.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .slice(0, 1)
             .map((item: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
               id: item.id,
               type: 'content' as const,
@@ -184,14 +181,13 @@ const ContentTrailerSection: React.FC = () => {
               category: item.category || 'Content',
               thumbnail: item.thumbnail,
             }));
-          items.push(...content);
+          allItems.push(...content);
         }
 
-        // Process animations (take exactly 1 with thumbnail)
+        // Process animations
         if (animationsResponse.status === 'fulfilled' && animationsResponse.value && animationsResponse.value.length > 0) {
           const animations = animationsResponse.value
             .filter((animation: any) => animation.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .slice(0, 1)
             .map((animation: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
               id: animation.id,
               type: 'animation' as const,
@@ -201,14 +197,13 @@ const ContentTrailerSection: React.FC = () => {
               category: animation.category || 'Animation',
               thumbnail: animation.thumbnail,
             }));
-          items.push(...animations);
+          allItems.push(...animations);
         }
 
-        // Process sneak peeks (take exactly 2 with thumbnails)
+        // Process sneak peeks
         if (sneakPeeksResponse.status === 'fulfilled' && sneakPeeksResponse.value && sneakPeeksResponse.value.length > 0) {
           const sneakPeeks = sneakPeeksResponse.value
             .filter((sneakPeek: any) => sneakPeek.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-            .slice(0, 2)
             .map((sneakPeek: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
               id: sneakPeek.id,
               type: 'sneakpeek' as const,
@@ -218,89 +213,18 @@ const ContentTrailerSection: React.FC = () => {
               category: sneakPeek.category || 'Sneak Peek',
               thumbnail: sneakPeek.thumbnail,
             }));
-          items.push(...sneakPeeks);
+          allItems.push(...sneakPeeks);
         }
 
-        console.log(`Total items from database: ${items.length}`, items.map(item => ({ type: item.type, title: item.title, id: item.id })));
+        console.log(`Total available featured items: ${allItems.length}`, allItems.map(item => ({ type: item.type, title: item.title, id: item.id })));
 
-        // If we don't have 6 items, try to get more from successful APIs
-        if (items.length < 6) {
-          console.log('Not enough items, trying to get more from available APIs...');
-          
-          // Try to get more stories if we have them
-          if (storiesResponse.status === 'fulfilled' && storiesResponse.value && storiesResponse.value.length > 1) {
-            const additionalStories = storiesResponse.value
-              .filter((story: any) => story.thumbnail || story.cover_image) // eslint-disable-line @typescript-eslint/no-explicit-any
-              .slice(1, 3) // Skip the first one we already used, take up to 2 more
-              .map((story: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-                id: story.id,
-                type: 'story' as const,
-                title: story.title,
-                description: story.description || story.short_description || story.excerpt || '',
-                duration: `${story.estimated_read_time || 5}m read`,
-                category: story.category || 'Story',
-                thumbnail: story.thumbnail || story.cover_image,
-              }));
-            items.push(...additionalStories.slice(0, 6 - items.length));
-          }
+        // Shuffle all items randomly and take exactly 6 (or all if less than 6)
+        const shuffledItems = allItems.sort(() => Math.random() - 0.5);
+        const finalItems = shuffledItems.slice(0, 6);
 
-          // Try to get more podcasts if we need them and have them
-          if (items.length < 6 && podcastsResponse.status === 'fulfilled' && podcastsResponse.value && podcastsResponse.value.length > 1) {
-            const additionalPodcasts = podcastsResponse.value
-              .filter((podcast: any) => podcast.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-              .slice(1, 3) // Skip the first one we already used
-              .map((podcast: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-                id: podcast.id,
-                type: 'podcast' as const,
-                title: podcast.title,
-                description: podcast.description || '',
-                duration: `${podcast.duration || 30}m`,
-                category: podcast.category || 'Podcast',
-                thumbnail: podcast.thumbnail,
-              }));
-            items.push(...additionalPodcasts.slice(0, 6 - items.length));
-          }
+        console.log(`Final selected items: ${finalItems.length}`, finalItems.map(item => ({ type: item.type, title: item.title, id: item.id })));
 
-          // Try to get more films if we need them and have them
-          if (items.length < 6 && filmsResponse.status === 'fulfilled' && filmsResponse.value && filmsResponse.value.length > 1) {
-            const additionalFilms = filmsResponse.value
-              .filter((film: any) => film.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-              .slice(1, 3) // Skip the first one we already used
-              .map((film: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-                id: film.id,
-                type: 'film' as const,
-                title: film.title,
-                description: film.description || film.short_description || '',
-                duration: film.duration_formatted || '2h',
-                category: film.category || 'Film',
-                thumbnail: film.thumbnail,
-              }));
-            items.push(...additionalFilms.slice(0, 6 - items.length));
-          }
-
-          // Try to get more content if we need it and have it
-          if (items.length < 6 && contentResponse.status === 'fulfilled' && contentResponse.value && contentResponse.value.length > 1) {
-            const additionalContent = contentResponse.value
-              .filter((item: any) => item.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
-              .slice(1, 3) // Skip the first one we already used
-              .map((item: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-                id: item.id,
-                type: 'content' as const,
-                title: item.title,
-                description: item.description || item.short_description || '',
-                duration: item.duration_formatted || '1h',
-                category: item.category || 'Content',
-                thumbnail: item.thumbnail,
-              }));
-            items.push(...additionalContent.slice(0, 6 - items.length));
-          }
-        }
-
-        console.log(`Final items count: ${items.length}`, items.map(item => ({ type: item.type, title: item.title, id: item.id })));
-
-        // Shuffle the items randomly and set them
-        const shuffledItems = items.sort(() => Math.random() - 0.5);
-        setContentItems(shuffledItems);
+        setContentItems(finalItems);
       } catch (err) {
         console.error('Error loading featured content:', err);
         setError('Failed to load featured content');
