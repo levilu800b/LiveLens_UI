@@ -40,7 +40,7 @@ export interface ContentItem {
   title: string;
   description: string;
   thumbnail?: string;
-  type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek';
+  type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek' | 'live-video';
   duration: number; // in minutes for videos, estimated read time for stories
   views: number;
   likes: number;

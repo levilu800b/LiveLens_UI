@@ -9,7 +9,7 @@ interface ContentCardProps {
   description: string;
   thumbnail?: string;
   duration: string;
-  type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek';
+  type: 'story' | 'film' | 'content' | 'podcast' | 'animation' | 'sneak-peek' | 'live-video';
   tags: string[];
   views?: number;
   likes?: number;
@@ -81,6 +81,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
         return;
       }
       navigate(`/sneak-peek/${id}`);
+    } else if (type === 'live-video') {
+      // Require authentication for live videos
+      if (!userInfo) {
+        navigate('/login');
+        return;
+      }
+      navigate(`/live-video/${id}`);
     } else {
       navigate(`/watch/${type}/${id}`);
     }

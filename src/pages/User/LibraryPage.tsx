@@ -39,7 +39,8 @@ const LibraryPage: React.FC = () => {
   }, [fetchLibrary]);
 
   const handleSearch = (query: string) => {
-    const filtered = library.filter(item =>
+    const baseItems = selectedType === 'all' ? library : library.filter(item => item.type === selectedType);
+    const filtered = baseItems.filter(item =>
       item.title.toLowerCase().includes(query.toLowerCase()) ||
       item.description.toLowerCase().includes(query.toLowerCase())
     );
@@ -64,6 +65,7 @@ const LibraryPage: React.FC = () => {
     { key: 'podcast', label: 'Podcasts', icon: Play },
     { key: 'animation', label: 'Animations', icon: Play },
     { key: 'sneak-peek', label: 'Sneak Peeks', icon: Play },
+    { key: 'live-video', label: 'Live Videos', icon: Play },
   ];
 
   if (isLoading) {
@@ -129,8 +131,15 @@ const LibraryPage: React.FC = () => {
               {filteredLibrary.map((item) => (
                 <ContentCard
                   key={item.id}
-                  content={item}
-                  showProgress={true}
+                  id={item.id}
+                  title={item.title}
+                  description={item.description}
+                  thumbnail={item.thumbnail}
+                  duration={item.duration.toString()}
+                  type={item.type}
+                  tags={item.tags}
+                  views={item.views}
+                  likes={item.likes}
                 />
               ))}
             </div>

@@ -40,12 +40,14 @@ const FavoritesPage: React.FC = () => {
   };
 
   const handleSearch = (query: string) => {
-    const filtered = favorites.filter(item =>
+    const baseItems = selectedType === 'all' ? favorites : favorites.filter(item => item.type === selectedType);
+    const filtered = baseItems.filter(item =>
       item.title.toLowerCase().includes(query.toLowerCase()) ||
       item.description.toLowerCase().includes(query.toLowerCase()) ||
       item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
     );
-    setFilteredFavorites(filtered);
+    const sorted = sortContent(filtered, sortBy);
+    setFilteredFavorites(sorted);
   };
 
   const handleTypeFilter = (type: string) => {
@@ -59,7 +61,8 @@ const FavoritesPage: React.FC = () => {
 
   const handleSortChange = (newSortBy: string) => {
     setSortBy(newSortBy);
-    const sorted = sortContent(filteredFavorites, newSortBy);
+    const baseItems = selectedType === 'all' ? favorites : favorites.filter(item => item.type === selectedType);
+    const sorted = sortContent(baseItems, newSortBy);
     setFilteredFavorites(sorted);
   };
 
@@ -112,6 +115,7 @@ const FavoritesPage: React.FC = () => {
     { key: 'podcast', label: 'Podcasts', icon: Play },
     { key: 'animation', label: 'Animations', icon: Play },
     { key: 'sneak-peek', label: 'Sneak Peeks', icon: Play },
+    { key: 'live-video', label: 'Live Videos', icon: Play },
   ];
 
   const sortOptions = [
@@ -227,10 +231,15 @@ const FavoritesPage: React.FC = () => {
               {filteredFavorites.map((item) => (
                 <ContentCard
                   key={item.id}
-                  content={item}
-                  viewMode={viewMode}
-                  showFavoriteButton={true}
-                  onUnfavorite={() => handleUnfavorite(item.type, item.id)}
+                  id={item.id}
+                  title={item.title}
+                  description={item.description}
+                  thumbnail={item.thumbnail}
+                  duration={item.duration.toString()}
+                  type={item.type}
+                  tags={item.tags}
+                  views={item.views}
+                  likes={item.likes}
                 />
               ))}
             </div>
