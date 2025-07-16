@@ -321,7 +321,6 @@ const Hero = () => {
             const playWhenReady = () => {
               if (video.paused) {
                 video.play().catch(error => {
-                  console.info('Autoplay prevented by browser, user interaction required:', error);
                 });
               }
             };

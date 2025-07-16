@@ -63,16 +63,10 @@ function App() {
   const originalRemove = sessionStorage.removeItem;
   
   sessionStorage.clear = function() {
-    console.error('🚨 sessionStorage.clear() called!');
-    console.trace('sessionStorage.clear stack trace:');
     return originalClear.call(this);
   };
   
   sessionStorage.removeItem = function(key) {
-    if (key === 'account') {
-      console.error('🚨 sessionStorage.removeItem("account") called!');
-      console.trace('sessionStorage.removeItem stack trace:');
-    }
     return originalRemove.call(this, key);
   };
   
@@ -81,16 +75,10 @@ function App() {
   const originalLocalRemove = localStorage.removeItem;
   
   localStorage.clear = function() {
-    console.error('🚨 localStorage.clear() called!');
-    console.trace('localStorage.clear stack trace:');
     return originalLocalClear.call(this);
   };
   
   localStorage.removeItem = function(key) {
-    if (key === 'user_session') {
-      console.error('🚨 localStorage.removeItem("user_session") called!');
-      console.trace('localStorage.removeItem stack trace:');
-    }
     return originalLocalRemove.call(this, key);
   };
 

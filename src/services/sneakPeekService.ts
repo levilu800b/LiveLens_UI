@@ -277,7 +277,6 @@ const sneakPeekService = {
         hasPrevious: !!data.previous,
       };
     } catch (error) {
-      console.error('Error fetching sneak peeks:', error);
       throw error;
     }
   },
@@ -303,7 +302,6 @@ const sneakPeekService = {
       const data = await response.json();
       return transformSneakPeek(data);
     } catch (error) {
-      console.error('Error fetching sneak peek:', error);
       throw error;
     }
   },
@@ -373,7 +371,6 @@ const sneakPeekService = {
       const data = await response.json();
       return transformSneakPeek(data);
     } catch (error) {
-      console.error('Error creating sneak peek:', error);
       throw error;
     }
   },
@@ -431,20 +428,13 @@ const sneakPeekService = {
 
       // Add tags as comma-separated string (Django typically expects this format)
       if (sneakPeekData.tags && sneakPeekData.tags.length > 0) {
-        // Debug: Log what we're about to send
-        console.log('Original tags:', sneakPeekData.tags);
-        console.log('Tags array check:', Array.isArray(sneakPeekData.tags));
-        
         // Ensure we have clean string values
         const cleanTags = sneakPeekData.tags
           .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
           .map(tag => tag.trim());
         
-        console.log('Final clean tags:', cleanTags);
-        
         // Send tags as comma-separated string only
         const tagString = cleanTags.join(',');
-        console.log('Sending tags as string:', tagString);
         formData.append('tags_list', tagString);
       }
 
@@ -477,7 +467,6 @@ const sneakPeekService = {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errorData = await response.json();
-          console.error('Backend error details:', errorData);
           
           if (errorData.detail) {
             errorMessage = errorData.detail;
@@ -494,8 +483,8 @@ const sneakPeekService = {
               errorMessage = `Validation errors: ${fieldErrors}`;
             }
           }
-        } catch (parseError) {
-          console.error('Could not parse error response:', parseError);
+        } catch {
+          // Could not parse error response
         }
         
         throw new Error(errorMessage);
@@ -504,7 +493,6 @@ const sneakPeekService = {
       const data = await response.json();
       return transformSneakPeek(data);
     } catch (error) {
-      console.error('Error updating sneak peek:', error);
       throw error;
     }
   },
@@ -530,7 +518,6 @@ const sneakPeekService = {
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error deleting sneak peek:', error);
       throw error;
     }
   },
@@ -570,7 +557,6 @@ const sneakPeekService = {
         likeCount: 0, // We'll get this from a refetch or store it in state
       };
     } catch (error) {
-      console.error('Error toggling like:', error);
       throw error;
     }
   },
@@ -607,7 +593,6 @@ const sneakPeekService = {
         isBookmarked,
       };
     } catch (error) {
-      console.error('Error toggling bookmark:', error);
       throw error;
     }
   },
@@ -628,7 +613,6 @@ const sneakPeekService = {
       const data = await response.json();
       return data.results.map(transformSneakPeek);
     } catch (error) {
-      console.error('Error fetching featured sneak peeks:', error);
       throw error;
     }
   },

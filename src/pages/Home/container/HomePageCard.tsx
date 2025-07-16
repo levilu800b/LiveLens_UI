@@ -92,31 +92,6 @@ const ContentTrailerSection: React.FC = () => {
           sneakPeekService.getFeaturedSneakPeeks()
         ]);
 
-        console.log('API Responses:', {
-          stories: storiesResponse.status === 'fulfilled' ? `${storiesResponse.value?.length || 0} items` : `ERROR: ${storiesResponse.reason}`,
-          podcasts: podcastsResponse.status === 'fulfilled' ? `${podcastsResponse.value?.length || 0} items` : `ERROR: ${podcastsResponse.reason}`,
-          films: filmsResponse.status === 'fulfilled' ? `${filmsResponse.value?.length || 0} items` : `ERROR: ${filmsResponse.reason}`,
-          content: contentResponse.status === 'fulfilled' ? `${contentResponse.value?.length || 0} items` : `ERROR: ${contentResponse.reason}`,
-          animations: animationsResponse.status === 'fulfilled' ? `${animationsResponse.value?.length || 0} items` : `ERROR: ${animationsResponse.reason}`,
-          sneakPeeks: sneakPeeksResponse.status === 'fulfilled' ? `${sneakPeeksResponse.value?.length || 0} items` : `ERROR: ${sneakPeeksResponse.reason}`,
-        });
-
-        // Log individual API responses to understand what's failing
-        if (storiesResponse.status === 'rejected') console.error('Stories API failed:', storiesResponse.reason);
-        if (podcastsResponse.status === 'rejected') console.error('Podcasts API failed:', podcastsResponse.reason);
-        if (filmsResponse.status === 'rejected') console.error('Films API failed:', filmsResponse.reason);
-        if (contentResponse.status === 'rejected') console.error('Content API failed:', contentResponse.reason);
-        if (animationsResponse.status === 'rejected') console.error('Animations API failed:', animationsResponse.reason);
-        if (sneakPeeksResponse.status === 'rejected') console.error('SneakPeeks API failed:', sneakPeeksResponse.reason);
-
-        // Log the actual data for debugging
-        if (storiesResponse.status === 'fulfilled') console.log('Stories data:', storiesResponse.value);
-        if (podcastsResponse.status === 'fulfilled') console.log('Podcasts data:', podcastsResponse.value);
-        if (filmsResponse.status === 'fulfilled') console.log('Films data:', filmsResponse.value);
-        if (contentResponse.status === 'fulfilled') console.log('Content data:', contentResponse.value);
-        if (animationsResponse.status === 'fulfilled') console.log('Animations data:', animationsResponse.value);
-        if (sneakPeeksResponse.status === 'fulfilled') console.log('SneakPeeks data:', sneakPeeksResponse.value);
-
         // Collect all featured items from all sources
         const allItems: ContentItem[] = [];
 
@@ -216,17 +191,12 @@ const ContentTrailerSection: React.FC = () => {
           allItems.push(...sneakPeeks);
         }
 
-        console.log(`Total available featured items: ${allItems.length}`, allItems.map(item => ({ type: item.type, title: item.title, id: item.id })));
-
         // Shuffle all items randomly and take exactly 6 (or all if less than 6)
         const shuffledItems = allItems.sort(() => Math.random() - 0.5);
         const finalItems = shuffledItems.slice(0, 6);
 
-        console.log(`Final selected items: ${finalItems.length}`, finalItems.map(item => ({ type: item.type, title: item.title, id: item.id })));
-
         setContentItems(finalItems);
-      } catch (err) {
-        console.error('Error loading featured content:', err);
+      } catch {
         setError('Failed to load featured content');
       } finally {
         setLoading(false);

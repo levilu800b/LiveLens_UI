@@ -192,8 +192,7 @@ const EditSneakPeekPage: React.FC = () => {
               finalTags = [...new Set(finalTags)].filter(tag => tag.length > 0);
               
               return finalTags;
-            } catch (error) {
-              console.error('Error processing tags:', error);
+            } catch {
               return [];
             }
           })(),
@@ -231,7 +230,6 @@ const EditSneakPeekPage: React.FC = () => {
         });
 
       } catch (error) {
-        console.error('Error loading sneak peek:', error);
         setError(error instanceof Error ? error.message : 'Failed to load sneak peek');
       } finally {
         setLoading(false);
@@ -299,11 +297,6 @@ const EditSneakPeekPage: React.FC = () => {
       setSaving(true);
       setError(null);
       
-      // Debug: Log form data before submission
-      console.log('Form data before submission:', formData);
-      console.log('Tags before submission:', formData.tags);
-      console.log('Tags type check:', formData.tags.map(tag => ({ tag, type: typeof tag })));
-      
       await sneakPeekService.updateSneakPeek(slug, formData);
       
       // Signal that sneak peek data has been updated
@@ -318,7 +311,6 @@ const EditSneakPeekPage: React.FC = () => {
       
       navigate('/admin/content');
     } catch (error) {
-      console.error('Error updating sneak peek:', error);
       setError(error instanceof Error ? error.message : 'Failed to update sneak peek');
     } finally {
       setSaving(false);
@@ -332,7 +324,6 @@ const EditSneakPeekPage: React.FC = () => {
       await sneakPeekService.deleteSneakPeek(slug);
       navigate('/admin/content');
     } catch (error) {
-      console.error('Error deleting sneak peek:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete sneak peek');
     }
   };
