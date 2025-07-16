@@ -147,6 +147,18 @@ const AnimationsPage = () => {
   const filteredAnimations = getFilteredAnimations();
   const featuredAnimation = animations.find((animation: Animation) => animation.is_trending) || animations[0];
 
+  // Format view count for display
+  const formatViewCount = (views: number): string => {
+    if (views >= 1000000) {
+      const millions = views / 1000000;
+      return millions % 1 === 0 ? `${millions.toFixed(0)}M` : `${millions.toFixed(1)}M`;
+    } else if (views >= 1000) {
+      const thousands = views / 1000;
+      return thousands % 1 === 0 ? `${thousands.toFixed(0)}K` : `${thousands.toFixed(1)}K`;
+    }
+    return views.toString();
+  };
+
   // Debug logging for search functionality
   useEffect(() => {
   }, [searchTerm, animations, filteredAnimations]);
@@ -216,7 +228,7 @@ const AnimationsPage = () => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {(stats.totalViews / 1000).toFixed(0)}K+
+                      {stats.totalViews >= 1000 ? `${formatViewCount(stats.totalViews)}+` : `${stats.totalViews}+`}
                     </div>
                     <div className="text-sm text-gray-400">Total Views</div>
                   </div>

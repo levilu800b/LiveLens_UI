@@ -121,6 +121,18 @@ const SneakPeeksPage = () => {
     }, 0) / sneakPeeks.length
   ) : 0;
 
+  // Format view count for display
+  const formatViewCount = (views: number): string => {
+    if (views >= 1000000) {
+      const millions = views / 1000000;
+      return millions % 1 === 0 ? `${millions.toFixed(0)}M` : `${millions.toFixed(1)}M`;
+    } else if (views >= 1000) {
+      const thousands = views / 1000;
+      return thousands % 1 === 0 ? `${thousands.toFixed(0)}K` : `${thousands.toFixed(1)}K`;
+    }
+    return views.toString();
+  };
+
   const formatDuration = (duration?: number) => {
     if (!duration) return '0:00';
     const minutes = Math.floor(duration / 60);
@@ -162,7 +174,7 @@ const SneakPeeksPage = () => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                      {(totalViews / 1000).toFixed(0)}K+
+                      {totalViews >= 1000 ? `${formatViewCount(totalViews)}+` : `${totalViews}+`}
                     </div>
                     <div className="text-sm text-gray-400">Total Views</div>
                   </div>

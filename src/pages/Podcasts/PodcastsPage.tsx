@@ -104,6 +104,18 @@ const PodcastsPage = () => {
   const filteredPodcasts = getFilteredPodcasts();
   const featuredPodcast = podcasts.find((podcast: ContentItem & { isTrending?: boolean }) => podcast.isTrending) || podcasts[0];
 
+  // Format view count for display
+  const formatViewCount = (views: number): string => {
+    if (views >= 1000000) {
+      const millions = views / 1000000;
+      return millions % 1 === 0 ? `${millions.toFixed(0)}M` : `${millions.toFixed(1)}M`;
+    } else if (views >= 1000) {
+      const thousands = views / 1000;
+      return thousands % 1 === 0 ? `${thousands.toFixed(0)}K` : `${thousands.toFixed(1)}K`;
+    }
+    return views.toString();
+  };
+
   return (
     <MainLayout>
       <div className="min-h-screen bg-gray-50">
@@ -136,7 +148,7 @@ const PodcastsPage = () => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {(stats.totalListeners / 1000).toFixed(0)}K+
+                      {stats.totalListeners >= 1000 ? `${formatViewCount(stats.totalListeners)}+` : `${stats.totalListeners}+`}
                     </div>
                     <div className="text-sm text-gray-400">Listeners</div>
                   </div>
