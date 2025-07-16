@@ -256,12 +256,12 @@ class StoryService {
 
   // Get featured stories
   async getFeaturedStories(): Promise<StoryListItem[]> {
-    return this.makeRequest('/stories/featured/');
+    return this.makeRequest('/stories/stories/featured/');
   }
 
   // Get trending stories
   async getTrendingStories(): Promise<StoryListItem[]> {
-    return this.makeRequest('/stories/trending/');
+    return this.makeRequest('/stories/stories/trending/');
   }
 
   // Get hero story

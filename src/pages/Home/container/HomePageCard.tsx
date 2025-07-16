@@ -1,86 +1,44 @@
-import React, { useState } from 'react';
-import { Play, Film, Headphones, BookOpen, X } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { Play, Headphones, BookOpen } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { uiActions } from '../../../store/reducers/uiReducers';
+import storyService from '../../../services/storyService';
+import podcastService from '../../../services/podcastService';
+import mediaService from '../../../services/mediaService';
+import animationService from '../../../services/animationService';
+import sneakPeekService from '../../../services/sneakPeekService';
+import unifiedAuth from '../../../utils/unifiedAuth';
 
 interface ContentItem {
   id: string;
-  type: 'film' | 'podcast' | 'story';
+  type: 'content' | 'podcast' | 'story' | 'film' | 'animation' | 'sneakpeek';
   title: string;
   description: string;
   duration: string;
-  genre: string;
+  genre?: string;
+  category?: string;
   thumbnail: string;
-  trailerUrl: string;
 }
 
-const contentItems: ContentItem[] = [
-  // ... your contentItems as before
-  {
-    id: '1',
-    type: 'film',
-    title: 'Resilience',
-    description: 'Learn how to tackle adversity, challenges and professional setbacks.',
-    duration: '2h',
-    genre: 'Organizational',
-    thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop',
-    trailerUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-  },
-  {
-    id: '2',
-    type: 'podcast',
-    title: 'Growth',
-    description: 'Create a development plan that best fits your goals and sense of purpose.',
-    duration: '45m',
-    genre: 'Organizational',
-    thumbnail: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400&h=600&fit=crop',
-    trailerUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-  },
-  {
-    id: '3',
-    type: 'story',
-    title: 'Engagement',
-    description: 'Develop your sense of belonging and active involvement in meaningful work.',
-    duration: '1h 20m',
-    genre: 'Organizational',
-    thumbnail: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=600&fit=crop',
-    trailerUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-  },
-  {
-    id: '4',
-    type: 'film',
-    title: 'Visioning',
-    description: 'Learn how to strategize and formulate your own professional goals.',
-    duration: '2h 10m',
-    genre: 'Organizational',
-    thumbnail: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=600&fit=crop',
-    trailerUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-  },
-  {
-    id: '5',
-    type: 'podcast',
-    title: 'Goal Orientation',
-    description: 'Adapt your strategies to maximize personal and professional success.',
-    duration: '50m',
-    genre: 'Organizational',
-    thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=600&fit=crop',
-    trailerUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-  },
-  {
-    id: '6',
-    type: 'story',
-    title: 'Self-belief',
-    description: 'Gain confidence in your abilities and empower your mindset.',
-    duration: '30m',
-    genre: 'Organizational',
-    thumbnail: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&h=600&fit=crop',
-    trailerUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-  },
-];
+interface RootState {
+  user: {
+    userInfo: {
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+    } | null;
+  };
+}
 
 const getIcon = (type: string) => {
   switch (type) {
-    case 'film': return <Film className="w-5 h-5" />;
+    case 'content': 
+    case 'film': 
+    case 'animation':
+    case 'sneakpeek':
+      return <Play className="w-5 h-5" />;
     case 'podcast': return <Headphones className="w-5 h-5" />;
     case 'story': return <BookOpen className="w-5 h-5" />;
     default: return <Play className="w-5 h-5" />;
@@ -89,9 +47,13 @@ const getIcon = (type: string) => {
 
 const getTypeColor = (type: string) => {
   switch (type) {
-    case 'film': return 'from-red-500 to-pink-600';
+    case 'content':
+    case 'film': 
+      return 'from-red-500 to-pink-600';
     case 'podcast': return 'from-blue-500 to-indigo-600';
     case 'story': return 'from-green-500 to-emerald-600';
+    case 'animation': return 'from-purple-500 to-violet-600';
+    case 'sneakpeek': return 'from-orange-500 to-yellow-600';
     default: return 'from-gray-500 to-gray-600';
   }
 };
@@ -107,22 +69,305 @@ const gridSpans = [
 
 const ContentTrailerSection: React.FC = () => {
   const dispatch = useDispatch();
-  const [activeTrailer, setActiveTrailer] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const userInfo = useSelector((state: RootState) => state.user.userInfo);
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Example Play Now handler
-  const handlePlayNow = (item: ContentItem) => {
-    dispatch(uiActions.addNotification({
-      message: `Play Now: ${item.title}`,
-      type: 'info'
-    }));
+  // Load featured content from various services
+  useEffect(() => {
+    const loadFeaturedContent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch featured content from all services in parallel
+        const [storiesResponse, podcastsResponse, filmsResponse, contentResponse, animationsResponse, sneakPeeksResponse] = await Promise.allSettled([
+          storyService.getFeaturedStories(),
+          podcastService.getFeaturedPodcasts(),
+          mediaService.getFeaturedFilms(),
+          mediaService.getFeaturedContent(),
+          animationService.getFeaturedAnimations(),
+          sneakPeekService.getFeaturedSneakPeeks()
+        ]);
+
+        console.log('API Responses:', {
+          stories: storiesResponse.status === 'fulfilled' ? `${storiesResponse.value?.length || 0} items` : `ERROR: ${storiesResponse.reason}`,
+          podcasts: podcastsResponse.status === 'fulfilled' ? `${podcastsResponse.value?.length || 0} items` : `ERROR: ${podcastsResponse.reason}`,
+          films: filmsResponse.status === 'fulfilled' ? `${filmsResponse.value?.length || 0} items` : `ERROR: ${filmsResponse.reason}`,
+          content: contentResponse.status === 'fulfilled' ? `${contentResponse.value?.length || 0} items` : `ERROR: ${contentResponse.reason}`,
+          animations: animationsResponse.status === 'fulfilled' ? `${animationsResponse.value?.length || 0} items` : `ERROR: ${animationsResponse.reason}`,
+          sneakPeeks: sneakPeeksResponse.status === 'fulfilled' ? `${sneakPeeksResponse.value?.length || 0} items` : `ERROR: ${sneakPeeksResponse.reason}`,
+        });
+
+        // Log individual API responses to understand what's failing
+        if (storiesResponse.status === 'rejected') console.error('Stories API failed:', storiesResponse.reason);
+        if (podcastsResponse.status === 'rejected') console.error('Podcasts API failed:', podcastsResponse.reason);
+        if (filmsResponse.status === 'rejected') console.error('Films API failed:', filmsResponse.reason);
+        if (contentResponse.status === 'rejected') console.error('Content API failed:', contentResponse.reason);
+        if (animationsResponse.status === 'rejected') console.error('Animations API failed:', animationsResponse.reason);
+        if (sneakPeeksResponse.status === 'rejected') console.error('SneakPeeks API failed:', sneakPeeksResponse.reason);
+
+        // Log the actual data for debugging
+        if (storiesResponse.status === 'fulfilled') console.log('Stories data:', storiesResponse.value);
+        if (podcastsResponse.status === 'fulfilled') console.log('Podcasts data:', podcastsResponse.value);
+        if (filmsResponse.status === 'fulfilled') console.log('Films data:', filmsResponse.value);
+        if (contentResponse.status === 'fulfilled') console.log('Content data:', contentResponse.value);
+        if (animationsResponse.status === 'fulfilled') console.log('Animations data:', animationsResponse.value);
+        if (sneakPeeksResponse.status === 'fulfilled') console.log('SneakPeeks data:', sneakPeeksResponse.value);
+
+        const items: ContentItem[] = [];
+
+        // Process stories (take exactly 1 with thumbnail)
+        if (storiesResponse.status === 'fulfilled' && storiesResponse.value && storiesResponse.value.length > 0) {
+          const stories = storiesResponse.value
+            .filter((story: any) => story.thumbnail || story.cover_image) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .slice(0, 1)
+            .map((story: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+              id: story.id,
+              type: 'story' as const,
+              title: story.title,
+              description: story.description || story.short_description || story.excerpt || '',
+              duration: `${story.estimated_read_time || 5}m read`,
+              category: story.category || 'Story',
+              thumbnail: story.thumbnail || story.cover_image,
+            }));
+          items.push(...stories);
+        }
+
+        // Process podcasts (take exactly 1 with thumbnail)
+        if (podcastsResponse.status === 'fulfilled' && podcastsResponse.value && podcastsResponse.value.length > 0) {
+          const podcasts = podcastsResponse.value
+            .filter((podcast: any) => podcast.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .slice(0, 1)
+            .map((podcast: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+              id: podcast.id,
+              type: 'podcast' as const,
+              title: podcast.title,
+              description: podcast.description || '',
+              duration: `${podcast.duration || 30}m`,
+              category: podcast.category || 'Podcast',
+              thumbnail: podcast.thumbnail,
+            }));
+          items.push(...podcasts);
+        }
+
+        // Process films (take exactly 1 with thumbnail)
+        if (filmsResponse.status === 'fulfilled' && filmsResponse.value && filmsResponse.value.length > 0) {
+          const films = filmsResponse.value
+            .filter((film: any) => film.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .slice(0, 1)
+            .map((film: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+              id: film.id,
+              type: 'film' as const,
+              title: film.title,
+              description: film.description || film.short_description || '',
+              duration: film.duration_formatted || '2h',
+              category: film.category || 'Film',
+              thumbnail: film.thumbnail,
+            }));
+          items.push(...films);
+        }
+
+        // Process content (take exactly 1 with thumbnail)
+        if (contentResponse.status === 'fulfilled' && contentResponse.value && contentResponse.value.length > 0) {
+          const content = contentResponse.value
+            .filter((item: any) => item.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .slice(0, 1)
+            .map((item: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+              id: item.id,
+              type: 'content' as const,
+              title: item.title,
+              description: item.description || item.short_description || '',
+              duration: item.duration_formatted || '1h',
+              category: item.category || 'Content',
+              thumbnail: item.thumbnail,
+            }));
+          items.push(...content);
+        }
+
+        // Process animations (take exactly 1 with thumbnail)
+        if (animationsResponse.status === 'fulfilled' && animationsResponse.value && animationsResponse.value.length > 0) {
+          const animations = animationsResponse.value
+            .filter((animation: any) => animation.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .slice(0, 1)
+            .map((animation: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+              id: animation.id,
+              type: 'animation' as const,
+              title: animation.title,
+              description: animation.description || animation.short_description || '',
+              duration: animation.duration_formatted || '10m',
+              category: animation.category || 'Animation',
+              thumbnail: animation.thumbnail,
+            }));
+          items.push(...animations);
+        }
+
+        // Process sneak peeks (take exactly 2 with thumbnails)
+        if (sneakPeeksResponse.status === 'fulfilled' && sneakPeeksResponse.value && sneakPeeksResponse.value.length > 0) {
+          const sneakPeeks = sneakPeeksResponse.value
+            .filter((sneakPeek: any) => sneakPeek.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .slice(0, 2)
+            .map((sneakPeek: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+              id: sneakPeek.id,
+              type: 'sneakpeek' as const,
+              title: sneakPeek.title,
+              description: sneakPeek.description || sneakPeek.short_description || '',
+              duration: sneakPeek.duration_formatted || '5m',
+              category: sneakPeek.category || 'Sneak Peek',
+              thumbnail: sneakPeek.thumbnail,
+            }));
+          items.push(...sneakPeeks);
+        }
+
+        console.log(`Total items from database: ${items.length}`, items.map(item => ({ type: item.type, title: item.title, id: item.id })));
+
+        // If we don't have 6 items, try to get more from successful APIs
+        if (items.length < 6) {
+          console.log('Not enough items, trying to get more from available APIs...');
+          
+          // Try to get more stories if we have them
+          if (storiesResponse.status === 'fulfilled' && storiesResponse.value && storiesResponse.value.length > 1) {
+            const additionalStories = storiesResponse.value
+              .filter((story: any) => story.thumbnail || story.cover_image) // eslint-disable-line @typescript-eslint/no-explicit-any
+              .slice(1, 3) // Skip the first one we already used, take up to 2 more
+              .map((story: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+                id: story.id,
+                type: 'story' as const,
+                title: story.title,
+                description: story.description || story.short_description || story.excerpt || '',
+                duration: `${story.estimated_read_time || 5}m read`,
+                category: story.category || 'Story',
+                thumbnail: story.thumbnail || story.cover_image,
+              }));
+            items.push(...additionalStories.slice(0, 6 - items.length));
+          }
+
+          // Try to get more podcasts if we need them and have them
+          if (items.length < 6 && podcastsResponse.status === 'fulfilled' && podcastsResponse.value && podcastsResponse.value.length > 1) {
+            const additionalPodcasts = podcastsResponse.value
+              .filter((podcast: any) => podcast.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+              .slice(1, 3) // Skip the first one we already used
+              .map((podcast: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+                id: podcast.id,
+                type: 'podcast' as const,
+                title: podcast.title,
+                description: podcast.description || '',
+                duration: `${podcast.duration || 30}m`,
+                category: podcast.category || 'Podcast',
+                thumbnail: podcast.thumbnail,
+              }));
+            items.push(...additionalPodcasts.slice(0, 6 - items.length));
+          }
+
+          // Try to get more films if we need them and have them
+          if (items.length < 6 && filmsResponse.status === 'fulfilled' && filmsResponse.value && filmsResponse.value.length > 1) {
+            const additionalFilms = filmsResponse.value
+              .filter((film: any) => film.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+              .slice(1, 3) // Skip the first one we already used
+              .map((film: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+                id: film.id,
+                type: 'film' as const,
+                title: film.title,
+                description: film.description || film.short_description || '',
+                duration: film.duration_formatted || '2h',
+                category: film.category || 'Film',
+                thumbnail: film.thumbnail,
+              }));
+            items.push(...additionalFilms.slice(0, 6 - items.length));
+          }
+
+          // Try to get more content if we need it and have it
+          if (items.length < 6 && contentResponse.status === 'fulfilled' && contentResponse.value && contentResponse.value.length > 1) {
+            const additionalContent = contentResponse.value
+              .filter((item: any) => item.thumbnail) // eslint-disable-line @typescript-eslint/no-explicit-any
+              .slice(1, 3) // Skip the first one we already used
+              .map((item: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+                id: item.id,
+                type: 'content' as const,
+                title: item.title,
+                description: item.description || item.short_description || '',
+                duration: item.duration_formatted || '1h',
+                category: item.category || 'Content',
+                thumbnail: item.thumbnail,
+              }));
+            items.push(...additionalContent.slice(0, 6 - items.length));
+          }
+        }
+
+        console.log(`Final items count: ${items.length}`, items.map(item => ({ type: item.type, title: item.title, id: item.id })));
+
+        // Shuffle the items randomly and set them
+        const shuffledItems = items.sort(() => Math.random() - 0.5);
+        setContentItems(shuffledItems);
+      } catch (err) {
+        console.error('Error loading featured content:', err);
+        setError('Failed to load featured content');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFeaturedContent();
+  }, []);
+
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    return unifiedAuth.isAuthenticated() && userInfo;
   };
 
-  // Example Read Story handler
+  // Handle Play Now action with authentication check
+  const handlePlayNow = (item: ContentItem) => {
+    if (!isAuthenticated()) {
+      dispatch(uiActions.addNotification({
+        message: 'Please login to access content',
+        type: 'info'
+      }));
+      navigate('/login');
+      return;
+    }
+
+    // Navigate to appropriate page based on content type
+    switch (item.type) {
+      case 'story':
+        navigate(`/story/${item.id}`);
+        break;
+      case 'podcast':
+        navigate(`/podcast/${item.id}`);
+        break;
+      case 'film':
+        navigate(`/watch/film/${item.id}`);
+        break;
+      case 'content':
+        navigate(`/watch/content/${item.id}`);
+        break;
+      case 'animation':
+        navigate(`/animation/${item.id}`);
+        break;
+      case 'sneakpeek':
+        navigate(`/sneak-peek/${item.id}`);
+        break;
+      default:
+        dispatch(uiActions.addNotification({
+          message: `Play Now: ${item.title}`,
+          type: 'info'
+        }));
+    }
+  };
+
+  // Handle Read Story action with authentication check
   const handleReadStory = (item: ContentItem) => {
-    dispatch(uiActions.addNotification({
-      message: `Read Story: ${item.title}`,
-      type: 'info'
-    }));
+    if (!isAuthenticated()) {
+      dispatch(uiActions.addNotification({
+        message: 'Please login to read stories',
+        type: 'info'
+      }));
+      navigate('/login');
+      return;
+    }
+
+    navigate(`/story/${item.id}`);
   };
 
   return (
@@ -130,115 +375,96 @@ const ContentTrailerSection: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-2">Featured Content</h2>
-          <p className="text-gray-500">Preview our latest releases before diving into the full experience</p>
+          <p className="text-gray-500">Explore our curated selection of stories, podcasts, and films</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 auto-rows-[220px] md:auto-rows-[200px] lg:auto-rows-[250px] gap-6">
-          {contentItems.map((item, idx) => (
-            <div
-              key={item.id}
-              className={`group relative rounded-2xl overflow-hidden border border-slate-200 hover:border-purple-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 ${gridSpans[idx]}`}
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading featured content...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
             >
-              {/* Card image and hover animation */}
-              <div className={`absolute inset-0 w-full h-full z-0 transition-transform duration-500
-                ${item.type !== 'story' ? 'group-hover:-translate-y-2 group-hover:scale-105' : ''}
-              `}>
-                {item.thumbnail ? (
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Content Grid */}
+        {!loading && !error && contentItems.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 auto-rows-[220px] md:auto-rows-[200px] lg:auto-rows-[250px] gap-6">
+            {contentItems.map((item, idx) => (
+              <div
+                key={item.id}
+                className={`group relative rounded-2xl overflow-hidden border border-slate-200 hover:border-purple-500 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 ${gridSpans[idx % gridSpans.length]}`}
+              >
+                {/* Card image and hover animation */}
+                <div className={`absolute inset-0 w-full h-full z-0 transition-transform duration-500
+                  ${item.type !== 'story' ? 'group-hover:-translate-y-2 group-hover:scale-105' : ''}
+                `}>
                   <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-white text-lg font-bold">{item.title.charAt(0).toUpperCase()}</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-              </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
 
-              {/* Card badge */}
-              <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor(item.type)} text-white text-xs font-semibold flex items-center gap-2 shadow-md z-10`}>
-                {getIcon(item.type)}
-                {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-              </div>
+                {/* Card badge */}
+                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor(item.type)} text-white text-xs font-semibold flex items-center gap-2 shadow-md z-10`}>
+                  {getIcon(item.type)}
+                  {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                </div>
 
-              {/* Card content with hover animation for film/podcast */}
-              <div className={`absolute bottom-4 left-4 right-4 text-white z-10 transition-transform duration-500
-                ${item.type !== 'story' ? 'group-hover:-translate-y-2' : ''}
-              `}>
-                <h3 className="text-lg font-bold">{item.title}</h3>
-                <p className="text-sm text-gray-200 line-clamp-2 mb-3">{item.description}</p>
-                {/* Buttons */}
-                {item.type === 'story' ? (
-                  <button
-                    onClick={() => handleReadStory(item)}
-                    className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold shadow transition"
-                    type="button"
-                  >
-                    Start Reading
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
+                {/* Card content with hover animation for non-story types */}
+                <div className={`absolute bottom-4 left-4 right-4 text-white z-10 transition-transform duration-500
+                  ${item.type !== 'story' ? 'group-hover:-translate-y-2' : ''}
+                `}>
+                  <h3 className="text-lg font-bold">{item.title}</h3>
+                  <p className="text-sm text-gray-200 line-clamp-2 mb-3">{item.description}</p>
+                  {/* Buttons */}
+                  {item.type === 'story' ? (
                     <button
-                      onClick={() => setActiveTrailer(item.id)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow transition"
+                      onClick={() => handleReadStory(item)}
+                      className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold shadow transition"
                       type="button"
                     >
-                      <Play className="w-4 h-4" /> Watch Trailer
+                      Start Reading
                     </button>
+                  ) : (
                     <button
                       onClick={() => handlePlayNow(item)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/80 hover:bg-white text-purple-700 font-semibold text-sm shadow transition"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow transition"
                       type="button"
                     >
-                      <Film className="w-4 h-4" /> Play Now
+                      <Play className="w-4 h-4" /> Play Now
                     </button>
+                  )}
+                </div>
+
+                {/* Optional: Play icon overlay for non-story types */}
+                {item.type !== 'story' && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/30 z-0">
+                    <Play className="w-12 h-12 text-white drop-shadow-lg" />
                   </div>
                 )}
               </div>
-
-              {/* Optional: Play icon overlay for film/podcast */}
-              {item.type !== 'story' && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition bg-black/30 z-0">
-                  <Play className="w-12 h-12 text-white drop-shadow-lg" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Trailer Modal */}
-      {activeTrailer && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-3xl bg-slate-900 rounded-2xl overflow-hidden">
-            <button
-              onClick={() => setActiveTrailer(null)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white"
-              aria-label="Close trailer"
-              type="button"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="aspect-video bg-black">
-              <video
-                controls
-                autoPlay
-                className="w-full h-full object-cover"
-                poster={contentItems.find(item => item.id === activeTrailer)?.thumbnail}
-              >
-                <source src={contentItems.find(item => item.id === activeTrailer)?.trailerUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            </div>
-
-            <div className="p-6">
-              <h3 className="text-2xl font-bold text-white mb-2">
-                {contentItems.find(item => item.id === activeTrailer)?.title}
-              </h3>
-              <p className="text-gray-400">{contentItems.find(item => item.id === activeTrailer)?.description}</p>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && contentItems.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-600">No featured content available at the moment.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
