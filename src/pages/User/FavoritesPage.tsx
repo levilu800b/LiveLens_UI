@@ -1,5 +1,5 @@
 // src/pages/User/FavoritesPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { Heart, BookOpen, Play, Filter, Grid, List } from 'lucide-react';
 import { contentService } from '../../services/contentService';
@@ -8,6 +8,7 @@ import MainLayout from '../../components/MainLayout/MainLayout';
 import ContentCard from '../../components/Common/ContentCard';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import SearchFilter from '../../components/Common/SearchFilter';
+import Pagination from '../../components/Common/Pagination';
 import { uiActions } from '../../store/reducers/uiReducers';
 
 const FavoritesPage: React.FC = () => {
@@ -18,12 +19,22 @@ const FavoritesPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<string>('newest');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
-  useEffect(() => {
-    fetchFavorites();
-  }, []);
+  // Calculate paginated items
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredFavorites.slice(startIndex, endIndex);
+  }, [filteredFavorites, currentPage, itemsPerPage]);
 
-  const fetchFavorites = async () => {
+  const totalPages = Math.ceil(filteredFavorites.length / itemsPerPage);
+
+  const fetchFavorites = useCallback(async () => {
     try {
       setIsLoading(true);
       const favoritesData = await contentService.getUserFavorites();
@@ -37,33 +48,48 @@ const FavoritesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dispatch]);
 
-  const handleSearch = (query: string) => {
-    const baseItems = selectedType === 'all' ? favorites : favorites.filter(item => item.type === selectedType);
-    const filtered = baseItems.filter(item =>
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.description.toLowerCase().includes(query.toLowerCase()) ||
-      item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-    );
-    const sorted = sortContent(filtered, sortBy);
-    setFilteredFavorites(sorted);
-  };
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
 
-  const handleTypeFilter = (type: string) => {
-    setSelectedType(type);
-    let filtered = type === 'all' ? favorites : favorites.filter(item => item.type === type);
+  // Filter, search, and sort effect - runs when dependencies change
+  useEffect(() => {
+    let filtered = selectedType === 'all' ? favorites : favorites.filter(item => item.type === selectedType);
+    
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.tags && Array.isArray(item.tags) && item.tags.some(tag => tag?.toLowerCase().includes(searchTerm.toLowerCase())))
+      );
+    }
     
     // Apply sorting
     filtered = sortContent(filtered, sortBy);
+    
     setFilteredFavorites(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [favorites, selectedType, searchTerm, sortBy]);
+
+  const handleTypeFilter = (type: string) => {
+    setSelectedType(type);
   };
 
   const handleSortChange = (newSortBy: string) => {
     setSortBy(newSortBy);
-    const baseItems = selectedType === 'all' ? favorites : favorites.filter(item => item.type === selectedType);
-    const sorted = sortContent(baseItems, newSortBy);
-    setFilteredFavorites(sorted);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setItemsPerPage(newPageSize);
+    setCurrentPage(1); // Reset to first page
   };
 
   const sortContent = (content: ContentItem[], sortType: string) => {
@@ -180,7 +206,7 @@ const FavoritesPage: React.FC = () => {
           {/* Search and Filters */}
           <div className="mb-8 space-y-4">
             <SearchFilter
-              onSearch={handleSearch}
+              onSearch={setSearchTerm}
               placeholder="Search your favorites..."
             />
             
@@ -223,26 +249,44 @@ const FavoritesPage: React.FC = () => {
 
           {/* Content Display */}
           {filteredFavorites.length > 0 ? (
-            <div className={
-              viewMode === 'grid' 
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                : "space-y-4"
-            }>
-              {filteredFavorites.map((item) => (
-                <ContentCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  description={item.description}
-                  thumbnail={item.thumbnail}
-                  duration={item.duration.toString()}
-                  type={item.type}
-                  tags={item.tags}
-                  views={item.views}
-                  likes={item.likes}
-                />
-              ))}
-            </div>
+            <>
+              <div className={
+                viewMode === 'grid' 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  : "space-y-4"
+              }>
+                {paginatedItems.map((item) => (
+                  <ContentCard
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    description={item.description}
+                    thumbnail={item.thumbnail}
+                    duration={item.duration.toString()}
+                    type={item.type}
+                    tags={item.tags}
+                    views={item.views}
+                    likes={item.likes}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {filteredFavorites.length > itemsPerPage && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={filteredFavorites.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[8, 12, 24, 48]}
+                    className="border-t border-gray-200 pt-6"
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-16">
               <Heart className="mx-auto h-16 w-16 text-gray-400 mb-6" />

@@ -1,5 +1,5 @@
 // src/pages/User/LibraryPage.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { Clock, BookOpen, Play } from 'lucide-react';
 import { contentService } from '../../services/contentService';
@@ -8,6 +8,7 @@ import MainLayout from '../../components/MainLayout/MainLayout';
 import ContentCard from '../../components/Common/ContentCard';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import SearchFilter from '../../components/Common/SearchFilter';
+import Pagination from '../../components/Common/Pagination';
 import { uiActions } from '../../store/reducers/uiReducers';
 
 const LibraryPage: React.FC = () => {
@@ -16,6 +17,20 @@ const LibraryPage: React.FC = () => {
   const [filteredLibrary, setFilteredLibrary] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+
+  // Calculate paginated items
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredLibrary.slice(startIndex, endIndex);
+  }, [filteredLibrary, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredLibrary.length / itemsPerPage);
 
   const fetchLibrary = useCallback(async () => {
     try {
@@ -38,23 +53,34 @@ const LibraryPage: React.FC = () => {
     fetchLibrary();
   }, [fetchLibrary]);
 
-  const handleSearch = (query: string) => {
-    const baseItems = selectedType === 'all' ? library : library.filter(item => item.type === selectedType);
-    const filtered = baseItems.filter(item =>
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.description.toLowerCase().includes(query.toLowerCase())
-    );
+  // Filter and search effect - runs when library, selectedType, or searchTerm changes
+  useEffect(() => {
+    let filtered = selectedType === 'all' ? library : library.filter(item => item.type === selectedType);
+    
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
     setFilteredLibrary(filtered);
-  };
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [library, selectedType, searchTerm]);
 
   const handleTypeFilter = (type: string) => {
     setSelectedType(type);
-    if (type === 'all') {
-      setFilteredLibrary(library);
-    } else {
-      const filtered = library.filter(item => item.type === type);
-      setFilteredLibrary(filtered);
-    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setItemsPerPage(newPageSize);
+    setCurrentPage(1); // Reset to first page
   };
 
   const contentTypes = [
@@ -103,7 +129,7 @@ const LibraryPage: React.FC = () => {
           {/* Search and Filters */}
           <div className="mb-8">
             <SearchFilter
-              onSearch={handleSearch}
+              onSearch={setSearchTerm}
               placeholder="Search your library..."
             />
             
@@ -127,22 +153,40 @@ const LibraryPage: React.FC = () => {
 
           {/* Content Grid */}
           {filteredLibrary.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredLibrary.map((item) => (
-                <ContentCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  description={item.description}
-                  thumbnail={item.thumbnail}
-                  duration={item.duration.toString()}
-                  type={item.type}
-                  tags={item.tags}
-                  views={item.views}
-                  likes={item.likes}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {paginatedItems.map((item) => (
+                  <ContentCard
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    description={item.description}
+                    thumbnail={item.thumbnail}
+                    duration={item.duration.toString()}
+                    type={item.type}
+                    tags={item.tags}
+                    views={item.views}
+                    likes={item.likes}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {filteredLibrary.length > itemsPerPage && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={filteredLibrary.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[8, 12, 24, 48]}
+                    className="border-t border-gray-200 pt-6"
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12">
               <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />

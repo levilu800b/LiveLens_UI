@@ -52,146 +52,234 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 export const contentService = {
   // User Library Functions
   async getUserLibrary(): Promise<ContentItem[]> {
-    try {
-      const data = await apiRequest('/user/library/');
-      
-      // Transform backend data to frontend format
-      const transformedData: ContentItem[] = [];
-      
-      // Process different content types
-      if (data.watched_stories) {
-        transformedData.push(...data.watched_stories.map((story: any) => ({
-          id: story.id,
-          title: story.title,
-          description: story.description,
-          thumbnail: story.thumbnail,
-          type: 'story' as const,
-          duration: story.estimated_read_time || 0,
-          views: story.read_count || 0,
-          likes: story.like_count || 0,
-          tags: story.tags || [],
-          createdAt: story.created_at,
-          watchProgress: 0, // Stories don't have progress tracking in this context
-          isFavorited: story.is_liked || false,
-          isBookmarked: story.is_bookmarked || false,
-        })));
-      }
-
-      if (data.watched_films) {
-        transformedData.push(...data.watched_films.map((film: any) => ({
-          id: film.id,
-          title: film.title,
-          description: film.description || film.short_description,
-          thumbnail: film.thumbnail,
-          type: 'film' as const,
-          duration: film.duration || 0,
-          views: film.view_count || 0,
-          likes: film.like_count || 0,
-          tags: film.tags || [],
-          createdAt: film.created_at,
-          watchProgress: film.watch_progress || 0,
-          isFavorited: film.is_liked || false,
-          isBookmarked: film.is_bookmarked || false,
-        })));
-      }
-
-      if (data.watched_content) {
-        transformedData.push(...data.watched_content.map((content: any) => ({
-          id: content.id,
-          title: content.title,
-          description: content.description || content.short_description,
-          thumbnail: content.thumbnail,
-          type: 'content' as const,
-          duration: content.duration || 0,
-          views: content.view_count || 0,
-          likes: content.like_count || 0,
-          tags: content.tags || [],
-          createdAt: content.created_at,
-          watchProgress: content.watch_progress || 0,
-          isFavorited: content.is_liked || false,
-          isBookmarked: content.is_bookmarked || false,
-        })));
-      }
-
-      if (data.watched_podcasts) {
-        transformedData.push(...data.watched_podcasts.map((podcast: any) => ({
-          id: podcast.id,
-          title: podcast.title,
-          description: podcast.description,
-          thumbnail: podcast.thumbnail,
-          type: 'podcast' as const,
-          duration: podcast.duration || 0,
-          views: podcast.play_count || 0,
-          likes: podcast.like_count || 0,
-          tags: podcast.tags || [],
-          createdAt: podcast.created_at,
-          watchProgress: podcast.listen_progress || 0,
-          isFavorited: podcast.is_liked || false,
-          isBookmarked: podcast.is_bookmarked || false,
-        })));
-      }
-
-      if (data.watched_animations) {
-        transformedData.push(...data.watched_animations.map((animation: any) => ({
-          id: animation.id,
-          title: animation.title,
-          description: animation.description,
-          thumbnail: animation.thumbnail,
-          type: 'animation' as const,
-          duration: animation.duration || 0,
-          views: animation.view_count || 0,
-          likes: animation.like_count || 0,
-          tags: animation.tags || [],
-          createdAt: animation.created_at,
-          watchProgress: animation.watch_progress || 0,
-          isFavorited: animation.is_liked || false,
-          isBookmarked: animation.is_bookmarked || false,
-        })));
-      }
-
-      if (data.watched_sneak_peeks) {
-        transformedData.push(...data.watched_sneak_peeks.map((sneakPeek: any) => ({
-          id: sneakPeek.id,
-          title: sneakPeek.title,
-          description: sneakPeek.description,
-          thumbnail: sneakPeek.thumbnail,
-          type: 'sneak-peek' as const,
-          duration: sneakPeek.duration || 0,
-          views: sneakPeek.view_count || 0,
-          likes: sneakPeek.like_count || 0,
-          tags: sneakPeek.tags || [],
-          createdAt: sneakPeek.created_at,
-          watchProgress: sneakPeek.watch_progress || 0,
-          isFavorited: sneakPeek.is_liked || false,
-          isBookmarked: sneakPeek.is_bookmarked || false,
-        })));
-      }
-
-      if (data.watched_live_videos) {
-        transformedData.push(...data.watched_live_videos.map((liveVideo: any) => ({
-          id: liveVideo.id,
-          title: liveVideo.title,
-          description: liveVideo.description,
-          thumbnail: liveVideo.thumbnail,
-          type: 'live-video' as const,
-          duration: liveVideo.duration || 0,
-          views: liveVideo.total_views || 0,
-          likes: liveVideo.like_count || 0,
-          tags: liveVideo.tags || [],
-          createdAt: liveVideo.created_at,
-          watchProgress: liveVideo.watch_progress || 0,
-          isFavorited: liveVideo.is_liked || false,
-          isBookmarked: liveVideo.is_bookmarked || false,
-        })));
-      }
-
-      // Sort by most recently watched
-      return transformedData.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    } catch (error) {
-      throw error;
+    const data = await apiRequest('/user/library/');
+    
+    // Transform backend data to frontend format
+    const transformedData: ContentItem[] = [];
+    
+    // Process different content types
+    if (data.watched_stories) {
+      transformedData.push(...data.watched_stories.map((story: {
+        id: string;
+        title: string;
+        description: string;
+        thumbnail: string;
+        estimated_read_time?: number;
+        read_count?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: story.id,
+        title: story.title || '',
+        description: story.description || '',
+        thumbnail: story.thumbnail || '',
+        type: 'story' as const,
+        duration: story.estimated_read_time || 0,
+        views: story.read_count || 0,
+        likes: story.like_count || 0,
+        tags: story.tags || [],
+        createdAt: story.created_at,
+        watchProgress: 0, // Stories don't have progress tracking in this context
+        isFavorited: story.is_liked || false,
+        isBookmarked: story.is_bookmarked || false,
+      })));
     }
+
+    if (data.watched_films) {
+      transformedData.push(...data.watched_films.map((film: {
+        id: string;
+        title: string;
+        description?: string;
+        short_description?: string;
+        thumbnail: string;
+        duration?: number;
+        view_count?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        watch_progress?: number;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: film.id,
+        title: film.title || '',
+        description: film.description || film.short_description || '',
+        thumbnail: film.thumbnail || '',
+        type: 'film' as const,
+        duration: film.duration || 0,
+        views: film.view_count || 0,
+        likes: film.like_count || 0,
+        tags: film.tags || [],
+        createdAt: film.created_at,
+        watchProgress: film.watch_progress || 0,
+        isFavorited: film.is_liked || false,
+        isBookmarked: film.is_bookmarked || false,
+      })));
+    }
+
+    if (data.watched_content) {
+      transformedData.push(...data.watched_content.map((content: {
+        id: string;
+        title: string;
+        description?: string;
+        short_description?: string;
+        thumbnail: string;
+        duration?: number;
+        view_count?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        watch_progress?: number;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: content.id,
+        title: content.title || '',
+        description: content.description || content.short_description || '',
+        thumbnail: content.thumbnail || '',
+        type: 'content' as const,
+        duration: content.duration || 0,
+        views: content.view_count || 0,
+        likes: content.like_count || 0,
+        tags: content.tags || [],
+        createdAt: content.created_at,
+        watchProgress: content.watch_progress || 0,
+        isFavorited: content.is_liked || false,
+        isBookmarked: content.is_bookmarked || false,
+      })));
+    }
+
+    if (data.watched_podcasts) {
+      transformedData.push(...data.watched_podcasts.map((podcast: {
+        id: string;
+        title: string;
+        description: string;
+        thumbnail: string;
+        duration?: number;
+        play_count?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        listen_progress?: number;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: podcast.id,
+        title: podcast.title || '',
+        description: podcast.description || '',
+        thumbnail: podcast.thumbnail || '',
+        type: 'podcast' as const,
+        duration: podcast.duration || 0,
+        views: podcast.play_count || 0,
+        likes: podcast.like_count || 0,
+        tags: podcast.tags || [],
+        createdAt: podcast.created_at,
+        watchProgress: podcast.listen_progress || 0,
+        isFavorited: podcast.is_liked || false,
+        isBookmarked: podcast.is_bookmarked || false,
+      })));
+    }
+
+    if (data.watched_animations) {
+      transformedData.push(...data.watched_animations.map((animation: {
+        id: string;
+        title: string;
+        description: string;
+        thumbnail: string;
+        duration?: number;
+        view_count?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        watch_progress?: number;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: animation.id,
+        title: animation.title || '',
+        description: animation.description || '',
+        thumbnail: animation.thumbnail || '',
+        type: 'animation' as const,
+        duration: animation.duration || 0,
+        views: animation.view_count || 0,
+        likes: animation.like_count || 0,
+        tags: animation.tags || [],
+        createdAt: animation.created_at,
+        watchProgress: animation.watch_progress || 0,
+        isFavorited: animation.is_liked || false,
+        isBookmarked: animation.is_bookmarked || false,
+      })));
+    }
+
+    if (data.watched_sneak_peeks) {
+      transformedData.push(...data.watched_sneak_peeks.map((sneakPeek: {
+        id: string;
+        title: string;
+        description: string;
+        thumbnail_url: string;
+        duration?: number;
+        view_count?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        watch_progress?: number;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: sneakPeek.id,
+        title: sneakPeek.title || '',
+        description: sneakPeek.description || '',
+        thumbnail: sneakPeek.thumbnail_url || '',
+        type: 'sneak-peek' as const,
+        duration: sneakPeek.duration || 0,
+        views: sneakPeek.view_count || 0,
+        likes: sneakPeek.like_count || 0,
+        tags: sneakPeek.tags || [],
+        createdAt: sneakPeek.created_at,
+        watchProgress: sneakPeek.watch_progress || 0,
+        isFavorited: sneakPeek.is_liked || false,
+        isBookmarked: sneakPeek.is_bookmarked || false,
+      })));
+    }
+
+    if (data.watched_live_videos) {
+      transformedData.push(...data.watched_live_videos.map((liveVideo: {
+        id: string;
+        title: string;
+        description: string;
+        thumbnail: string;
+        duration?: number;
+        total_views?: number;
+        like_count?: number;
+        tags?: string[];
+        created_at: string;
+        watch_progress?: number;
+        is_liked?: boolean;
+        is_bookmarked?: boolean;
+      }) => ({
+        id: liveVideo.id,
+        title: liveVideo.title || '',
+        description: liveVideo.description || '',
+        thumbnail: liveVideo.thumbnail || '',
+        type: 'live-video' as const,
+        duration: liveVideo.duration || 0,
+        views: liveVideo.total_views || 0,
+        likes: liveVideo.like_count || 0,
+        tags: liveVideo.tags || [],
+        createdAt: liveVideo.created_at,
+        watchProgress: liveVideo.watch_progress || 0,
+        isFavorited: liveVideo.is_liked || false,
+        isBookmarked: liveVideo.is_bookmarked || false,
+      })));
+    }
+
+    // Sort by most recently watched
+    return transformedData.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   },
 
   // User Favorites Functions
@@ -206,9 +294,9 @@ export const contentService = {
       if (data.stories) {
         transformedData.push(...data.stories.map((story: any) => ({
           id: story.id,
-          title: story.title,
-          description: story.description,
-          thumbnail: story.thumbnail,
+          title: story.title || '',
+          description: story.description || '',
+          thumbnail: story.thumbnail || '',
           type: 'story' as const,
           duration: story.estimated_read_time || 0,
           views: story.read_count || 0,
@@ -224,9 +312,9 @@ export const contentService = {
       if (data.films) {
         transformedData.push(...data.films.map((film: any) => ({
           id: film.id,
-          title: film.title,
-          description: film.description || film.short_description,
-          thumbnail: film.thumbnail,
+          title: film.title || '',
+          description: film.description || film.short_description || '',
+          thumbnail: film.thumbnail || '',
           type: 'film' as const,
           duration: film.duration || 0,
           views: film.view_count || 0,
@@ -242,9 +330,9 @@ export const contentService = {
       if (data.content) {
         transformedData.push(...data.content.map((content: any) => ({
           id: content.id,
-          title: content.title,
-          description: content.description || content.short_description,
-          thumbnail: content.thumbnail,
+          title: content.title || '',
+          description: content.description || content.short_description || '',
+          thumbnail: content.thumbnail || '',
           type: 'content' as const,
           duration: content.duration || 0,
           views: content.view_count || 0,
@@ -260,9 +348,9 @@ export const contentService = {
       if (data.podcasts) {
         transformedData.push(...data.podcasts.map((podcast: any) => ({
           id: podcast.id,
-          title: podcast.title,
-          description: podcast.description,
-          thumbnail: podcast.thumbnail,
+          title: podcast.title || '',
+          description: podcast.description || '',
+          thumbnail: podcast.thumbnail || '',
           type: 'podcast' as const,
           duration: podcast.duration || 0,
           views: podcast.play_count || 0,
@@ -278,9 +366,9 @@ export const contentService = {
       if (data.animations) {
         transformedData.push(...data.animations.map((animation: any) => ({
           id: animation.id,
-          title: animation.title,
-          description: animation.description,
-          thumbnail: animation.thumbnail,
+          title: animation.title || '',
+          description: animation.description || '',
+          thumbnail: animation.thumbnail || '',
           type: 'animation' as const,
           duration: animation.duration || 0,
           views: animation.view_count || 0,
@@ -296,9 +384,9 @@ export const contentService = {
       if (data.sneak_peeks) {
         transformedData.push(...data.sneak_peeks.map((sneakPeek: any) => ({
           id: sneakPeek.id,
-          title: sneakPeek.title,
-          description: sneakPeek.description,
-          thumbnail: sneakPeek.thumbnail,
+          title: sneakPeek.title || '',
+          description: sneakPeek.description || '',
+          thumbnail: sneakPeek.thumbnail_url || '',
           type: 'sneak-peek' as const,
           duration: sneakPeek.duration || 0,
           views: sneakPeek.view_count || 0,
@@ -314,9 +402,9 @@ export const contentService = {
       if (data.live_videos) {
         transformedData.push(...data.live_videos.map((liveVideo: any) => ({
           id: liveVideo.id,
-          title: liveVideo.title,
-          description: liveVideo.description,
-          thumbnail: liveVideo.thumbnail,
+          title: liveVideo.title || '',
+          description: liveVideo.description || '',
+          thumbnail: liveVideo.thumbnail || '',
           type: 'live-video' as const,
           duration: liveVideo.duration || 0,
           views: liveVideo.total_views || 0,
