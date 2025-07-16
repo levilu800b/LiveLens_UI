@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Play, 
   Sparkles, 
-  ArrowRight, 
   Volume2, 
   VolumeX, 
   Heart, 
@@ -10,9 +9,17 @@ import {
   Send,
   Users,
   X,
-  LogIn
+  LogIn,
+  Search,
+  BookOpen,
+  Film,
+  Headphones,
+  Zap
 } from 'lucide-react';
 import liveVideoService from '../../../services/liveVideoService';
+import storyService from '../../../services/storyService';
+import podcastService from '../../../services/podcastService';
+import mediaService from '../../../services/mediaService';
 import { useNavigate } from 'react-router-dom';
 
 interface LiveVideoData {
@@ -26,6 +33,21 @@ interface LiveVideoData {
   comment_count?: number;
 }
 
+interface PlatformStats {
+  stories: number;
+  contents: number; // combined films + content
+  podcasts: number;
+}
+
+// Utility function to format count display
+const formatCount = (count: number): string => {
+  if (count >= 1000) {
+    const thousands = count / 1000;
+    return thousands % 1 === 0 ? `${thousands.toFixed(0)}K+` : `${thousands.toFixed(1)}K+`;
+  }
+  return `${count}+`;
+};
+
 const Hero = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -34,6 +56,17 @@ const Hero = () => {
   const [hasTriedFetch, setHasTriedFetch] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  
+  // Platform stats state
+  const [stats, setStats] = useState<PlatformStats>({
+    stories: 0,
+    contents: 0, // combined films + content
+    podcasts: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Live video controls
   const [isMuted, setIsMuted] = useState(true);
@@ -52,6 +85,65 @@ const Hero = () => {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     setIsAuthenticated(!!token);
+  }, []);
+
+  // Load platform stats
+  useEffect(() => {
+    const loadPlatformStats = async () => {
+      try {
+        setStatsLoading(true);
+        
+        // Fetch data from all services in parallel
+        const [storyStatsResponse, podcastStatsResponse, filmsResponse, contentResponse] = await Promise.allSettled([
+          storyService.getStats(),
+          podcastService.getStats(),
+          mediaService.getFilms({ page_size: 1 }), // Just need the count
+          mediaService.getContent({ page_size: 1 }) // Just need the count
+        ]);
+
+        let storiesCount = 0;
+        let podcastsCount = 0;
+        let filmsCount = 0;
+        let contentCount = 0;
+
+        // Extract stories count
+        if (storyStatsResponse.status === 'fulfilled') {
+          storiesCount = storyStatsResponse.value.total_stories || 0;
+        }
+
+        // Extract podcasts count  
+        if (podcastStatsResponse.status === 'fulfilled') {
+          podcastsCount = podcastStatsResponse.value.total_episodes || 0;
+        }
+
+        // Extract films count
+        if (filmsResponse.status === 'fulfilled') {
+          filmsCount = filmsResponse.value.count || 0;
+        }
+
+        // Extract content count
+        if (contentResponse.status === 'fulfilled') {
+          contentCount = contentResponse.value.count || 0;
+        }
+
+        // Combine films + content for "Contents"
+        const totalContents = filmsCount + contentCount;
+
+        setStats({
+          stories: storiesCount,
+          contents: totalContents,
+          podcasts: podcastsCount,
+        });
+
+      } catch (error) {
+        console.warn('Error loading platform stats:', error);
+        // Keep default values on error
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadPlatformStats();
   }, []);
   
   useEffect(() => {
@@ -404,6 +496,44 @@ const Hero = () => {
     }, 2000);
   };
 
+  // Search functionality
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Navigate to stories page with search query
+      navigate(`/stories?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  // Quick navigation functions
+  const navigateToContent = (type: string) => {
+    switch (type) {
+      case 'stories':
+        navigate('/stories');
+        break;
+      case 'films':
+        navigate('/media/films');
+        break;
+      case 'contents':
+        navigate('/media/contents');
+        break;
+      case 'media':
+        navigate('/media');
+        break;
+      case 'podcasts':
+        navigate('/podcasts');
+        break;
+      case 'animations':
+        navigate('/animations');
+        break;
+      case 'sneak-peeks':
+        navigate('/sneak-peeks');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
       {/* Animated Background Elements */}
@@ -446,30 +576,81 @@ const Hero = () => {
             {/* Stats */}
             <div className="flex flex-wrap gap-8 mb-10">
               <div className="text-center">
-                <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">10K+</div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                  {statsLoading ? '...' : formatCount(stats.stories)}
+                </div>
                 <div className="text-sm text-gray-400">Stories</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">5K+</div>
-                <div className="text-sm text-gray-400">Films</div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  {statsLoading ? '...' : formatCount(stats.contents)}
+                </div>
+                <div className="text-sm text-gray-400">Contents</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-cyan-400 bg-clip-text text-transparent">2K+</div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                  {statsLoading ? '...' : formatCount(stats.podcasts)}
+                </div>
                 <div className="text-sm text-gray-400">Podcasts</div>
               </div>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button className="group bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-2xl hover:shadow-purple-500/25 flex items-center justify-center">
-                Discover
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </button>
-              
-              <button className="group bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 flex items-center justify-center">
-                <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                Watch Demo
-              </button>
+            {/* Search and Navigation */}
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="relative">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search stories, podcasts, films..."
+                    className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-12 py-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white/20 transition-all duration-300"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 hover:scale-105"
+                  >
+                    Search
+                  </button>
+                </div>
+              </form>
+
+              {/* Quick Navigation Buttons */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  onClick={() => navigateToContent('stories')}
+                  className="group bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center text-sm"
+                >
+                  <BookOpen className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  Stories
+                </button>
+                
+                <button
+                  onClick={() => navigateToContent('films')}
+                  className="group bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center text-sm"
+                >
+                  <Film className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  Films
+                </button>
+                
+                <button
+                  onClick={() => navigateToContent('podcasts')}
+                  className="group bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center text-sm"
+                >
+                  <Headphones className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  Podcasts
+                </button>
+                
+                <button
+                  onClick={() => navigateToContent('animations')}
+                  className="group bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center text-sm"
+                >
+                  <Zap className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  Animations
+                </button>
+              </div>
             </div>
           </div>
 
@@ -729,13 +910,17 @@ const Hero = () => {
               <div className="absolute -left-12 top-1/3 z-20 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 transform rotate-6 hover:rotate-3 transition-transform duration-300 hidden lg:block">
                 <div className="w-16 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg mb-2"></div>
                 <div className="text-xs text-white font-medium">Stories</div>
-                <div className="text-xs text-gray-400">10K+ Available</div>
+                <div className="text-xs text-gray-400">
+                  {statsLoading ? 'Loading...' : `${formatCount(stats.stories)} Available`}
+                </div>
               </div>
               
               <div className="absolute -right-12 top-2/3 z-20 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 transform -rotate-6 hover:-rotate-3 transition-transform duration-300 hidden lg:block">
                 <div className="w-16 h-12 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-lg mb-2"></div>
-                <div className="text-xs text-white font-medium">Films</div>
-                <div className="text-xs text-gray-400">HD Quality</div>
+                <div className="text-xs text-white font-medium">Contents</div>
+                <div className="text-xs text-gray-400">
+                  {statsLoading ? 'Loading...' : `${formatCount(stats.contents)} Available`}
+                </div>
               </div>
             </div>
           </div>
