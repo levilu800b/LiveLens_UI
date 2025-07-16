@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Play, Film, Mic, BookOpen, Heart, Eye } from 'lucide-react';
+import { Play, Film, Mic, BookOpen, Heart, Eye, TrendingUp } from 'lucide-react';
+import storyService from '../../../services/storyService';
+import podcastService from '../../../services/podcastService';
+import mediaService from '../../../services/mediaService';
+import animationService from '../../../services/animationService';
 
 // Floating Background Particles Component
 export const FloatingParticles = ({ className = "" }) => {
@@ -349,59 +353,183 @@ export const RotatingContentOrbs = ({ contents = [], className = "" }: RotatingC
 };
 
 // Demo Component showing how to use them together
-const AnimationDemo = () => {
+const LatestContentSection = () => {
   const [activeContentIndex, setActiveContentIndex] = useState(0);
+  const [latestContent, setLatestContent] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [trendingContent, setTrendingContent] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const myContent = [
-    { 
-      icon: <Mic className="w-6 h-6" />, 
-      type: "Podcast", 
-      title: "Tech Talk #15",
-      description: "Diving deep into the latest AI developments and their impact on creative industries. We explore machine learning, automation, and the future of human creativity.",
-      stats: { views: "2.3K", likes: "89" },
-      duration: "45 min",
-      date: "2 days ago",
-      tags: ["Technology", "AI", "Future"]
-    },
-    { 
-      icon: <Film className="w-6 h-6" />, 
-      type: "Short Film", 
-      title: "Morning Coffee",
-      description: "A cinematic journey through the ritual of morning coffee. Shot entirely in natural light, exploring themes of solitude, routine, and finding beauty in everyday moments.",
-      stats: { views: "1.2K", likes: "156" },
-      duration: "8 min",
-      date: "1 week ago",
-      tags: ["Drama", "Lifestyle", "Cinematic"]
-    },
-    { 
-      icon: <Play className="w-6 h-6" />, 
-      type: "Animation", 
-      title: "Logo Reveal",
-      description: "Dynamic logo animation featuring particle effects and smooth transitions. Created using modern animation techniques with a focus on brand storytelling and visual impact.",
-      stats: { views: "890", likes: "67" },
-      duration: "30 sec",
-      date: "3 days ago",
-      tags: ["Motion Graphics", "Branding", "Design"]
-    },
-    { 
-      icon: <BookOpen className="w-6 h-6" />, 
-      type: "Story", 
-      title: "Chapter 3: The Journey",
-      description: "The protagonist faces their greatest challenge yet. This chapter explores themes of perseverance, self-discovery, and the power of human connection in times of adversity.",
-      stats: { views: "445", likes: "23" },
-      duration: "12 min read",
-      date: "5 days ago",
-      tags: ["Fiction", "Adventure", "Character Development"]
+  // Transform API data to component format
+  const transformToComponentFormat = (items: any[]) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    return items.map(item => ({
+      icon: getIconForType(item.type || 'content'),
+      type: (item.type || 'content').charAt(0).toUpperCase() + (item.type || 'content').slice(1),
+      title: item.title || 'Untitled',
+      description: item.description || item.short_description || 'No description available',
+      stats: { 
+        views: formatNumber(item.views || item.view_count || item.read_count || 0), 
+        likes: formatNumber(item.likes || item.like_count || 0) 
+      },
+      duration: item.duration_formatted || `${item.estimated_read_time || 5}m read`,
+      date: formatDate(item.created_at || new Date().toISOString()),
+      tags: [] // We'll skip tags for now to simplify
+    }));
+  };
+
+  // Helper functions
+  const getIconForType = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'podcast': return <Mic className="w-6 h-6" />;
+      case 'film': return <Film className="w-6 h-6" />;
+      case 'animation': return <Play className="w-6 h-6" />;
+      case 'story': return <BookOpen className="w-6 h-6" />;
+      case 'content': return <Play className="w-6 h-6" />;
+      case 'sneakpeek': return <Play className="w-6 h-6" />;
+      default: return <Play className="w-6 h-6" />;
     }
-  ];
+  };
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays <= 7) return `${diffDays} days ago`;
+    if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return `${Math.ceil(diffDays / 30)} months ago`;
+  };
+
+  // Load real data from APIs
+  useEffect(() => {
+    const loadLatestContent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch recent content from all sources
+        const [
+          recentStories,
+          recentPodcasts, 
+          recentFilms,
+          recentContent
+        ] = await Promise.allSettled([
+          storyService.getStories({}),
+          podcastService.getPodcasts({}),
+          mediaService.getFilms({}),
+          mediaService.getContent({})
+        ]);
+
+        // Collect latest items and add type field
+        const latestItems: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+        
+        if (recentStories.status === 'fulfilled' && recentStories.value?.results) {
+          latestItems.push(...recentStories.value.results.slice(0, 1).map((item: any) => ({ ...item, type: 'story' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+        if (recentPodcasts.status === 'fulfilled' && recentPodcasts.value?.results) {
+          latestItems.push(...recentPodcasts.value.results.slice(0, 1).map((item: any) => ({ ...item, type: 'podcast' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+        if (recentFilms.status === 'fulfilled' && recentFilms.value?.results) {
+          latestItems.push(...recentFilms.value.results.slice(0, 1).map((item: any) => ({ ...item, type: 'film' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+        if (recentContent.status === 'fulfilled' && recentContent.value?.results) {
+          latestItems.push(...recentContent.value.results.slice(0, 1).map((item: any) => ({ ...item, type: 'content' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+
+        setLatestContent(latestItems);
+
+        // Fetch trending content
+        const [
+          trendingStories,
+          trendingPodcasts,
+          trendingFilms,
+          trendingAnimations
+        ] = await Promise.allSettled([
+          storyService.getTrendingStories(),
+          podcastService.getTrendingPodcasts(),
+          mediaService.getTrendingFilms(),
+          animationService.getTrendingAnimations()
+        ]);
+
+        const trendingItems: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+        
+        if (trendingStories.status === 'fulfilled' && trendingStories.value) {
+          trendingItems.push(...trendingStories.value.slice(0, 1).map((item: any) => ({ ...item, type: 'story' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+        if (trendingPodcasts.status === 'fulfilled' && trendingPodcasts.value) {
+          trendingItems.push(...trendingPodcasts.value.slice(0, 1).map((item: any) => ({ ...item, type: 'podcast' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+        if (trendingFilms.status === 'fulfilled' && trendingFilms.value) {
+          trendingItems.push(...trendingFilms.value.slice(0, 1).map((item: any) => ({ ...item, type: 'film' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+        if (trendingAnimations.status === 'fulfilled' && trendingAnimations.value) {
+          trendingItems.push(...trendingAnimations.value.slice(0, 1).map((item: any) => ({ ...item, type: 'animation' }))); // eslint-disable-line @typescript-eslint/no-explicit-any
+        }
+
+        setTrendingContent(trendingItems);
+      } catch (err) {
+        console.error('Error loading content:', err);
+        setError('Failed to load content');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLatestContent();
+  }, []);
+
+  // Transform data for components
+  const transformedLatestContent = transformToComponentFormat(latestContent);
+  const transformedTrendingContent = transformToComponentFormat(trendingContent);
 
   // Sync content detail with content showcase
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveContentIndex((prev) => (prev + 1) % myContent.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [myContent.length]);
+    if (transformedLatestContent.length > 0) {
+      const interval = setInterval(() => {
+        setActiveContentIndex((prev) => (prev + 1) % transformedLatestContent.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [transformedLatestContent.length]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4 sm:p-6 lg:p-8">
+        <div className="max-w-sm sm:max-w-4xl lg:max-w-6xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-300">Loading latest content...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4 sm:p-6 lg:p-8">
+        <div className="max-w-sm sm:max-w-4xl lg:max-w-6xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4 sm:p-6 lg:p-8">
@@ -438,18 +566,18 @@ const AnimationDemo = () => {
           <FloatingOrbs />
           
           <div className="relative z-10 text-center space-y-6 sm:space-y-8">
-            <RotatingContentOrbs contents={myContent} />
+            <RotatingContentOrbs contents={transformedLatestContent} />
           </div>
         </div>
 
-        {/* Example: Enhanced Card Grid */}
+        {/* Example: Enhanced Card Grid with Real Data */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 items-stretch">
           <AnimatedCard delay={200} className="bg-slate-800/50 rounded-xl border border-slate-700">
             <GlowingBorder color="purple">
               <div className="p-4 sm:p-6 lg:p-8">
                 <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-100">Latest Content</h3>
                 <ContentShowcase 
-                  contents={myContent} 
+                  contents={transformedLatestContent} 
                   onActiveChange={setActiveContentIndex}
                   activeIndex={activeContentIndex}
                 />
@@ -460,10 +588,13 @@ const AnimationDemo = () => {
           <AnimatedCard delay={400} className="bg-slate-800/50 rounded-xl border border-slate-700">
             <GlowingBorder color="pink">
               <div className="p-4 sm:p-6 lg:p-8 h-full flex flex-col">
-                <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-100">Featured</h3>
+                <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-100 flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6" />
+                  Trending Now
+                </h3>
                 <div className="flex-1 min-h-0">
                   <FlippingCarousel 
-                    contents={myContent}
+                    contents={transformedTrendingContent}
                     activeIndex={activeContentIndex}
                   />
                 </div>
@@ -476,4 +607,4 @@ const AnimationDemo = () => {
   );
 };
 
-export default AnimationDemo;
+export default LatestContentSection;
