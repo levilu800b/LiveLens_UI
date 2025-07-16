@@ -299,6 +299,11 @@ const EditSneakPeekPage: React.FC = () => {
       setSaving(true);
       setError(null);
       
+      // Debug: Log form data before submission
+      console.log('Form data before submission:', formData);
+      console.log('Tags before submission:', formData.tags);
+      console.log('Tags type check:', formData.tags.map(tag => ({ tag, type: typeof tag })));
+      
       await sneakPeekService.updateSneakPeek(slug, formData);
       
       // Signal that sneak peek data has been updated

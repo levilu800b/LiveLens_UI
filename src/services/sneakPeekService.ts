@@ -21,9 +21,11 @@ interface BackendSneakPeek {
   description?: string;
   summary?: string;
   short_description?: string;
-  cover_image?: string;
-  thumbnail?: string;
-  thumbnail_url?: string;
+  category?: string;
+  tags?: string[] | string;
+  upcoming_content_type?: string;
+  upcoming_content_title?: string;
+  upcoming_release_date?: string;
   duration?: number; // seconds for video content
   video_quality?: '480p' | '720p' | '1080p' | '4K';
   content_rating?: 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17';
@@ -39,10 +41,14 @@ interface BackendSneakPeek {
   is_trending?: boolean;
   published_at?: string;
   created_at: string;
-  category?: string;
-  author?: Author;
+  featuredAt?: string;
   video_file?: string;
   video_file_url?: string;
+  image_file?: string;
+  cover_image?: string;
+  thumbnail?: string;
+  thumbnail_url?: string;
+  author?: Author;
   poster?: string;
   poster_url?: string;
   content_type?: 'video' | 'image' | 'text';
@@ -54,12 +60,8 @@ interface BackendSneakPeek {
   is_bookmarked?: boolean;
   user_rating?: number;
   user_interaction?: string[]; // Array of interaction types like ['like', 'favorite']
-  tags?: string[] | string;
   tags_list?: string[];
   status?: 'draft' | 'published' | 'archived';
-  upcoming_content_type?: string;
-  upcoming_content_title?: string;
-  upcoming_release_date?: string;
 }
 
 // Frontend sneak peek types
@@ -427,10 +429,23 @@ const sneakPeekService = {
         formData.append('is_trending', sneakPeekData.is_trending.toString());
       }
 
-      // Add tags as comma-separated string or JSON array
+      // Add tags as comma-separated string (Django typically expects this format)
       if (sneakPeekData.tags && sneakPeekData.tags.length > 0) {
-        // Use tags_list field for array format (preferred by backend serializer)
-        formData.append('tags_list', JSON.stringify(sneakPeekData.tags));
+        // Debug: Log what we're about to send
+        console.log('Original tags:', sneakPeekData.tags);
+        console.log('Tags array check:', Array.isArray(sneakPeekData.tags));
+        
+        // Ensure we have clean string values
+        const cleanTags = sneakPeekData.tags
+          .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+          .map(tag => tag.trim());
+        
+        console.log('Final clean tags:', cleanTags);
+        
+        // Send tags as comma-separated string only
+        const tagString = cleanTags.join(',');
+        console.log('Sending tags as string:', tagString);
+        formData.append('tags_list', tagString);
       }
 
       // Add file uploads only if they are new files
