@@ -46,14 +46,19 @@ const ContentManagement: React.FC = () => {
   const fetchContent = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const data = await adminService.getContentManagement({
-        ...filters,
+        content_type: filters.content_type || undefined,
+        status: filters.status || undefined,
+        search: filters.search || undefined,
         page: currentPage,
         page_size: itemsPerPage
       });
-      setContent(data.content);
-      setTotalCount(data.total_count);
-      setTotalPages(data.total_pages || Math.ceil(data.total_count / itemsPerPage));
+      
+      setContent(data.content || []);
+      setTotalCount(data.total_count || 0);
+      setTotalPages(data.total_pages || Math.ceil((data.total_count || 0) / itemsPerPage));
     } catch (err) {
       setError('Failed to load content. Please try again.');
       console.error('Error fetching content:', err);
@@ -66,11 +71,8 @@ const ContentManagement: React.FC = () => {
     fetchContent();
   }, [fetchContent]);
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
     setCurrentPage(1); // Reset to first page when filters change
   };
 
@@ -285,7 +287,7 @@ const ContentManagement: React.FC = () => {
                 <input
                   type="text"
                   value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  onChange={(e) => handleFilterChange({ search: e.target.value })}
                   placeholder="Search content..."
                   className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
@@ -298,7 +300,7 @@ const ContentManagement: React.FC = () => {
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <select
                   value={filters.content_type}
-                  onChange={(e) => handleFilterChange('content_type', e.target.value)}
+                  onChange={(e) => handleFilterChange({ content_type: e.target.value })}
                   className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 >
                   <option value="">All Types</option>
@@ -317,7 +319,7 @@ const ContentManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
                 value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
+                onChange={(e) => handleFilterChange({ status: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">All Statuses</option>
