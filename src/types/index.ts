@@ -13,6 +13,7 @@ export interface User {
   gender?: 'male' | 'female' | '';
   country?: string;
   dateOfBirth?: string;
+  googleId?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -2,15 +2,13 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Settings, 
-  Shield, 
-  Bell, 
-  Trash2, 
-  Key, 
-  User, 
-  Moon, 
-  Sun,
+import {
+  Settings,
+  Shield,
+  Bell,
+  Trash2,
+  Key,
+  User,
   Save,
   AlertTriangle
 } from 'lucide-react';
@@ -20,11 +18,8 @@ import { uiActions } from '../../store/reducers/uiReducers';
 import secureAuth from '../../utils/secureAuth';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
-import unifiedAuth from '../../utils/unifiedAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-
 
 const SettingsPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -42,7 +37,7 @@ const SettingsPage: React.FC = () => {
     newPassword: '',
     confirmPassword: ''
   });
-
+  
   // Preferences State
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -51,10 +46,10 @@ const SettingsPage: React.FC = () => {
     preferredVideoQuality: 'auto',
     darkMode: theme === 'dark'
   });
-
+  
   // Delete Account State
   const [deletePassword, setDeletePassword] = useState('');
-
+  
   const tabs = [
     { id: 'preferences', label: 'Preferences', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -62,104 +57,147 @@ const SettingsPage: React.FC = () => {
     { id: 'account', label: 'Account', icon: User },
   ];
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Validate passwords match
-  if (passwordData.newPassword !== passwordData.confirmPassword) {
-    dispatch(uiActions.addNotification({
-      type: 'error',
-      message: 'New passwords do not match'
-    }));
-    return;
-  }
-
-  // Validate password length
-  if (passwordData.newPassword.length < 8) {
-    dispatch(uiActions.addNotification({
-      type: 'error',
-      message: 'New password must be at least 8 characters long'
-    }));
-    return;
-  }
-
-  // Validate current password is not empty
-  if (!passwordData.currentPassword) {
-    dispatch(uiActions.addNotification({
-      type: 'error',
-      message: 'Please enter your current password'
-    }));
-    return;
-  }
-
-  try {
-    setIsLoading(true);
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // FIXED: Include all required fields for the API
-    const response = await fetch('/api/auth/change-password/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-      },
-      body: JSON.stringify({
-        old_password: passwordData.currentPassword,
-        new_password: passwordData.newPassword,
-        new_password_confirm: passwordData.confirmPassword, // FIXED: Added missing field
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      
-      // Handle specific validation errors
-      if (errorData.old_password) {
-        throw new Error(errorData.old_password[0] || 'Invalid current password');
-      } else if (errorData.new_password) {
-        throw new Error(errorData.new_password[0] || 'Invalid new password');
-      } else if (errorData.new_password_confirm) {
-        throw new Error(errorData.new_password_confirm[0] || 'Password confirmation error');
-      } else if (errorData.non_field_errors) {
-        throw new Error(errorData.non_field_errors[0] || 'Passwords do not match');
-      } else {
-        throw new Error(errorData.message || errorData.error || 'Failed to change password');
-      }
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Passwords do not match'
+      }));
+      return;
     }
+
+    // Validate password length
+    if (passwordData.newPassword.length < 8) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Password must be at least 8 characters long'
+      }));
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch(`${API_BASE_URL}/auth/set-password/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          new_password: passwordData.newPassword,
+          new_password_confirm: passwordData.confirmPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to set password');
+      }
+
+      dispatch(uiActions.addNotification({
+        type: 'success',
+        message: 'Password set successfully! You can now log in with email and password.'
+      }));
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+    } catch (error: unknown) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to set password'
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const responseData = await response.json();
-    
-    dispatch(uiActions.addNotification({
-      type: 'success',
-      message: responseData.message || 'Password changed successfully'
-    }));
-    
-    // Clear the form after successful change
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-    
-  } catch (error: any) {
-    console.error('Password change error:', error);
-    dispatch(uiActions.addNotification({
-      type: 'error',
-      message: error.message || 'Failed to change password. Please try again.'
-    }));
-  } finally {
-    setIsLoading(false);
-  }
-};
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'New passwords do not match'
+      }));
+      return;
+    }
+
+    // Validate password length
+    if (passwordData.newPassword.length < 8) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'New password must be at least 8 characters long'
+      }));
+      return;
+    }
+
+    // Validate current password is not empty
+    if (!passwordData.currentPassword) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: 'Please enter your current password'
+      }));
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch(`${API_BASE_URL}/auth/change-password/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          old_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword,
+          new_password_confirm: passwordData.confirmPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
+      dispatch(uiActions.addNotification({
+        type: 'success',
+        message: 'Password changed successfully'
+      }));
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+    } catch (error: unknown) {
+      dispatch(uiActions.addNotification({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to change password'
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handlePreferencesUpdate = async () => {
     try {
       setIsLoading(true);
       
-      // Update theme in UI store
-      dispatch(uiActions.setTheme(preferences.darkMode ? 'dark' : 'light'));
-      
-      // Save preferences to backend
-const response = await fetch(`${API_BASE_URL}/auth/preferences/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/preferences/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -182,10 +220,10 @@ const response = await fetch(`${API_BASE_URL}/auth/preferences/`, {
         type: 'success',
         message: 'Preferences updated successfully'
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(uiActions.addNotification({
         type: 'error',
-        message: error.message || 'Failed to update preferences'
+        message: error instanceof Error ? error.message : 'Failed to update preferences'
       }));
     } finally {
       setIsLoading(false);
@@ -193,7 +231,9 @@ const response = await fetch(`${API_BASE_URL}/auth/preferences/`, {
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) {
+    const isGoogleUser = userInfo?.googleId;
+    
+    if (!isGoogleUser && !deletePassword) {
       dispatch(uiActions.addNotification({
         type: 'error',
         message: 'Please enter your password to confirm'
@@ -204,14 +244,14 @@ const response = await fetch(`${API_BASE_URL}/auth/preferences/`, {
     try {
       setIsLoading(true);
       
-const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
+      const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
         body: JSON.stringify({
-          password: deletePassword,
+          password: isGoogleUser ? '' : deletePassword,
         }),
       });
 
@@ -221,7 +261,8 @@ const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
       }
 
       // Clear all auth data
-      secureAuth.clearAuth();
+      secureAuth.user.clearUser();
+      await secureAuth.auth.logout();
       dispatch(userActions.resetUserInfo());
       
       dispatch(uiActions.addNotification({
@@ -230,10 +271,10 @@ const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
       }));
       
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       dispatch(uiActions.addNotification({
         type: 'error',
-        message: error.message || 'Failed to delete account'
+        message: error instanceof Error ? error.message : 'Failed to delete account'
       }));
     } finally {
       setIsLoading(false);
@@ -325,7 +366,7 @@ const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
         <div className="flex items-center justify-between">
           <div>
             <label className="text-sm font-medium text-gray-700">Email Notifications</label>
-            <p className="text-sm text-gray-500">Receive updates via email</p>
+            <p className="text-sm text-gray-500">Receive notifications via email</p>
           </div>
           <button
             onClick={() => setPreferences(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
@@ -376,135 +417,211 @@ const response = await fetch(`${API_BASE_URL}/auth/delete-account/`, {
     </div>
   );
 
-  const renderSecurity = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900">Security Settings</h3>
-      
-      <form onSubmit={handlePasswordChange} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Current Password
-          </label>
-          <input
-            type="password"
-            value={passwordData.currentPassword}
-            onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            required
-          />
-        </div>
+  const renderSecurity = () => {
+    const isGoogleUser = userInfo?.googleId;
+    const hasPassword = !isGoogleUser; // Google users don't have passwords initially
+    
+    return (
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-900">Security Settings</h3>
+        
+        {isGoogleUser && !hasPassword && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <Shield className="h-5 w-5 text-blue-600 mr-3" />
+              <div>
+                <h4 className="text-sm font-medium text-blue-900">Google Account</h4>
+                <p className="text-sm text-blue-700">
+                  You signed in with Google. You can set a password to also log in with email/password.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {isGoogleUser && !hasPassword ? (
+          // Google user - show set password form
+          <form onSubmit={handleSetPassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Set Password (Optional)
+              </label>
+              <input
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter new password"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Confirm new password"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <LoadingSpinner size="sm" className="mr-2" />
+              ) : (
+                <Key className="h-4 w-4 mr-2" />
+              )}
+              Set Password
+            </button>
+          </form>
+        ) : (
+          // Regular user or Google user with password - show change password form
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Current Password
+              </label>
+              <input
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+                minLength={8}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+                minLength={8}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <LoadingSpinner size="sm" className="mr-2" />
+              ) : (
+                <Key className="h-4 w-4 mr-2" />
+              )}
+              Change Password
+            </button>
+          </form>
+        )}
+      </div>
+    );
+  };
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            New Password
-          </label>
-          <input
-            type="password"
-            value={passwordData.newPassword}
-            onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            required
-            minLength={8}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Confirm New Password
-          </label>
-          <input
-            type="password"
-            value={passwordData.confirmPassword}
-            onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            required
-            minLength={8}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-        >
-          {isLoading ? (
-            <LoadingSpinner size="sm" className="mr-2" />
-          ) : (
-            <Key className="h-4 w-4 mr-2" />
-          )}
-          Change Password
-        </button>
-      </form>
-    </div>
-  );
-
-  const renderAccount = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900">Account Management</h3>
-      
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <div className="flex items-start">
-          <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 mr-3" />
-          <div className="flex-1">
-            <h4 className="text-sm font-medium text-red-800">Delete Account</h4>
-            <p className="text-sm text-red-700 mt-1">
-              Once you delete your account, there is no going back. Please be certain.
-            </p>
-            
-            {!showDeleteConfirm ? (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="mt-3 inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Account
-              </button>
-            ) : (
-              <form onSubmit={(e) => { e.preventDefault(); handleDeleteAccount(); }} className="mt-4 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-red-800 mb-1">
-                    Enter your password to confirm:
-                  </label>
-                  <input
-                    type="password"
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <LoadingSpinner size="sm" className="mr-2" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 mr-2" />
-                    )}
-                    Permanently Delete Account
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowDeleteConfirm(false);
-                      setDeletePassword('');
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
+  const renderAccount = () => {
+    const isGoogleUser = userInfo?.googleId;
+    
+    return (
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-900">Account Management</h3>
+        
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 mr-3" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-red-800">Delete Account</h4>
+              <p className="text-sm text-red-700 mt-1">
+                Once you delete your account, there is no going back. Please be certain.
+              </p>
+              
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="mt-3 inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account
+                </button>
+              ) : (
+                <form onSubmit={(e) => { e.preventDefault(); handleDeleteAccount(); }} className="mt-4 space-y-3">
+                  {!isGoogleUser && (
+                    <div>
+                      <label className="block text-sm font-medium text-red-800 mb-1">
+                        Enter your password to confirm:
+                      </label>
+                      <input
+                        type="password"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
+                  )}
+                  
+                  {isGoogleUser && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                      <p className="text-sm text-yellow-800">
+                        You are about to delete your Google account. This action cannot be undone.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="flex space-x-3">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <LoadingSpinner size="sm" className="mr-2" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-2" />
+                      )}
+                      Permanently Delete Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeletePassword('');
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {

@@ -1,7 +1,7 @@
 // src/components/Header/Header.tsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { 
   User, 
   Settings, 
@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import type { RootState } from '../../store';
 import { userActions } from '../../store/reducers/userReducers';
-import unifiedAuth from '../../utils/unifiedAuth';
 import { useAppDispatch } from '../../store';
 import { performCompleteLogout } from '../../utils/authUtils';
 
@@ -70,7 +69,7 @@ const Header = () => {
 
   const handleSignOut = () => {
     performCompleteLogout().then(() => {
-      dispatch(userActions.logout());
+      dispatch(userActions.resetUserInfo());
       navigate('/login');
     }).catch((error) => {
       console.error('Logout failed:', error);
@@ -79,11 +78,6 @@ const Header = () => {
 
   const handleMenuClick = () => {
     setIsProfileDropdownOpen(false);
-    setIsMediaDropdownOpen(false);
-  };
-
-  const handleMediaClick = () => {
-    navigate('/media');
     setIsMediaDropdownOpen(false);
   };
 
@@ -191,8 +185,8 @@ const Header = () => {
                   {isProfileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-md rounded-md shadow-lg border border-white/10 py-1 z-50">
                       <div className="px-4 py-2 border-b border-white/10">
-                        <p className="text-sm font-medium text-white">{userInfo?.firstName} {userInfo?.lastName}</p>
-                        <p className="text-xs text-gray-400">{userInfo?.email}</p>
+                        <p className="text-sm font-medium text-white truncate">{userInfo?.firstName} {userInfo?.lastName}</p>
+                        <p className="text-xs text-gray-400 truncate">{userInfo?.email}</p>
                       </div>
                       
                       {userInfo?.isAdmin && (
@@ -329,8 +323,8 @@ const Header = () => {
                     )}
                   </div>
                   <div className="ml-3">
-                    <div className="text-base font-medium text-white">{userInfo?.firstName} {userInfo?.lastName}</div>
-                    <div className="text-sm font-medium text-gray-400">{userInfo?.email}</div>
+                    <div className="text-base font-medium text-white truncate">{userInfo?.firstName} {userInfo?.lastName}</div>
+                    <div className="text-sm font-medium text-gray-400 truncate">{userInfo?.email}</div>
                   </div>
                 </div>
                 
