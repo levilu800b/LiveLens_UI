@@ -55,7 +55,7 @@ export interface DashboardStats {
   trending_films: Array<{
     id: string;
     title: string;
-    creator__username: string;
+    author__username: string;
     view_count: number;
     like_count: number;
   }>;
@@ -63,7 +63,7 @@ export interface DashboardStats {
   trending_podcasts: Array<{
     id: string;
     title: string;
-    creator__username: string;
+    author__username: string;
     play_count: number;
     like_count: number;
   }>;
@@ -71,7 +71,7 @@ export interface DashboardStats {
   trending_animations: Array<{
     id: string;
     title: string;
-    creator__username: string;
+    author__username: string;
     view_count: number;
     like_count: number;
   }>;
@@ -240,14 +240,14 @@ class AdminService {
         { id: '3', title: 'Journey Through Space', author__username: 'space_explorer', read_count: 756, like_count: 63 },
       ],
       trending_films: [
-        { id: '1', title: 'Documentary: Ocean Life', creator__username: 'filmmaker_1', view_count: 5432, like_count: 234 },
-        { id: '2', title: 'Short Film: City Dreams', creator__username: 'indie_director', view_count: 3456, like_count: 189 },
+        { id: '1', title: 'Documentary: Ocean Life', author__username: 'filmmaker_1', view_count: 5432, like_count: 234 },
+        { id: '2', title: 'Short Film: City Dreams', author__username: 'indie_director', view_count: 3456, like_count: 189 },
       ],
       trending_podcasts: [
-        { id: '1', title: 'Tech Talk Weekly', creator__username: 'podcast_host', play_count: 2345, like_count: 156 },
+        { id: '1', title: 'Tech Talk Weekly', author__username: 'podcast_host', play_count: 2345, like_count: 156 },
       ],
       trending_animations: [
-        { id: '1', title: 'Animated Adventure', creator__username: 'animator_pro', view_count: 1234, like_count: 98 },
+        { id: '1', title: 'Animated Adventure', author__username: 'animator_pro', view_count: 1234, like_count: 98 },
       ],
       most_active_users: [
         { id: '1', username: 'content_creator_1', first_name: 'Alice', last_name: 'Johnson', content_count: 45 },
